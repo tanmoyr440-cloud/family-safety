@@ -42,7 +42,16 @@ class OwnerResponse(BaseModel):
 class LoginResponse(BaseModel):
     owner: OwnerResponse
     csrf_token: str
+    access_token: str | None = None
+    refresh_token: str | None = None
     mfa_required: bool = False
+
+
+class RefreshResponse(BaseModel):
+    message: str = "Session refreshed successfully."
+    csrf_token: str = ""
+    access_token: str | None = None
+    refresh_token: str | None = None
 
 
 class MfaEnrollResponse(BaseModel):

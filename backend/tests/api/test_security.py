@@ -84,9 +84,9 @@ async def test_rate_limiting_lockout(client: AsyncClient) -> None:
     # Reset auth limiter for clean test
     auth_rate_limiter.requests.clear()
 
-    # Exceed auth limiter (configured to 10 requests / min)
+    # Exceed auth limiter
     responses = []
-    for _ in range(12):
+    for _ in range(auth_rate_limiter.requests_per_minute + 2):
         res = await client.post(
             "/api/v1/auth/login",
             json={"email": "nobody@example.com", "password": "wrong"},

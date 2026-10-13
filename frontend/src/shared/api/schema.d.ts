@@ -1275,11 +1275,20 @@ export interface components {
             owner: components["schemas"]["OwnerResponse"];
             /** Csrf Token */
             csrf_token: string;
+            access_token?: string | null;
+            refresh_token?: string | null;
             /**
              * Mfa Required
              * @default false
              */
             mfa_required: boolean;
+        };
+        /** RefreshResponse */
+        RefreshResponse: {
+            message?: string;
+            csrf_token?: string;
+            access_token?: string | null;
+            refresh_token?: string | null;
         };
         /** MarkInstallmentPaidRequest */
         MarkInstallmentPaidRequest: {

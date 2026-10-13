@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/shared/api/client";
+import { api, setStoredAuthTokens } from "@/shared/api/client";
 import { unwrap } from "@/shared/api/errors";
 import { authKeys } from "./keys";
 import type { components } from "@/shared/api/schema";
@@ -19,6 +19,11 @@ export function useLogin() {
     },
     onSuccess: (data) => {
       if (!data.mfa_required) {
+        setStoredAuthTokens({
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+          csrfToken: data.csrf_token,
+        });
         queryClient.setQueryData(authKeys.me(), data.owner);
         queryClient.invalidateQueries({ queryKey: authKeys.me() });
       }

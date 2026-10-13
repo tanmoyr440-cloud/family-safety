@@ -255,6 +255,6 @@ class InMemoryRateLimiter:
         self.requests[key] = valid_requests
 
 
-auth_rate_limiter = InMemoryRateLimiter(requests_per_minute=10)
-otp_rate_limiter = InMemoryRateLimiter(requests_per_minute=20)
-general_rate_limiter = InMemoryRateLimiter(requests_per_minute=120)
+auth_rate_limiter = InMemoryRateLimiter(requests_per_minute=20)
+otp_rate_limiter = InMemoryRateLimiter(requests_per_minute=30)
+general_rate_limiter = InMemoryRateLimiter(requests_per_minute=300)

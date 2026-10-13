@@ -33,6 +33,7 @@ from app.interfaces.api.schemas import (
     MfaVerifyRequest,
     OwnerExportResponse,
     OwnerResponse,
+    RefreshResponse,
     RegisterRequest,
 )
 from app.interfaces.api.security import (
@@ -49,22 +50,40 @@ from app.interfaces.api.security import (
 router = APIRouter(tags=["auth"])
 
 
+def _is_cross_site_secure(request: Request | None) -> bool:
+    if settings.environment == "production":
+        return True
+    if request is not None:
+        scheme = request.url.scheme
+        proto = request.headers.get("x-forwarded-proto")
+        origin = request.headers.get("origin", "")
+        host = request.headers.get("host", "")
+        if scheme == "https" or proto == "https":
+            return True
+        if "onrender.com" in host or "vercel.app" in origin:
+            return True
+    return False
+
+
 def _set_auth_cookies(
     response: Response,
     owner_id: str,
     csrf_token: str,
+    request: Request | None = None,
 ) -> tuple[str, str]:
     """Helper to issue and set session cookies."""
     access_token = create_access_token(owner_id=owner_id, csrf_token=csrf_token)
     raw_refresh_token = generate_secure_token(48)
-    is_prod = settings.environment == "production"
+    is_secure = _is_cross_site_secure(request)
+    samesite = "none" if is_secure else "lax"
+    cookie_secure = True if is_secure else False
 
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=is_prod,
-        samesite="lax",
+        secure=cookie_secure,
+        samesite=samesite,
         max_age=15 * 60,
         path="/",
     )
@@ -72,8 +91,8 @@ def _set_auth_cookies(
         key="refresh_token",
         value=raw_refresh_token,
         httponly=True,
-        secure=is_prod,
-        samesite="lax",
+        secure=cookie_secure,
+        samesite=samesite,
         max_age=7 * 24 * 3600,
         path="/",
     )
@@ -81,19 +100,27 @@ def _set_auth_cookies(
         key="csrf_token",
         value=csrf_token,
         httponly=False,  # Client needs to read this to send X-CSRF-Token
-        secure=is_prod,
-        samesite="lax",
+        secure=cookie_secure,
+        samesite=samesite,
         max_age=7 * 24 * 3600,
         path="/",
     )
+    # Also expose headers for cross-origin clients (Vercel to Render)
+    response.headers["X-CSRF-Token"] = csrf_token
+    response.headers["X-Access-Token"] = access_token
+    response.headers["X-Refresh-Token"] = raw_refresh_token
     return access_token, raw_refresh_token
 
 
-def _clear_auth_cookies(response: Response) -> None:
+def _clear_auth_cookies(response: Response, request: Request | None = None) -> None:
     """Helper to remove authentication cookies."""
-    response.delete_cookie(key="access_token", path="/")
-    response.delete_cookie(key="refresh_token", path="/")
-    response.delete_cookie(key="csrf_token", path="/")
+    is_secure = _is_cross_site_secure(request)
+    samesite = "none" if is_secure else "lax"
+    cookie_secure = True if is_secure else False
+
+    response.delete_cookie(key="access_token", path="/", samesite=samesite, secure=cookie_secure)
+    response.delete_cookie(key="refresh_token", path="/", samesite=samesite, secure=cookie_secure)
+    response.delete_cookie(key="csrf_token", path="/", samesite=samesite, secure=cookie_secure)
 
 
 @router.post(
@@ -107,6 +134,7 @@ def _clear_auth_cookies(response: Response) -> None:
 async def register(
     body: RegisterRequest,
     response: Response,
+    request: Request,
 ) -> OwnerResponse:
     """Register a new account holder with initial monitor and credentials."""
     session_factory = get_session_factory()
@@ -150,7 +178,7 @@ async def register(
         session.add(monitor_row)
 
         csrf_token = generate_csrf_token()
-        _, raw_refresh_token = _set_auth_cookies(response, owner_id, csrf_token)
+        _, raw_refresh_token = _set_auth_cookies(response, owner_id, csrf_token, request)
 
         # Store hashed refresh token
         now = datetime.now(UTC)
@@ -184,6 +212,7 @@ async def register(
 async def login(
     body: LoginRequest,
     response: Response,
+    request: Request,
 ) -> LoginResponse:
     """Log in owner and establish cookie session."""
     session_factory = get_session_factory()
@@ -214,7 +243,7 @@ async def login(
                 raise UnauthorizedException("Invalid MFA verification code.")
 
         csrf_token = generate_csrf_token()
-        _, raw_refresh_token = _set_auth_cookies(response, owner_row.id, csrf_token)
+        access_token, raw_refresh_token = _set_auth_cookies(response, owner_row.id, csrf_token, request)
 
         now = datetime.now(UTC)
         rf_row = RefreshTokenModel(
@@ -236,7 +265,13 @@ async def login(
             mfa_enabled=owner_row.mfa_enabled,
             monitoring_paused_until=owner_row.monitoring_paused_until,
         )
-        return LoginResponse(owner=owner_resp, csrf_token=csrf_token, mfa_required=False)
+        return LoginResponse(
+            owner=owner_resp,
+            csrf_token=csrf_token,
+            access_token=access_token,
+            refresh_token=raw_refresh_token,
+            mfa_required=False,
+        )
 
 
 @router.post(
@@ -250,7 +285,7 @@ async def logout(
     response: Response,
 ) -> ActionResponse:
     """Clear session cookies and revoke current refresh token."""
-    refresh_token = request.cookies.get("refresh_token")
+    refresh_token = request.cookies.get("refresh_token") or request.headers.get("x-refresh-token")
     if refresh_token:
         session_factory = get_session_factory()
         async with session_factory() as session:
@@ -264,22 +299,22 @@ async def logout(
                 rf_row.revoked_at = datetime.now(UTC)
                 await session.commit()
 
-    _clear_auth_cookies(response)
+    _clear_auth_cookies(response, request)
     return ActionResponse(message="Successfully logged out.")
 
 
 @router.post(
     "/auth/refresh",
-    response_model=ActionResponse,
+    response_model=RefreshResponse,
     operation_id="refreshSession",
     summary="Refresh session tokens",
 )
 async def refresh(
     request: Request,
     response: Response,
-) -> ActionResponse:
+) -> RefreshResponse:
     """Rotate refresh token and issue new access token."""
-    raw_token = request.cookies.get("refresh_token")
+    raw_token = request.cookies.get("refresh_token") or request.headers.get("x-refresh-token")
     if not raw_token:
         raise UnauthorizedException("No refresh token provided.")
 
@@ -291,14 +326,14 @@ async def refresh(
 
         now = datetime.now(UTC)
         if not rf_row or rf_row.revoked_at is not None or rf_row.expires_at < now:
-            _clear_auth_cookies(response)
+            _clear_auth_cookies(response, request)
             raise UnauthorizedException("Invalid, expired, or revoked refresh token.")
 
         # Revoke old refresh token (single use)
         rf_row.revoked_at = now
 
         csrf_token = generate_csrf_token()
-        _, new_refresh_token = _set_auth_cookies(response, rf_row.owner_id, csrf_token)
+        access_token, new_refresh_token = _set_auth_cookies(response, rf_row.owner_id, csrf_token, request)
 
         new_rf_row = RefreshTokenModel(
             id=str(uuid.uuid4()),
@@ -310,7 +345,12 @@ async def refresh(
         session.add(new_rf_row)
         await session.commit()
 
-    return ActionResponse(message="Session refreshed successfully.")
+    return RefreshResponse(
+        message="Session refreshed successfully.",
+        csrf_token=csrf_token,
+        access_token=access_token,
+        refresh_token=new_refresh_token,
+    )
 
 
 @router.post(

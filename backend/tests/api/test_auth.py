@@ -213,3 +213,61 @@ async def test_owner_export_and_delete(client: AsyncClient) -> None:
     client.cookies.set("access_token", access_token)
     get_del = await client.get("/api/v1/me")
     assert get_del.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_cross_origin_header_based_auth(client: AsyncClient) -> None:
+    """Verifies that authentication works purely via headers (Bearer & X-Refresh-Token)."""
+    tag = str(uuid.uuid4())[:8]
+    email = f"cross_origin_{tag}@example.com"
+    pwd = "StrongPassword123!"
+
+    reg = await client.post(
+        "/api/v1/auth/register",
+        json={"name": "Cross Origin", "email": email, "phone": "+919876543210", "password": pwd},
+    )
+    assert reg.status_code == 201
+
+    # Login and extract tokens from response body and headers
+    login_resp = await client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": pwd},
+    )
+    assert login_resp.status_code == 200
+    login_data = login_resp.json()
+    access_token = login_data["access_token"]
+    refresh_token = login_data["refresh_token"]
+    csrf_token = login_data["csrf_token"]
+    assert access_token is not None
+    assert refresh_token is not None
+    assert csrf_token is not None
+
+    # Clear all cookies from client to simulate cross-origin scenario where cookies are blocked
+    client.cookies.clear()
+
+    # GET /api/v1/me with Bearer token
+    me_resp = await client.get(
+        "/api/v1/me",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+    assert me_resp.status_code == 200
+    assert me_resp.json()["email"] == email
+
+    # POST /api/v1/auth/refresh with X-Refresh-Token header and no cookies
+    ref_resp = await client.post(
+        "/api/v1/auth/refresh",
+        headers={"X-Refresh-Token": refresh_token},
+    )
+    assert ref_resp.status_code == 200
+    ref_data = ref_resp.json()
+    new_access_token = ref_data["access_token"]
+    new_refresh_token = ref_data["refresh_token"]
+    assert new_access_token is not None
+    assert new_refresh_token != refresh_token
+
+    # Verify new token works with GET /me
+    me_resp_2 = await client.get(
+        "/api/v1/me",
+        headers={"Authorization": f"Bearer {new_access_token}"},
+    )
+    assert me_resp_2.status_code == 200
