@@ -3,8 +3,11 @@
 import uuid
 from datetime import UTC, datetime
 
+import structlog
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
+
+logger = structlog.get_logger(__name__)
 
 from app.config import settings
 from app.domain.entities.owner import Owner
@@ -104,23 +107,33 @@ async def get_nominee_guidance(
 ) -> NomineeGuidanceResponse:
     """Retrieve the registered nominee and emergency guidance for the owner."""
     session_factory = get_session_factory()
-    async with session_factory() as session:
-        stmt = select(NomineeGuidanceModel).where(NomineeGuidanceModel.owner_id == current_owner.id)
-        row = (await session.execute(stmt)).scalar_one_or_none()
-        if not row:
+    try:
+        async with session_factory() as session:
+            stmt = select(NomineeGuidanceModel).where(NomineeGuidanceModel.owner_id == current_owner.id)
+            row = (await session.execute(stmt)).scalar_one_or_none()
+            if not row:
+                return NomineeGuidanceResponse(
+                    nominee_name=DEFAULT_NOMINEE_NAME,
+                    nominee_relation=DEFAULT_NOMINEE_RELATION,
+                    nominee_share=DEFAULT_NOMINEE_SHARE,
+                    notes=DEFAULT_NOMINEE_NOTES,
+                    updated_at=None,
+                )
             return NomineeGuidanceResponse(
-                nominee_name=DEFAULT_NOMINEE_NAME,
-                nominee_relation=DEFAULT_NOMINEE_RELATION,
-                nominee_share=DEFAULT_NOMINEE_SHARE,
-                notes=DEFAULT_NOMINEE_NOTES,
-                updated_at=None,
+                nominee_name=row.nominee_name if row.nominee_name is not None else DEFAULT_NOMINEE_NAME,
+                nominee_relation=row.nominee_relation if row.nominee_relation is not None else DEFAULT_NOMINEE_RELATION,
+                nominee_share=row.nominee_share if row.nominee_share is not None else DEFAULT_NOMINEE_SHARE,
+                notes=row.notes if row.notes is not None else DEFAULT_NOMINEE_NOTES,
+                updated_at=row.updated_at,
             )
+    except Exception as exc:
+        logger.error("Failed to load nominee guidance: %s", exc)
         return NomineeGuidanceResponse(
-            nominee_name=row.nominee_name or DEFAULT_NOMINEE_NAME,
-            nominee_relation=row.nominee_relation or DEFAULT_NOMINEE_RELATION,
-            nominee_share=row.nominee_share or DEFAULT_NOMINEE_SHARE,
-            notes=row.notes if row.notes is not None else DEFAULT_NOMINEE_NOTES,
-            updated_at=row.updated_at,
+            nominee_name=DEFAULT_NOMINEE_NAME,
+            nominee_relation=DEFAULT_NOMINEE_RELATION,
+            nominee_share=DEFAULT_NOMINEE_SHARE,
+            notes=DEFAULT_NOMINEE_NOTES,
+            updated_at=None,
         )
 
 
@@ -137,38 +150,42 @@ async def update_nominee_guidance(
     """Upsert nominee and emergency guidance instructions."""
     now = datetime.now(UTC)
     session_factory = get_session_factory()
-    async with session_factory() as session:
-        stmt = select(NomineeGuidanceModel).where(NomineeGuidanceModel.owner_id == current_owner.id)
-        row = (await session.execute(stmt)).scalar_one_or_none()
-        if not row:
-            row = NomineeGuidanceModel(
-                id=str(uuid.uuid4()),
-                owner_id=current_owner.id,
-                nominee_name=body.nominee_name,
-                nominee_relation=body.nominee_relation,
-                nominee_share=body.nominee_share,
-                notes=body.notes,
-                updated_at=now,
+    try:
+        async with session_factory() as session:
+            stmt = select(NomineeGuidanceModel).where(NomineeGuidanceModel.owner_id == current_owner.id)
+            row = (await session.execute(stmt)).scalar_one_or_none()
+            if not row:
+                row = NomineeGuidanceModel(
+                    id=str(uuid.uuid4()),
+                    owner_id=current_owner.id,
+                    nominee_name=body.nominee_name,
+                    nominee_relation=body.nominee_relation,
+                    nominee_share=body.nominee_share or "100%",
+                    notes=body.notes,
+                    updated_at=now,
+                )
+                session.add(row)
+            else:
+                if body.nominee_name is not None:
+                    row.nominee_name = body.nominee_name
+                if body.nominee_relation is not None:
+                    row.nominee_relation = body.nominee_relation
+                if body.nominee_share is not None:
+                    row.nominee_share = body.nominee_share
+                if body.notes is not None:
+                    row.notes = body.notes
+                row.updated_at = now
+
+            await session.commit()
+            await session.refresh(row)
+
+            return NomineeGuidanceResponse(
+                nominee_name=row.nominee_name,
+                nominee_relation=row.nominee_relation,
+                nominee_share=row.nominee_share,
+                notes=row.notes,
+                updated_at=row.updated_at,
             )
-            session.add(row)
-        else:
-            if body.nominee_name is not None:
-                row.nominee_name = body.nominee_name
-            if body.nominee_relation is not None:
-                row.nominee_relation = body.nominee_relation
-            if body.nominee_share is not None:
-                row.nominee_share = body.nominee_share
-            if body.notes is not None:
-                row.notes = body.notes
-            row.updated_at = now
-
-        await session.commit()
-        await session.refresh(row)
-
-        return NomineeGuidanceResponse(
-            nominee_name=row.nominee_name,
-            nominee_relation=row.nominee_relation,
-            nominee_share=row.nominee_share,
-            notes=row.notes,
-            updated_at=row.updated_at,
-        )
+    except Exception as exc:
+        logger.error("Failed to update nominee guidance for owner %s: %s", current_owner.id, exc)
+        raise

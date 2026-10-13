@@ -14,7 +14,7 @@ export const NomineeNotesCard: React.FC = () => {
   const [isEditing, setIsEditing] = React.useState(false);
   const [saveSuccess, setSaveSuccess] = React.useState(false);
 
-  const { data } = useNomineeGuidance();
+  const { data, isLoading, isError } = useNomineeGuidance();
   const updateMutation = useUpdateNomineeGuidance();
 
   const [nomineeName, setNomineeName] = React.useState(DEFAULT_NOMINEE_NAME);
@@ -34,12 +34,18 @@ export const NomineeNotesCard: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateMutation.mutateAsync({
+      const updated = await updateMutation.mutateAsync({
         nominee_name: nomineeName.trim(),
         nominee_relation: nomineeRelation.trim(),
         nominee_share: nomineeShare.trim(),
         notes: notes.trim(),
       });
+      if (updated) {
+        setNomineeName(updated.nominee_name ?? "");
+        setNomineeRelation(updated.nominee_relation ?? "");
+        setNomineeShare(updated.nominee_share ?? "");
+        setNotes(updated.notes ?? "");
+      }
       setIsEditing(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -76,6 +82,11 @@ export const NomineeNotesCard: React.FC = () => {
               <Check className="h-3 w-3" /> Saved
             </span>
           )}
+          {isLoading && (
+            <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+              <Loader2 className="h-3 w-3 animate-spin" /> Loading...
+            </span>
+          )}
         </div>
 
         {!isEditing && (
@@ -84,6 +95,7 @@ export const NomineeNotesCard: React.FC = () => {
             variant="ghost"
             size="sm"
             onClick={() => setIsEditing(true)}
+            disabled={isLoading}
             className="text-slate-600 hover:text-slate-900"
           >
             <Edit2 className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
@@ -188,6 +200,11 @@ export const NomineeNotesCard: React.FC = () => {
           </form>
         ) : (
           <div className="space-y-3 text-xs">
+            {isError && (
+              <div className="text-[11px] text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                Notice: Default guidance template is shown. Customize your nominee instructions by clicking Edit Notes.
+              </div>
+            )}
             {/* Nominee details grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-purple-50/50 p-3.5 rounded-xl border border-purple-100">
               <div>

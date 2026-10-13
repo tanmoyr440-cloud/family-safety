@@ -231,10 +231,36 @@ async def test_accounts_and_packet_endpoints(client: AsyncClient) -> None:
     )
     assert update_groww.status_code == 200
 
+    # Nominee guidance GET default
+    nom_get = await client.get("/api/v1/accounts/nominee-guidance")
+    assert nom_get.status_code == 200
+    assert nom_get.json()["nominee_name"] == "Savitri Sharma"
+
+    # Nominee guidance PUT update
+    nom_put = await client.put(
+        "/api/v1/accounts/nominee-guidance",
+        headers=headers,
+        json={
+            "nominee_name": "Ramesh Sharma",
+            "nominee_relation": "Father",
+            "nominee_share": "100%",
+            "notes": "Custom instructions for Ramesh",
+        },
+    )
+    assert nom_put.status_code == 200
+    assert nom_put.json()["nominee_name"] == "Ramesh Sharma"
+
+    # Nominee guidance GET updated
+    nom_get_updated = await client.get("/api/v1/accounts/nominee-guidance")
+    assert nom_get_updated.status_code == 200
+    assert nom_get_updated.json()["nominee_name"] == "Ramesh Sharma"
+    assert nom_get_updated.json()["nominee_relation"] == "Father"
+
     # Packet preview
     preview_resp = await client.get("/api/v1/packet/preview")
     assert preview_resp.status_code == 200
     assert preview_resp.json()["owner_name"] == "Router Tester"
+    assert preview_resp.json()["nominee"]["nominee_name"] == "Ramesh Sharma"
 
     # Create a contact and packet share for real token testing
     contact_resp = await client.post(
