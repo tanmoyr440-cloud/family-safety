@@ -89,7 +89,7 @@ export const ImportCasDialog: React.FC<ImportCasDialogProps> = ({ open, onOpenCh
                 Auto-Import CAS Statement
               </DialogPrimitive.Title>
               <DialogPrimitive.Description className="text-xs text-slate-500">
-                Upload your CAMS or KFintech Consolidated Account Statement PDF to instantly sync your mutual fund portfolio.
+                Upload your CDSL, NSDL, CAMS, or KFintech Consolidated Account Statement PDF to instantly sync your portfolio.
               </DialogPrimitive.Description>
             </div>
             <button
@@ -110,7 +110,7 @@ export const ImportCasDialog: React.FC<ImportCasDialogProps> = ({ open, onOpenCh
                   Portfolio Synced Successfully
                 </h4>
                 <p className="text-xs text-emerald-800">
-                  Imported <span className="font-bold">{importSummary.imported_count}</span> mutual fund folios.
+                  Imported <span className="font-bold">{importSummary.imported_count}</span> holdings and folios.
                   Valuations updated with live SEBI/AMFI feeds.
                 </p>
                 {importSummary.total_value_paise > 0 && (
@@ -207,7 +207,7 @@ export const ImportCasDialog: React.FC<ImportCasDialogProps> = ({ open, onOpenCh
                         Click to upload or drag & drop PDF
                       </p>
                       <p className="text-xs text-slate-500">
-                        CAMS or KFintech monthly CAS statement (.pdf)
+                        CDSL, NSDL, CAMS, or KFintech statement (.pdf)
                       </p>
                     </div>
                   </div>
@@ -228,13 +228,13 @@ export const ImportCasDialog: React.FC<ImportCasDialogProps> = ({ open, onOpenCh
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="PAN number (e.g. ABCDE1234F) or DOB"
+                  placeholder="PAN (e.g. ABCDE1234F) or PAN + DOB (DDMMYYYY)"
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <div className="flex items-start gap-1.5 text-[11px] text-slate-500 leading-tight">
                   <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
                   <span>
-                    Statements from CAMS/KFintech are typically protected with your PAN in uppercase. Passwords are decrypted entirely in-memory and never stored.
+                    CDSL/NSDL statements are typically protected by PAN in UPPERCASE or PAN + DOB (DDMMYYYY). CAMS/KFintech use PAN in UPPERCASE. Decrypted strictly in-memory and never stored.
                   </span>
                 </div>
               </div>

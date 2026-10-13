@@ -73,7 +73,7 @@ describe("Accounts Feature - Bank Accounts & Mutual Funds", () => {
       ).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/cams or kfintech consolidated account statement pdf/i)).toBeInTheDocument();
+    expect(screen.getByText(/upload your cdsl, nsdl, cams/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/pdf password/i)).toBeInTheDocument();
 
     expect(await axe(container)).toHaveNoViolations();

@@ -176,7 +176,7 @@ async def delete_mutual_fund_holding(
     "/mutual-funds/import-cas",
     response_model=CasImportResponse,
     operation_id="importCasStatement",
-    summary="Import portfolio from CAMS / KFintech Consolidated Account Statement (CAS) PDF",
+    summary="Import portfolio from CDSL / NSDL / CAMS / KFintech Consolidated Account Statement (CAS) PDF",
 )
 async def import_cas_statement(
     file: UploadFile = File(..., description="CAS PDF statement file"),
@@ -184,7 +184,7 @@ async def import_cas_statement(
     current_owner: Owner = Depends(get_current_owner),
     uow: UnitOfWork = Depends(get_uow),
 ) -> CasImportResponse:
-    """Parse encrypted or unencrypted CAS PDF, map to SEBI/AMFI registry, and import holdings."""
+    """Parse encrypted or unencrypted CAS PDF (CDSL, NSDL, CAMS, KFintech), map to SEBI/AMFI registry, and import holdings."""
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise BadRequestException("Please upload a valid PDF file.")
 
