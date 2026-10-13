@@ -481,9 +481,17 @@ async def test_access_audit_log_entries(client: AsyncClient) -> None:
     )
     contact_id = c_resp.json()["id"]
 
+    # Request OTP and verify with real OTP
+    send_otp_resp = await client.post(f"/api/v1/contacts/{contact_id}/verify/send", headers=headers)
+    assert send_otp_resp.status_code == 200
+    import re
+    match = re.search(r"Dev OTP:\s*(\d{6})", send_otp_resp.json()["message"])
+    assert match is not None
+    real_otp = match.group(1)
+
     verify_c = await client.post(
         "/api/v1/public/contacts/verify",
-        json={"token": contact_id, "otp": "123456"},
+        json={"token": contact_id, "otp": real_otp},
     )
     assert verify_c.status_code == 200
 

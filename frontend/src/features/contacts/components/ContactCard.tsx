@@ -129,13 +129,9 @@ export const ContactCard: React.FC<ContactCardProps> = ({ contact, onEdit, onRem
                 <p className="font-semibold text-slate-900">Waiting for contact consent</p>
                 <p className="text-amber-800">
                   {isResentSuccess
-                    ? "Verification OTP simulated! Local test code is 123456."
-                    : "This contact must enter an OTP before receiving emergency alerts."}
+                    ? "Verification OTP sent to contact's phone and email!"
+                    : "This contact must enter the OTP sent to their phone/email before receiving emergency alerts."}
                 </p>
-                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-100/90 text-amber-900 text-[11px] font-medium border border-amber-200/80">
-                  <span>Local Dev OTP:</span>
-                  <span className="font-mono font-bold tracking-wider">123456</span>
-                </div>
               </div>
             </div>
 

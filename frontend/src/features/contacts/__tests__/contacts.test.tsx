@@ -130,7 +130,7 @@ describe("Contacts Feature (Phase 5)", () => {
     await user.click(resendBtn);
     await waitFor(() => {
       expect(
-        screen.getByText(/verification otp simulated|local test code is 123456/i),
+        screen.getByText(/verification otp sent to contact's phone and email/i),
       ).toBeInTheDocument();
     });
 

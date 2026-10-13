@@ -98,6 +98,23 @@ class ContactModel(Base):
     owner: Mapped[OwnerModel] = relationship("OwnerModel", back_populates="contacts")
 
 
+class ContactOtpModel(Base):
+    """Stores one-time verification codes for trusted contact consent."""
+
+    __tablename__ = "contact_otps"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    contact_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("contacts.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
+    )
+    otp_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(AwareDateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(AwareDateTime(timezone=True), nullable=False)
+
+    contact: Mapped[ContactModel] = relationship("ContactModel")
+
+
 class InactivityMonitorModel(Base):
     """Inactivity monitor aggregate persistence model."""
 

@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     environment: str = "development"
     debug: bool = False
     api_v1_prefix: str = "/api/v1"
+    portal_base_url: str = "http://localhost:5173"
 
     # CORS
     cors_origins: list[str] = [

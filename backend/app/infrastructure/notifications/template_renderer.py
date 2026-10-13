@@ -389,6 +389,64 @@ _DEFAULT_TEMPLATES = {
 </html>
 """
     ),
+    # Contact Verification OTP Templates
+    "contact_verification_otp_sms.txt": (
+        "Family Safety Net: Your verification code is {{ otp }}. "
+        "{{ owner_name|default('Your family member') }} has added you as a trusted emergency contact. "
+        "Valid for 15 minutes."
+    ),
+    "contact_verification_otp_email.txt": (
+        "Dear {{ contact_name|default('there') }},\n\n"
+        "{{ owner_name|default('Your family member') }} has registered you as a trusted emergency contact on Family Safety Net.\n\n"
+        "Your verification OTP is: {{ otp }}\n\n"
+        "This code will expire in 15 minutes. To confirm your consent, please enter this code at:\n"
+        "{{ verify_url }}\n\n"
+        "As an emergency contact, you will only receive alerts if your family member has no investment activity for 90 days or misses a loan EMI.\n\n"
+        "Warm regards,\n"
+        "Family Safety Net"
+    ),
+    "contact_verification_otp_email.html": (
+        """<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Emergency Contact Verification</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; margin: 0; padding: 24px; }
+    .container { max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; }
+    .header { background: #0f172a; color: #ffffff; padding: 24px 32px; }
+    .header h1 { margin: 0; font-size: 18px; font-weight: 700; }
+    .content { padding: 32px; }
+    .otp-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0; }
+    .otp-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 32px; font-weight: 800; letter-spacing: 0.25em; color: #15803d; }
+    .btn { display: inline-block; background: #2563eb; color: #ffffff !important; text-decoration: none; font-weight: 600; font-size: 14px; padding: 12px 24px; border-radius: 8px; margin-top: 16px; }
+    .footer { background: #f8fafc; padding: 16px 32px; border-top: 1px solid #f1f5f9; font-size: 12px; color: #64748b; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Family Safety Net &bull; Contact Verification</h1>
+    </div>
+    <div class="content">
+      <p>Hello <strong>{{ contact_name|default('there') }}</strong>,</p>
+      <p><strong>{{ owner_name|default('Your family member') }}</strong> has added you as their trusted emergency contact.</p>
+      <div class="otp-box">
+        <div style="font-size: 12px; font-weight: 600; color: #166534; text-transform: uppercase; margin-bottom: 6px;">Your 6-Digit Verification Code</div>
+        <div class="otp-code">{{ otp }}</div>
+        <div style="font-size: 12px; color: #64748b; margin-top: 6px;">Expires in 15 minutes</div>
+      </div>
+      <p style="font-size: 13px; color: #475569;">To confirm your consent, please click below or visit your verification page and enter the code:</p>
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="{{ verify_url }}" class="btn">Confirm Contact Details</a>
+      </div>
+    </div>
+    <div class="footer">Sent by Family Safety Net &bull; Protecting what matters most</div>
+  </div>
+</body>
+</html>
+"""
+    ),
 }
 
 

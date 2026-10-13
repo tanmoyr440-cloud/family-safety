@@ -110,10 +110,25 @@ async def test_contacts_endpoints(client: AsyncClient) -> None:
     assert patch_resp.status_code == 200
     assert patch_resp.json()["priority"] == 2
 
-    # 4. Public verify contact OTP
+    # 4. Request OTP and verify with real OTP
+    send_resp = await client.post(f"/api/v1/contacts/{contact_id}/verify/send", headers=headers)
+    assert send_resp.status_code == 200
+    import re
+    match = re.search(r"Dev OTP:\s*(\d{6})", send_resp.json()["message"])
+    assert match is not None
+    real_otp = match.group(1)
+
+    # 4a. Wrong OTP fails
+    bad_resp = await client.post(
+        "/api/v1/public/contacts/verify",
+        json={"token": contact_id, "otp": "000000"},
+    )
+    assert bad_resp.status_code == 401
+
+    # 4b. Real OTP succeeds
     verify_resp = await client.post(
         "/api/v1/public/contacts/verify",
-        json={"token": contact_id, "otp": "123456"},
+        json={"token": contact_id, "otp": real_otp},
     )
     assert verify_resp.status_code == 200
 
