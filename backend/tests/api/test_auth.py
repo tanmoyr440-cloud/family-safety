@@ -1,0 +1,215 @@
+"""Tests for authentication and session lifecycle endpoints."""
+
+import struct
+import time
+import uuid
+
+import pytest
+from httpx import AsyncClient
+
+
+def _generate_totp_code(secret: str) -> str:
+    """Helper to compute valid TOTP code for test verification."""
+    import base64
+    import hashlib
+    import hmac
+
+    pad_len = (8 - len(secret) % 8) % 8
+    key = base64.b32decode(secret + ("=" * pad_len), casefold=True)
+    interval = int(time.time() // 30)
+    msg = struct.pack(">Q", interval)
+    digest = hmac.new(key, msg, hashlib.sha1).digest()
+    offset = digest[-1] & 0x0F
+    code = (
+        ((digest[offset] & 0x7F) << 24)
+        | ((digest[offset + 1] & 0xFF) << 16)
+        | ((digest[offset + 2] & 0xFF) << 8)
+        | (digest[offset + 3] & 0xFF)
+    )
+    return f"{code % 1_000_000:06d}"
+
+
+@pytest.mark.asyncio
+async def test_register_owner(client: AsyncClient) -> None:
+    """Verifies that an owner can register and receive session cookies."""
+    tag = str(uuid.uuid4())[:8]
+    payload = {
+        "name": "Tanmoy Test",
+        "email": f"owner_{tag}@example.com",
+        "phone": "+919876543210",
+        "password": "StrongPassword123!",
+    }
+
+    response = await client.post("/api/v1/auth/register", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "Tanmoy Test"
+    assert data["email"] == payload["email"]
+    assert "access_token" in response.cookies
+    assert "refresh_token" in response.cookies
+    assert "csrf_token" in response.cookies
+
+
+@pytest.mark.asyncio
+async def test_register_duplicate_email(client: AsyncClient) -> None:
+    """Verifies that duplicate registration fails with 409 Problem Details."""
+    tag = str(uuid.uuid4())[:8]
+    payload = {
+        "name": "Duplicate Owner",
+        "email": f"dup_{tag}@example.com",
+        "phone": "+919876543210",
+        "password": "StrongPassword123!",
+    }
+
+    res1 = await client.post("/api/v1/auth/register", json=payload)
+    assert res1.status_code == 201
+
+    res2 = await client.post("/api/v1/auth/register", json=payload)
+    assert res2.status_code == 409
+    err = res2.json()
+    assert err["code"] == "EMAIL_ALREADY_EXISTS"
+    assert err["status"] == 409
+
+
+@pytest.mark.asyncio
+async def test_login_flow(client: AsyncClient) -> None:
+    """Verifies login with valid and invalid credentials."""
+    tag = str(uuid.uuid4())[:8]
+    email = f"login_{tag}@example.com"
+    pwd = "StrongPassword123!"
+
+    reg_resp = await client.post(
+        "/api/v1/auth/register",
+        json={"name": "Login User", "email": email, "phone": "+919876543210", "password": pwd},
+    )
+    assert reg_resp.status_code == 201
+
+    # Invalid password
+    bad_login = await client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": "WrongPassword"},
+    )
+    assert bad_login.status_code == 401
+    assert bad_login.json()["code"] == "UNAUTHORIZED"
+
+    # Valid login
+    good_login = await client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": pwd},
+    )
+    assert good_login.status_code == 200
+    data = good_login.json()
+    assert data["owner"]["email"] == email
+    assert "access_token" in good_login.cookies
+    assert "refresh_token" in good_login.cookies
+
+
+@pytest.mark.asyncio
+async def test_session_refresh_and_logout(client: AsyncClient) -> None:
+    """Verifies token rotation on refresh and revocation on logout."""
+    tag = str(uuid.uuid4())[:8]
+    email = f"refresh_{tag}@example.com"
+    pwd = "StrongPassword123!"
+
+    reg_resp = await client.post(
+        "/api/v1/auth/register",
+        json={"name": "Refresh User", "email": email, "phone": "+919876543210", "password": pwd},
+    )
+    assert reg_resp.status_code == 201
+    old_refresh_token = reg_resp.cookies["refresh_token"]
+
+    # Refresh
+    client.cookies.set("refresh_token", old_refresh_token)
+    ref_resp = await client.post("/api/v1/auth/refresh")
+    assert ref_resp.status_code == 200
+    new_refresh_token = ref_resp.cookies["refresh_token"]
+    assert new_refresh_token != old_refresh_token
+
+    # Replaying old refresh token must be rejected (single-use rotation)
+    client.cookies.set("refresh_token", old_refresh_token)
+    replay_resp = await client.post("/api/v1/auth/refresh")
+    assert replay_resp.status_code == 401
+
+    # Logout
+    client.cookies.set("refresh_token", new_refresh_token)
+    logout_resp = await client.post("/api/v1/auth/logout")
+    assert logout_resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_mfa_enroll_and_verify(client: AsyncClient) -> None:
+    """Verifies MFA enrollment and verification flow."""
+    tag = str(uuid.uuid4())[:8]
+    email = f"mfa_{tag}@example.com"
+    pwd = "StrongPassword123!"
+
+    reg_resp = await client.post(
+        "/api/v1/auth/register",
+        json={"name": "MFA User", "email": email, "phone": "+919876543210", "password": pwd},
+    )
+    assert reg_resp.status_code == 201
+    access_token = reg_resp.cookies["access_token"]
+    csrf_token = reg_resp.cookies["csrf_token"]
+
+    client.cookies.set("access_token", access_token)
+    headers = {"X-CSRF-Token": csrf_token}
+
+    # Enroll MFA
+    enroll_resp = await client.post("/api/v1/auth/mfa/enroll", headers=headers)
+    assert enroll_resp.status_code == 200
+    secret = enroll_resp.json()["secret"]
+    assert secret
+
+    # Verify invalid code
+    bad_verify = await client.post(
+        "/api/v1/auth/mfa/verify",
+        headers=headers,
+        json={"code": "000000"},
+    )
+    assert bad_verify.status_code == 401
+
+    # Verify valid code
+    valid_code = _generate_totp_code(secret)
+    good_verify = await client.post(
+        "/api/v1/auth/mfa/verify",
+        headers=headers,
+        json={"code": valid_code},
+    )
+    assert good_verify.status_code == 200
+
+    # Profile shows mfa_enabled=True
+    me_resp = await client.get("/api/v1/me")
+    assert me_resp.status_code == 200
+    assert me_resp.json()["mfa_enabled"] is True
+
+
+@pytest.mark.asyncio
+async def test_owner_export_and_delete(client: AsyncClient) -> None:
+    """Verifies DPDP export and account deletion."""
+    tag = str(uuid.uuid4())[:8]
+    email = f"export_{tag}@example.com"
+    pwd = "StrongPassword123!"
+
+    reg_resp = await client.post(
+        "/api/v1/auth/register",
+        json={"name": "Export User", "email": email, "phone": "+919876543210", "password": pwd},
+    )
+    access_token = reg_resp.cookies["access_token"]
+    csrf_token = reg_resp.cookies["csrf_token"]
+    client.cookies.set("access_token", access_token)
+
+    # Export
+    export_resp = await client.get("/api/v1/me/export")
+    assert export_resp.status_code == 200
+    data = export_resp.json()
+    assert data["owner"]["email"] == email
+    assert "exported_at" in data
+
+    # Delete
+    del_resp = await client.delete("/api/v1/me", headers={"X-CSRF-Token": csrf_token})
+    assert del_resp.status_code == 200
+
+    # Subsequent GET /me fails
+    client.cookies.set("access_token", access_token)
+    get_del = await client.get("/api/v1/me")
+    assert get_del.status_code == 401

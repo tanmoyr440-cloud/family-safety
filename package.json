@@ -1,0 +1,16 @@
+{
+  "name": "family-safety-net",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -k -n \"api,worker,web\" -c \"blue,magenta,green\" \"npm run dev:api\" \"npm run dev:worker\" \"npm run dev:web\"",
+    "dev:api": "uv run --directory backend uvicorn app.main:app --reload --port 8000",
+    "dev:worker": "uv run --directory backend python -m app.interfaces.worker run",
+    "dev:web": "npm --prefix frontend run dev",
+    "api:export": "uv run --directory backend python scripts/export_openapi.py && node -e \"require('fs').copyFileSync('backend/openapi.json', 'frontend/openapi/openapi.json')\"",
+    "api:types": "npm --prefix frontend run api:types"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

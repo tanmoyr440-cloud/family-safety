@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/ci.yml'
+
+jobs:
+  backend-lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.22"
+
+      - name: Set up Python 3.13
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --all-groups
+
+      - name: Check code formatting and linting (ruff)
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Type check (mypy --strict)
+        run: uv run mypy --strict app
+
+      - name: Architecture layer boundaries (import-linter)
+        run: uv run lint-imports
+
+      - name: Dependency vulnerability audit (pip-audit)
+        run: uv run pip-audit
+
+      - name: Run tests (pytest)
+        run: uv run pytest
+
+  frontend-lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate API types
+        run: npm run api:types
+
+      - name: Check code formatting (Prettier)
+        run: npm run format:check
+
+      - name: Lint (ESLint with jsx-a11y)
+        run: npm run lint
+
+      - name: Type check (TypeScript strict)
+        run: npm run typecheck
+
+      - name: Run tests (Vitest + RTL + MSW)
+        run: npm run test
+
+      - name: Build production bundle
+        run: npm run build

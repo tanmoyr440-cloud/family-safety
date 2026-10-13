@@ -1,0 +1,4085 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Family Safety Net API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Register new owner",
+        "description": "Register a new account holder with initial monitor and credentials.",
+        "operationId": "registerOwner",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Authenticate owner",
+        "description": "Log in owner and establish cookie session.",
+        "operationId": "loginOwner",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Log out owner",
+        "description": "Clear session cookies and revoke current refresh token.",
+        "operationId": "logoutOwner",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Refresh session tokens",
+        "description": "Rotate refresh token and issue new access token.",
+        "operationId": "refreshSession",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/enroll": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Enroll in TOTP MFA",
+        "description": "Generate a TOTP secret and provisioning URI.",
+        "operationId": "enrollMfa",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaEnrollResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/verify": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Verify and enable TOTP MFA",
+        "description": "Verify code and activate MFA for current owner.",
+        "operationId": "verifyMfa",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MfaVerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Get current owner profile",
+        "description": "Return profile details for authenticated owner.",
+        "operationId": "getCurrentOwner",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Delete owner account",
+        "description": "Permanently delete owner account and associated data.",
+        "operationId": "deleteOwnerAccount",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/export": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Export all owner data",
+        "description": "Export complete owner data bundle (GDPR / DPDP compliance).",
+        "operationId": "exportOwnerData",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerExportResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/activity/check-in": {
+      "post": {
+        "tags": [
+          "monitor"
+        ],
+        "summary": "Record authenticated owner activity",
+        "description": "Record one-tap activity signal from authenticated owner.",
+        "operationId": "recordCheckIn",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/activity/check-in/link/{token}": {
+      "post": {
+        "tags": [
+          "monitor"
+        ],
+        "summary": "Record activity via magic check-in link",
+        "description": "Record activity using signed magic link token without requiring login.",
+        "operationId": "recordCheckInMagicLink",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitor": {
+      "get": {
+        "tags": [
+          "monitor"
+        ],
+        "summary": "Get current monitor status",
+        "description": "Return inactivity monitor configuration, status, and idle days.",
+        "operationId": "getMonitor",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonitorStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitor/config": {
+      "put": {
+        "tags": [
+          "monitor"
+        ],
+        "summary": "Update monitor thresholds",
+        "description": "Update warning and threshold day settings.",
+        "operationId": "updateMonitorConfig",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMonitorConfigRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/monitor/pause": {
+      "post": {
+        "tags": [
+          "monitor"
+        ],
+        "summary": "Pause inactivity monitoring",
+        "description": "Pause monitoring until specified date.",
+        "operationId": "pauseMonitor",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PauseMonitorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "monitor"
+        ],
+        "summary": "Resume inactivity monitoring",
+        "description": "Resume paused monitoring.",
+        "operationId": "resumeMonitor",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contacts": {
+      "get": {
+        "tags": [
+          "contacts"
+        ],
+        "summary": "List all trusted contacts",
+        "description": "Retrieve all trusted contacts registered for current owner.",
+        "operationId": "listContacts",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContactResponse"
+                  },
+                  "title": "Response Listcontacts"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "contacts"
+        ],
+        "summary": "Add a new trusted contact",
+        "description": "Register a new trusted contact with consent pending.",
+        "operationId": "createContact",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContactRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contacts/{id}": {
+      "patch": {
+        "tags": [
+          "contacts"
+        ],
+        "summary": "Update contact details",
+        "description": "Update contact attributes.",
+        "operationId": "updateContact",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateContactRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "contacts"
+        ],
+        "summary": "Delete trusted contact",
+        "description": "Remove a trusted contact.",
+        "operationId": "deleteContact",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contacts/{id}/verify/send": {
+      "post": {
+        "tags": [
+          "contacts"
+        ],
+        "summary": "Send or resend consent verification OTP",
+        "description": "Send an invitation and verification OTP to contact's phone.",
+        "operationId": "sendContactVerificationOtp",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/contacts/verify": {
+      "post": {
+        "tags": [
+          "contacts"
+        ],
+        "summary": "Verify contact consent via OTP (Public)",
+        "description": "Public endpoint for contacts to confirm consent using OTP token.",
+        "operationId": "verifyContactPublic",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicVerifyContactRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/contacts/opt-out": {
+      "post": {
+        "tags": [
+          "contacts"
+        ],
+        "summary": "Opt-out from being a contact (Public)",
+        "description": "Public endpoint for contacts to opt out from alerts.",
+        "operationId": "optOutContactPublic",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicOptOutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loans": {
+      "get": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "List tracked loans",
+        "description": "Retrieve all active loan obligations for current owner.",
+        "operationId": "listLoans",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LoanResponse"
+                  },
+                  "title": "Response Listloans"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Register a new loan obligation",
+        "description": "Register loan obligation with EMI amount and due day.",
+        "operationId": "createLoan",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLoanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loans/{id}": {
+      "patch": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Update loan details",
+        "description": "Update loan details.",
+        "operationId": "updateLoan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLoanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loans/{id}/installments": {
+      "get": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "List installments for loan",
+        "description": "Retrieve installments recorded for a loan.",
+        "operationId": "listLoanInstallments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InstallmentResponse"
+                  },
+                  "title": "Response Listloaninstallments"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loans/{id}/installments/{yyyy_mm}/mark-paid": {
+      "post": {
+        "tags": [
+          "loans"
+        ],
+        "summary": "Mark loan installment as paid",
+        "description": "Mark an installment as paid with payment evidence/reference.",
+        "operationId": "markLoanInstallmentPaid",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "yyyy_mm",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Yyyy Mm"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/MarkInstallmentPaidRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": " Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallmentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/groww": {
+      "get": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Get Groww account integration status",
+        "description": "Return Groww connection and holdings sync status.",
+        "operationId": "getGrowwAccount",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrowwAccountResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Configure Groww account credentials",
+        "description": "Update Groww read-only API credentials.",
+        "operationId": "updateGrowwAccount",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGrowwAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/groww/refresh-holdings": {
+      "post": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Refresh holdings snapshot from Groww",
+        "description": "Trigger on-demand portfolio holdings snapshot update.",
+        "operationId": "refreshGrowwHoldings",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bank-accounts": {
+      "get": {
+        "tags": [
+          "bank-accounts"
+        ],
+        "summary": "List registered savings and bank accounts",
+        "description": "Retrieve all registered bank accounts for the authenticated owner.",
+        "operationId": "listBankAccounts",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BankAccountResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Listbankaccounts"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "bank-accounts"
+        ],
+        "summary": "Register a new savings or bank account",
+        "description": "Register bank account with validated IFSC and masked account number.",
+        "operationId": "addBankAccount",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddBankAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccountResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bank-accounts/{id}": {
+      "delete": {
+        "tags": [
+          "bank-accounts"
+        ],
+        "summary": "Delete a registered bank account",
+        "description": "Remove a registered bank account.",
+        "operationId": "deleteBankAccount",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mutual-funds/search": {
+      "get": {
+        "tags": [
+          "mutual-funds"
+        ],
+        "summary": "Search SEBI-registered mutual fund schemes",
+        "description": "Search all SEBI-registered mutual fund schemes across AMCs.",
+        "operationId": "searchMutualFunds",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "description": "Scheme name search term",
+              "title": "Q"
+            },
+            "description": "Scheme name search term"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MutualFundSchemeResponse"
+                  },
+                  "title": "Response Searchmutualfunds"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mutual-funds/{scheme_code}/nav": {
+      "get": {
+        "tags": [
+          "mutual-funds"
+        ],
+        "summary": "Get latest NAV from SEBI/AMFI public registry",
+        "description": "Fetch latest daily NAV, AMC fund house, category, and ISIN from SEBI/AMFI feed.",
+        "operationId": "getMutualFundNav",
+        "parameters": [
+          {
+            "name": "scheme_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Scheme Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MutualFundNavResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mutual-funds/holdings": {
+      "get": {
+        "tags": [
+          "mutual-funds"
+        ],
+        "summary": "List mutual fund holdings with live SEBI/AMFI valuations",
+        "description": "Retrieve all registered holdings for owner with real-time SEBI/AMFI valuations.",
+        "operationId": "listMutualFundHoldings",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MutualFundHoldingResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Listmutualfundholdings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "mutual-funds"
+        ],
+        "summary": "Add a mutual fund holding to portfolio",
+        "description": "Register a new mutual fund holding with official metadata fetched from SEBI/AMFI.",
+        "operationId": "addMutualFundHolding",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddMutualFundHoldingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MutualFundHoldingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mutual-funds/holdings/{id}": {
+      "delete": {
+        "tags": [
+          "mutual-funds"
+        ],
+        "summary": "Remove a mutual fund holding",
+        "description": "Delete a mutual fund holding from owner's portfolio.",
+        "operationId": "deleteMutualFundHolding",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mutual-funds/import-cas": {
+      "post": {
+        "tags": [
+          "mutual-funds"
+        ],
+        "summary": "Import portfolio from CAMS / KFintech Consolidated Account Statement (CAS) PDF",
+        "description": "Parse encrypted or unencrypted CAS PDF, map to SEBI/AMFI registry, and import holdings.",
+        "operationId": "importCasStatement",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_importCasStatement"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CasImportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documents": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "List uploaded encrypted documents",
+        "description": "Retrieve metadata of all documents uploaded by owner.",
+        "operationId": "listDocuments",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentResponse"
+                  },
+                  "title": "Response Listdocuments"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Upload an encrypted document",
+        "description": "Upload a new document with envelope encryption and metadata storage.",
+        "operationId": "uploadDocument",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_uploadDocument"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}": {
+      "delete": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Delete an uploaded document",
+        "description": "Delete document by ID with cross-user isolation.",
+        "operationId": "deleteDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/packet/preview": {
+      "get": {
+        "tags": [
+          "packet"
+        ],
+        "summary": "Preview assembled emergency packet",
+        "description": "Preview emergency packet exactly as a parent/contact would see it.",
+        "operationId": "previewPacket",
+        "parameters": [
+          {
+            "name": "contact_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Contact Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PacketPreviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/packet/shares": {
+      "get": {
+        "tags": [
+          "packet"
+        ],
+        "summary": "List active packet shares",
+        "description": "Retrieve all emergency packet shares issued to contacts.",
+        "operationId": "listPacketShares",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PacketShareResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Listpacketshares"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "packet"
+        ],
+        "summary": "Create an emergency packet share link for a contact",
+        "description": "Generate signed packet share token for a trusted contact.",
+        "operationId": "createPacketShare",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePacketShareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PacketShareResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/packet/shares/{id}": {
+      "delete": {
+        "tags": [
+          "packet"
+        ],
+        "summary": "Revoke an emergency packet share link",
+        "description": "Revoke access to an active packet link immediately with cross-user isolation.",
+        "operationId": "revokePacketShare",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/packet/session": {
+      "get": {
+        "tags": [
+          "packet"
+        ],
+        "summary": "View emergency packet contents during verified session",
+        "description": "Return packet contents after successful OTP verification with strict security headers.",
+        "operationId": "getPublicPacketSession",
+        "parameters": [
+          {
+            "name": "session_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Session Token"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PacketPreviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/packet/session/documents/{id}": {
+      "get": {
+        "tags": [
+          "packet"
+        ],
+        "summary": "Stream encrypted document from packet session",
+        "description": "Stream decrypted document content with cross-user isolation and security headers.",
+        "operationId": "downloadPublicPacketDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "session_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Session Token"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/packet/{token}": {
+      "get": {
+        "tags": [
+          "packet"
+        ],
+        "summary": "Get initial packet share info (Public)",
+        "description": "Minimal unauthenticated info page prompting parent to request OTP.",
+        "operationId": "getPublicPacketInfo",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPacketInfoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/packet/{token}/otp/send": {
+      "post": {
+        "tags": [
+          "packet"
+        ],
+        "summary": "Send OTP to parent's verified phone number",
+        "description": "Send one-time password to verify parent identity with lockout check.",
+        "operationId": "sendPublicPacketOtp",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/packet/{token}/otp/verify": {
+      "post": {
+        "tags": [
+          "packet"
+        ],
+        "summary": "Verify OTP to unlock emergency packet session",
+        "description": "Verify OTP and issue short-lived access session for packet with lockout on failures.",
+        "operationId": "verifyPublicPacketOtp",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicPacketOtpVerifyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPacketOtpVerifyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "List delivery notification log",
+        "description": "Retrieve message delivery audit trail and status.",
+        "operationId": "listNotifications",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by delivery status",
+              "title": "Status"
+            },
+            "description": "Filter by delivery status"
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by channel: SMS, EMAIL",
+              "title": "Channel"
+            },
+            "description": "Filter by channel: SMS, EMAIL"
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter messages since timestamp",
+              "title": "Since"
+            },
+            "description": "Filter messages since timestamp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationLogItemResponse"
+                  },
+                  "title": "Response Listnotifications"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/send-emergency-alert": {
+      "post": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Send emergency alert email to trusted contact with attachments",
+        "description": "Dispatches emergency email with portfolio details and decrypted documents.",
+        "operationId": "sendEmergencyAlert",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendEmergencyAlertRequest",
+                "default": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendEmergencyAlertResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Service health check",
+        "description": "Return health status of the API service.",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health/scheduler": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Scheduler worker health check",
+        "description": "Return health status of the background scheduler worker.",
+        "operationId": "getSchedulerHealth",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulerHealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Root health check",
+        "description": "Root health check endpoint.",
+        "operationId": "getRootHealth",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActionResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Action completed successfully."
+          }
+        },
+        "type": "object",
+        "title": "ActionResponse"
+      },
+      "AddBankAccountRequest": {
+        "properties": {
+          "bank_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Bank Name",
+            "examples": [
+              "State Bank of India",
+              "HDFC Bank"
+            ]
+          },
+          "account_number": {
+            "type": "string",
+            "maxLength": 34,
+            "minLength": 4,
+            "title": "Account Number",
+            "examples": [
+              "123456789012"
+            ]
+          },
+          "ifsc_code": {
+            "type": "string",
+            "maxLength": 11,
+            "minLength": 11,
+            "title": "Ifsc Code",
+            "examples": [
+              "SBIN0001234"
+            ]
+          },
+          "branch_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch Name"
+          },
+          "account_type": {
+            "type": "string",
+            "maxLength": 32,
+            "title": "Account Type",
+            "default": "SAVINGS"
+          },
+          "holder_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bank_name",
+          "account_number",
+          "ifsc_code"
+        ],
+        "title": "AddBankAccountRequest"
+      },
+      "AddMutualFundHoldingRequest": {
+        "properties": {
+          "scheme_code": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Scheme Code"
+          },
+          "units": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Units"
+          },
+          "folio_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folio Number"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scheme_code",
+          "units"
+        ],
+        "title": "AddMutualFundHoldingRequest"
+      },
+      "BankAccountResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "bank_name": {
+            "type": "string",
+            "title": "Bank Name"
+          },
+          "account_number_masked": {
+            "type": "string",
+            "title": "Account Number Masked"
+          },
+          "ifsc_code": {
+            "type": "string",
+            "title": "Ifsc Code"
+          },
+          "branch_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch Name"
+          },
+          "account_type": {
+            "type": "string",
+            "title": "Account Type",
+            "default": "SAVINGS"
+          },
+          "holder_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Name"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "bank_name",
+          "account_number_masked",
+          "ifsc_code"
+        ],
+        "title": "BankAccountResponse"
+      },
+      "Body_importCasStatement": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "CAS PDF statement file"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password",
+            "description": "PDF password (typically PAN or DOB)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_importCasStatement"
+      },
+      "Body_uploadDocument": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "default": "general"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "title"
+        ],
+        "title": "Body_uploadDocument"
+      },
+      "CasImportResponse": {
+        "properties": {
+          "imported_count": {
+            "type": "integer",
+            "title": "Imported Count"
+          },
+          "total_value_paise": {
+            "type": "integer",
+            "title": "Total Value Paise",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "CAS statement processed successfully."
+          },
+          "holdings": {
+            "items": {
+              "$ref": "#/components/schemas/MutualFundHoldingResponse"
+            },
+            "type": "array",
+            "title": "Holdings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "imported_count",
+          "holdings"
+        ],
+        "title": "CasImportResponse"
+      },
+      "CheckInResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recorded_at"
+        ],
+        "title": "CheckInResponse"
+      },
+      "ContactResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "relation": {
+            "type": "string",
+            "title": "Relation"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority"
+          },
+          "consent": {
+            "type": "string",
+            "title": "Consent"
+          },
+          "consent_verified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Verified At"
+          },
+          "last_delivery": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Delivery"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "relation",
+          "phone",
+          "email",
+          "priority",
+          "consent"
+        ],
+        "title": "ContactResponse"
+      },
+      "CreateContactRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "relation": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Relation"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone",
+            "examples": [
+              "+919876543210"
+            ]
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "examples": [
+              "parent@example.com"
+            ]
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Priority",
+            "default": 1
+          },
+          "locale": {
+            "type": "string",
+            "maxLength": 16,
+            "title": "Locale",
+            "default": "en"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "relation",
+          "phone",
+          "email"
+        ],
+        "title": "CreateContactRequest"
+      },
+      "CreateLoanRequest": {
+        "properties": {
+          "lender": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Lender"
+          },
+          "account_number": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 4,
+            "title": "Account Number"
+          },
+          "emi_paise": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Emi Paise"
+          },
+          "due_day": {
+            "type": "integer",
+            "maximum": 31.0,
+            "minimum": 1.0,
+            "title": "Due Day"
+          },
+          "grace_days": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Grace Days",
+            "default": 1
+          },
+          "payment_instructions": {
+            "$ref": "#/components/schemas/PaymentInstructionsSchema"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lender",
+          "account_number",
+          "emi_paise",
+          "due_day"
+        ],
+        "title": "CreateLoanRequest"
+      },
+      "CreatePacketShareRequest": {
+        "properties": {
+          "contact_id": {
+            "type": "string",
+            "title": "Contact Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contact_id"
+        ],
+        "title": "CreatePacketShareRequest"
+      },
+      "DocumentResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "category",
+          "filename",
+          "size_bytes",
+          "created_at"
+        ],
+        "title": "DocumentResponse"
+      },
+      "GrowwAccountResponse": {
+        "properties": {
+          "connected": {
+            "type": "boolean",
+            "title": "Connected"
+          },
+          "masked_account": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Masked Account"
+          },
+          "last_synced_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Synced At"
+          },
+          "holdings_count": {
+            "type": "integer",
+            "title": "Holdings Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "connected"
+        ],
+        "title": "GrowwAccountResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Overall service status",
+            "default": "ok"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "Backend version",
+            "default": "0.1.0"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "Current server timestamp in UTC"
+          }
+        },
+        "type": "object",
+        "title": "HealthResponse",
+        "description": "Health check response payload."
+      },
+      "InstallmentResponse": {
+        "properties": {
+          "year_month": {
+            "type": "string",
+            "title": "Year Month"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          },
+          "amount_paise": {
+            "type": "integer",
+            "title": "Amount Paise"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year_month",
+          "due_date",
+          "amount_paise",
+          "status"
+        ],
+        "title": "InstallmentResponse"
+      },
+      "LoanResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "lender": {
+            "type": "string",
+            "title": "Lender"
+          },
+          "account_masked": {
+            "type": "string",
+            "title": "Account Masked"
+          },
+          "emi_paise": {
+            "type": "integer",
+            "title": "Emi Paise"
+          },
+          "due_day": {
+            "type": "integer",
+            "title": "Due Day"
+          },
+          "grace_days": {
+            "type": "integer",
+            "title": "Grace Days"
+          },
+          "payment_instructions": {
+            "$ref": "#/components/schemas/PaymentInstructionsSchema"
+          },
+          "next_due": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NextDueSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "lender",
+          "account_masked",
+          "emi_paise",
+          "due_day",
+          "grace_days",
+          "payment_instructions"
+        ],
+        "title": "LoanResponse"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          },
+          "mfa_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 6
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mfa Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest"
+      },
+      "LoginResponse": {
+        "properties": {
+          "owner": {
+            "$ref": "#/components/schemas/OwnerResponse"
+          },
+          "csrf_token": {
+            "type": "string",
+            "title": "Csrf Token"
+          },
+          "mfa_required": {
+            "type": "boolean",
+            "title": "Mfa Required",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "owner",
+          "csrf_token"
+        ],
+        "title": "LoginResponse"
+      },
+      "MarkInstallmentPaidRequest": {
+        "properties": {
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "title": "MarkInstallmentPaidRequest"
+      },
+      "MfaEnrollResponse": {
+        "properties": {
+          "secret": {
+            "type": "string",
+            "title": "Secret"
+          },
+          "otpauth_url": {
+            "type": "string",
+            "title": "Otpauth Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "secret",
+          "otpauth_url"
+        ],
+        "title": "MfaEnrollResponse"
+      },
+      "MfaVerifyRequest": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 6,
+            "minLength": 6,
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "MfaVerifyRequest"
+      },
+      "MonitorNextStage": {
+        "properties": {
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          },
+          "at": {
+            "type": "string",
+            "format": "date",
+            "title": "At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stage",
+          "at"
+        ],
+        "title": "MonitorNextStage"
+      },
+      "MonitorStatusResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "last_activity_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Activity At"
+          },
+          "days_idle": {
+            "type": "integer",
+            "title": "Days Idle"
+          },
+          "threshold_days": {
+            "type": "integer",
+            "title": "Threshold Days"
+          },
+          "warning_days": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Warning Days"
+          },
+          "next_stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MonitorNextStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paused_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paused Until"
+          },
+          "scheduler_healthy": {
+            "type": "boolean",
+            "title": "Scheduler Healthy",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "days_idle",
+          "threshold_days",
+          "warning_days"
+        ],
+        "title": "MonitorStatusResponse"
+      },
+      "MutualFundHoldingResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "scheme_code": {
+            "type": "integer",
+            "title": "Scheme Code"
+          },
+          "scheme_name": {
+            "type": "string",
+            "title": "Scheme Name"
+          },
+          "fund_house": {
+            "type": "string",
+            "title": "Fund House"
+          },
+          "units": {
+            "type": "number",
+            "title": "Units"
+          },
+          "folio_masked": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folio Masked"
+          },
+          "latest_nav": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Nav"
+          },
+          "nav_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nav Date"
+          },
+          "value_paise": {
+            "type": "integer",
+            "title": "Value Paise"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "scheme_code",
+          "scheme_name",
+          "fund_house",
+          "units",
+          "value_paise"
+        ],
+        "title": "MutualFundHoldingResponse"
+      },
+      "MutualFundNavResponse": {
+        "properties": {
+          "scheme_code": {
+            "type": "integer",
+            "title": "Scheme Code"
+          },
+          "scheme_name": {
+            "type": "string",
+            "title": "Scheme Name"
+          },
+          "fund_house": {
+            "type": "string",
+            "title": "Fund House"
+          },
+          "scheme_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheme Type"
+          },
+          "scheme_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheme Category"
+          },
+          "isin_growth": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isin Growth"
+          },
+          "nav": {
+            "type": "number",
+            "title": "Nav"
+          },
+          "nav_date": {
+            "type": "string",
+            "title": "Nav Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scheme_code",
+          "scheme_name",
+          "fund_house",
+          "nav",
+          "nav_date"
+        ],
+        "title": "MutualFundNavResponse"
+      },
+      "MutualFundSchemeResponse": {
+        "properties": {
+          "scheme_code": {
+            "type": "integer",
+            "title": "Scheme Code"
+          },
+          "scheme_name": {
+            "type": "string",
+            "title": "Scheme Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scheme_code",
+          "scheme_name"
+        ],
+        "title": "MutualFundSchemeResponse"
+      },
+      "NextDueSchema": {
+        "properties": {
+          "year_month": {
+            "type": "string",
+            "title": "Year Month"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year_month",
+          "due_date",
+          "status"
+        ],
+        "title": "NextDueSchema"
+      },
+      "NotificationLogItemResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel"
+          },
+          "recipient_label": {
+            "type": "string",
+            "title": "Recipient Label"
+          },
+          "template": {
+            "type": "string",
+            "title": "Template"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "queued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Queued At"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "channel",
+          "recipient_label",
+          "template",
+          "status",
+          "attempts",
+          "queued_at"
+        ],
+        "title": "NotificationLogItemResponse"
+      },
+      "OwnerExportResponse": {
+        "properties": {
+          "owner": {
+            "$ref": "#/components/schemas/OwnerResponse"
+          },
+          "monitor": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monitor"
+          },
+          "contacts": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Contacts"
+          },
+          "loans": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Loans"
+          },
+          "documents": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Documents"
+          },
+          "exported_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Exported At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "owner",
+          "exported_at"
+        ],
+        "title": "OwnerExportResponse"
+      },
+      "OwnerResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone",
+            "default": "Asia/Kolkata"
+          },
+          "mfa_enabled": {
+            "type": "boolean",
+            "title": "Mfa Enabled",
+            "default": false
+          },
+          "monitoring_paused_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monitoring Paused Until"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone"
+        ],
+        "title": "OwnerResponse"
+      },
+      "PacketPreviewResponse": {
+        "properties": {
+          "owner_name": {
+            "type": "string",
+            "title": "Owner Name"
+          },
+          "days_idle": {
+            "type": "integer",
+            "title": "Days Idle"
+          },
+          "holdings_summary": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Holdings Summary"
+          },
+          "loans": {
+            "items": {
+              "$ref": "#/components/schemas/LoanResponse"
+            },
+            "type": "array",
+            "title": "Loans"
+          },
+          "bank_accounts": {
+            "items": {
+              "$ref": "#/components/schemas/BankAccountResponse"
+            },
+            "type": "array",
+            "title": "Bank Accounts"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentResponse"
+            },
+            "type": "array",
+            "title": "Documents"
+          },
+          "instructions": {
+            "type": "string",
+            "title": "Instructions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "owner_name",
+          "days_idle",
+          "holdings_summary",
+          "loans",
+          "documents",
+          "instructions"
+        ],
+        "title": "PacketPreviewResponse"
+      },
+      "PacketShareResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "contact_id": {
+            "type": "string",
+            "title": "Contact Id"
+          },
+          "contact_name": {
+            "type": "string",
+            "title": "Contact Name"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "revoked": {
+            "type": "boolean",
+            "title": "Revoked",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "contact_id",
+          "contact_name",
+          "token",
+          "expires_at",
+          "created_at"
+        ],
+        "title": "PacketShareResponse"
+      },
+      "PauseMonitorRequest": {
+        "properties": {
+          "until": {
+            "type": "string",
+            "format": "date",
+            "title": "Until"
+          }
+        },
+        "type": "object",
+        "required": [
+          "until"
+        ],
+        "title": "PauseMonitorRequest"
+      },
+      "PaymentInstructionsSchema": {
+        "properties": {
+          "upi_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upi Id"
+          },
+          "portal_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portal Url"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "title": "PaymentInstructionsSchema"
+      },
+      "PublicOptOutRequest": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "PublicOptOutRequest"
+      },
+      "PublicPacketInfoResponse": {
+        "properties": {
+          "owner_name": {
+            "type": "string",
+            "title": "Owner Name"
+          },
+          "recipient_phone_masked": {
+            "type": "string",
+            "title": "Recipient Phone Masked"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "owner_name",
+          "recipient_phone_masked",
+          "expires_at"
+        ],
+        "title": "PublicPacketInfoResponse"
+      },
+      "PublicPacketOtpVerifyRequest": {
+        "properties": {
+          "otp": {
+            "type": "string",
+            "maxLength": 8,
+            "minLength": 4,
+            "title": "Otp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "otp"
+        ],
+        "title": "PublicPacketOtpVerifyRequest"
+      },
+      "PublicPacketOtpVerifyResponse": {
+        "properties": {
+          "session_token": {
+            "type": "string",
+            "title": "Session Token"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_token",
+          "expires_at"
+        ],
+        "title": "PublicPacketOtpVerifyResponse"
+      },
+      "PublicVerifyContactRequest": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "otp": {
+            "type": "string",
+            "maxLength": 8,
+            "minLength": 4,
+            "title": "Otp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "otp"
+        ],
+        "title": "PublicVerifyContactRequest"
+      },
+      "RegisterRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Name",
+            "examples": [
+              "Tanmoy"
+            ]
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Email",
+            "examples": [
+              "tanmoy@example.com"
+            ]
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone",
+            "examples": [
+              "+919876543210"
+            ]
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "phone",
+          "password"
+        ],
+        "title": "RegisterRequest"
+      },
+      "SchedulerHealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Scheduler status",
+            "default": "ok"
+          },
+          "heartbeat_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Heartbeat At",
+            "description": "Last scheduler heartbeat timestamp in UTC"
+          }
+        },
+        "type": "object",
+        "title": "SchedulerHealthResponse",
+        "description": "Scheduler health check response payload."
+      },
+      "SendEmergencyAlertRequest": {
+        "properties": {
+          "contact_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Id"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          }
+        },
+        "type": "object",
+        "title": "SendEmergencyAlertRequest"
+      },
+      "SendEmergencyAlertResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "recipient": {
+            "type": "string",
+            "title": "Recipient"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id"
+          },
+          "attached_documents": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Attached Documents"
+          },
+          "total_holdings": {
+            "type": "integer",
+            "title": "Total Holdings",
+            "default": 0
+          },
+          "total_loans": {
+            "type": "integer",
+            "title": "Total Loans",
+            "default": 0
+          },
+          "total_bank_accounts": {
+            "type": "integer",
+            "title": "Total Bank Accounts",
+            "default": 0
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Sent At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "recipient",
+          "channel",
+          "subject",
+          "message_id",
+          "sent_at"
+        ],
+        "title": "SendEmergencyAlertResponse"
+      },
+      "UpdateContactRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "relation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relation"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          }
+        },
+        "type": "object",
+        "title": "UpdateContactRequest"
+      },
+      "UpdateGrowwAccountRequest": {
+        "properties": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key"
+          },
+          "api_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Secret"
+          }
+        },
+        "type": "object",
+        "title": "UpdateGrowwAccountRequest"
+      },
+      "UpdateLoanRequest": {
+        "properties": {
+          "lender": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lender"
+          },
+          "emi_paise": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emi Paise"
+          },
+          "due_day": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 31.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Day"
+          },
+          "grace_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grace Days"
+          },
+          "payment_instructions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentInstructionsSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "UpdateLoanRequest"
+      },
+      "UpdateMonitorConfigRequest": {
+        "properties": {
+          "threshold_days": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Threshold Days"
+          },
+          "warning_days": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Warning Days"
+          },
+          "parent_repeat_every_days": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Parent Repeat Every Days",
+            "default": 7
+          }
+        },
+        "type": "object",
+        "required": [
+          "threshold_days",
+          "warning_days"
+        ],
+        "title": "UpdateMonitorConfigRequest"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
