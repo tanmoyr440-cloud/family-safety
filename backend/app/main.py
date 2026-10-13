@@ -53,15 +53,14 @@ setup_logging()
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan context manager."""
-    if "sqlite" in settings.database_url:
-        from app.infrastructure.persistence.models import Base
-        from app.interfaces.api.dependencies import get_session_factory
-        import app.interfaces.api.dependencies as deps
+    from app.infrastructure.persistence.models import Base
+    from app.interfaces.api.dependencies import get_session_factory
+    import app.interfaces.api.dependencies as deps
 
-        get_session_factory()
-        if deps._engine is not None:
-            async with deps._engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
+    get_session_factory()
+    if deps._engine is not None:
+        async with deps._engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
     yield
 
 

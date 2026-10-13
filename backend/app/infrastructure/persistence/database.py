@@ -8,17 +8,27 @@ from sqlalchemy.ext.asyncio import (
 )
 
 
+def normalize_database_url(database_url: str) -> str:
+    """Normalize postgres URLs to use asyncpg driver."""
+    if database_url.startswith("postgres://"):
+        return database_url.replace("postgres://", "postgresql+asyncpg://", 1)
+    if database_url.startswith("postgresql://") and not database_url.startswith("postgresql+"):
+        return database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return database_url
+
+
 def create_engine(database_url: str, echo: bool = False) -> AsyncEngine:
     """Create SQLAlchemy AsyncEngine."""
-    if "sqlite" in database_url:
+    normalized_url = normalize_database_url(database_url)
+    if "sqlite" in normalized_url:
         return create_async_engine(
-            database_url,
+            normalized_url,
             echo=echo,
             future=True,
             connect_args={"check_same_thread": False},
         )
     return create_async_engine(
-        database_url,
+        normalized_url,
         echo=echo,
         future=True,
         pool_pre_ping=True,
