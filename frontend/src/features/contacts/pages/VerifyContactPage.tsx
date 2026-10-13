@@ -1,16 +1,17 @@
 import * as React from "react";
-import { useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { usePublicVerifyContact } from "../api/usePublicVerifyContact";
 import { usePublicOptOutContact } from "../api/usePublicOptOutContact";
 import { Button } from "@/shared/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/Card";
-import { AlertCircle, CheckCircle2, KeyRound, ShieldCheck, UserX } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, KeyRound, ShieldCheck, UserX } from "lucide-react";
 
 export interface VerifyContactPageProps {
   tokenOverride?: string;
 }
 
 export const VerifyContactPage: React.FC<VerifyContactPageProps> = ({ tokenOverride }) => {
+  const navigate = useNavigate();
   const params = useParams<{ token: string }>();
   const token = tokenOverride || params.token || "tok_default_123";
   const [otp, setOtp] = React.useState("");
@@ -59,6 +60,17 @@ export const VerifyContactPage: React.FC<VerifyContactPageProps> = ({ tokenOverr
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
+        {/* Top Back navigation */}
+        <div className="flex items-center justify-start">
+          <Link
+            to="/contacts"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+            Back to Contacts
+          </Link>
+        </div>
+
         {/* Calm logo / Brand */}
         <div className="text-center space-y-1">
           <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-blue-100 text-blue-600 mb-2">
@@ -71,7 +83,7 @@ export const VerifyContactPage: React.FC<VerifyContactPageProps> = ({ tokenOverr
         {/* Verification Success State */}
         {status === "verified" && (
           <Card className="border-emerald-200 bg-white shadow-sm text-center">
-            <CardContent className="pt-8 pb-8 px-6 space-y-4">
+            <CardContent className="pt-8 pb-8 px-6 space-y-5">
               <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-emerald-100 text-emerald-600 mx-auto">
                 <CheckCircle2 className="h-7 w-7" aria-hidden="true" />
               </div>
@@ -81,6 +93,16 @@ export const VerifyContactPage: React.FC<VerifyContactPageProps> = ({ tokenOverr
                 receive an SMS and email if your family member has no investment activity for 90
                 days or misses an EMI.
               </p>
+              <div className="pt-2">
+                <Button
+                  type="button"
+                  onClick={() => navigate("/contacts")}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                  Back to Contacts
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -88,7 +110,7 @@ export const VerifyContactPage: React.FC<VerifyContactPageProps> = ({ tokenOverr
         {/* Opted Out State */}
         {status === "opted_out" && (
           <Card className="border-slate-200 bg-white shadow-sm text-center">
-            <CardContent className="pt-8 pb-8 px-6 space-y-4">
+            <CardContent className="pt-8 pb-8 px-6 space-y-5">
               <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-slate-100 text-slate-600 mx-auto">
                 <UserX className="h-7 w-7" aria-hidden="true" />
               </div>
@@ -97,6 +119,17 @@ export const VerifyContactPage: React.FC<VerifyContactPageProps> = ({ tokenOverr
                 You have successfully declined to be an emergency contact. You will not receive any
                 emergency alerts from Family Safety Net.
               </p>
+              <div className="pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate("/contacts")}
+                  className="w-full flex items-center justify-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                  Back to Contacts
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}

@@ -206,6 +206,7 @@ describe("Contacts Feature (Phase 5)", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/contact details verified/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /back to contacts/i })).toBeInTheDocument();
     });
 
     expect(await axe(container)).toHaveNoViolations();
