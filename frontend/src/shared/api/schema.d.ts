@@ -508,6 +508,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/accounts/nominee-guidance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get nominee and emergency guidance instructions
+         * @description Retrieve the registered nominee and emergency guidance for the owner.
+         */
+        get: operations["getNomineeGuidance"];
+        /**
+         * Update nominee details and emergency guidance instructions
+         * @description Upsert nominee and emergency guidance instructions.
+         */
+        put: operations["updateNomineeGuidance"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/bank-accounts": {
         parameters: {
             query?: never;
@@ -1491,6 +1515,22 @@ export interface components {
             documents: components["schemas"]["DocumentResponse"][];
             /** Instructions */
             instructions: string;
+            nominee?: components["schemas"]["NomineeGuidanceResponse"] | null;
+        };
+        /** NomineeGuidanceResponse */
+        NomineeGuidanceResponse: {
+            nominee_name?: string | null;
+            nominee_relation?: string | null;
+            nominee_share?: string | null;
+            notes?: string | null;
+            updated_at?: string | null;
+        };
+        /** UpdateNomineeGuidanceRequest */
+        UpdateNomineeGuidanceRequest: {
+            nominee_name?: string | null;
+            nominee_relation?: string | null;
+            nominee_share?: string | null;
+            notes?: string | null;
         };
         /** PacketShareResponse */
         PacketShareResponse: {
@@ -2542,6 +2582,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActionResponse"];
+                };
+            };
+        };
+    };
+    getNomineeGuidance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NomineeGuidanceResponse"];
+                };
+            };
+        };
+    };
+    updateNomineeGuidance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateNomineeGuidanceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NomineeGuidanceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

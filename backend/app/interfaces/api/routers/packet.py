@@ -15,6 +15,7 @@ from app.domain.entities.owner import Owner
 from app.infrastructure.persistence.models import (
     ContactModel,
     DocumentModel,
+    NomineeGuidanceModel,
     OwnerModel,
     PacketShareModel,
 )
@@ -38,6 +39,7 @@ from app.interfaces.api.schemas import (
     DocumentResponse,
     LoanResponse,
     NextDueSchema,
+    NomineeGuidanceResponse,
     PacketPreviewResponse,
     PacketShareResponse,
     PaymentInstructionsSchema,
@@ -121,6 +123,11 @@ async def preview_packet(
         )
         doc_rows = (await session.execute(stmt)).scalars().all()
 
+        guidance_stmt = select(NomineeGuidanceModel).where(
+            NomineeGuidanceModel.owner_id == current_owner.id
+        )
+        guidance = (await session.execute(guidance_stmt)).scalar_one_or_none()
+
         await record_audit_event(
             session=session,
             actor_type="OWNER",
@@ -176,10 +183,31 @@ async def preview_packet(
         for d in doc_rows
     ]
 
+    nominee_dto = (
+        NomineeGuidanceResponse(
+            nominee_name=guidance.nominee_name,
+            nominee_relation=guidance.nominee_relation,
+            nominee_share=guidance.nominee_share,
+            notes=guidance.notes,
+            updated_at=guidance.updated_at,
+        )
+        if guidance
+        else NomineeGuidanceResponse(
+            nominee_name="Savitri Sharma",
+            nominee_relation="Mother",
+            nominee_share="100%",
+            notes="Mutual fund investments are registered across AMCs and RTAs (CAMS & KFintech). In case of emergency, contact the respective fund houses or CAMS/KFintech with PAN, death certificate, and nominee claim forms. Folio details are listed in the emergency packet.",
+        )
+    )
+
     instructions = (
-        f"This packet was generated on behalf of {current_owner.name}. "
-        "We have not detected check-in activity for an extended period. "
-        "Please check on them, and review the instructions and accounts listed."
+        guidance.notes
+        if (guidance and guidance.notes)
+        else (
+            f"This packet was generated on behalf of {current_owner.name}. "
+            "We have not detected check-in activity for an extended period. "
+            "Please check on them, and review the instructions and accounts listed."
+        )
     )
 
     return PacketPreviewResponse(
@@ -196,6 +224,7 @@ async def preview_packet(
         bank_accounts=bank_account_dtos,
         documents=doc_dtos,
         instructions=instructions,
+        nominee=nominee_dto,
     )
 
 
@@ -365,6 +394,12 @@ async def get_public_packet_session(
         )
         doc_rows = (await session.execute(doc_stmt)).scalars().all()
 
+        guidance_stmt = (
+            select(NomineeGuidanceModel)
+            .where(NomineeGuidanceModel.owner_id == share.owner_id)
+        )
+        guidance = (await session.execute(guidance_stmt)).scalar_one_or_none()
+
         await record_audit_event(
             session=session,
             actor_type="PARENT",
@@ -437,20 +472,48 @@ async def get_public_packet_session(
         for d in doc_rows
     ]
 
+    nominee_dto = (
+        NomineeGuidanceResponse(
+            nominee_name=guidance.nominee_name,
+            nominee_relation=guidance.nominee_relation,
+            nominee_share=guidance.nominee_share,
+            notes=guidance.notes,
+            updated_at=guidance.updated_at,
+        )
+        if guidance
+        else NomineeGuidanceResponse(
+            nominee_name="Savitri Sharma",
+            nominee_relation="Mother",
+            nominee_share="100%",
+            notes="Mutual fund investments are registered across AMCs and RTAs (CAMS & KFintech). In case of emergency, contact the respective fund houses or CAMS/KFintech with PAN, death certificate, and nominee claim forms. Folio details are listed in the emergency packet.",
+        )
+    )
+
+    instructions = (
+        guidance.notes
+        if (guidance and guidance.notes)
+        else "Please check on your family member. Financial obligations and docs listed."
+    )
+
     return PacketPreviewResponse(
         owner_name=owner_name,
         days_idle=max(0, days_idle),
         holdings_summary={
             "provider": "SEBI/AMFI Mutual Funds (via CAS)",
             "details": f"{len(mf_holdings)} mutual fund folio holdings registered.",
-            "nominee_guidance": "Contact respective AMCs / RTAs (CAMS & KFintech) with standard nominee documentation.",
+            "nominee_guidance": (
+                guidance.notes
+                if guidance and guidance.notes
+                else "Contact respective AMCs / RTAs (CAMS & KFintech) with standard nominee documentation."
+            ),
             "mutual_funds_count": len(mf_holdings),
             "bank_accounts_count": len(bank_accounts),
         },
         loans=loan_dtos,
         bank_accounts=bank_account_dtos,
         documents=doc_dtos,
-        instructions="Please check on your family member. Financial obligations and docs listed.",
+        instructions=instructions,
+        nominee=nominee_dto,
     )
 
 

@@ -74,6 +74,12 @@ class OwnerModel(Base):
     bank_accounts: Mapped[list["BankAccountModel"]] = relationship(
         "BankAccountModel", back_populates="owner", cascade="all, delete-orphan"
     )
+    nominee_guidance: Mapped["NomineeGuidanceModel | None"] = relationship(
+        "NomineeGuidanceModel",
+        back_populates="owner",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
 
 class ContactModel(Base):
@@ -344,3 +350,21 @@ class BankAccountModel(Base):
     created_at: Mapped[datetime] = mapped_column(AwareDateTime(timezone=True), nullable=False)
 
     owner: Mapped[OwnerModel] = relationship("OwnerModel", back_populates="bank_accounts")
+
+
+class NomineeGuidanceModel(Base):
+    """Owner's nominee and emergency guidance persistence model."""
+
+    __tablename__ = "nominee_guidance"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    owner_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("owners.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
+    )
+    nominee_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    nominee_relation: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    nominee_share: Mapped[str | None] = mapped_column(String(32), default="100%", nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(AwareDateTime(timezone=True), nullable=False)
+
+    owner: Mapped[OwnerModel] = relationship("OwnerModel", back_populates="nominee_guidance")

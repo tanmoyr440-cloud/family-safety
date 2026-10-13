@@ -20,6 +20,15 @@ import {
   makeSchedulerHealth,
 } from "./factories";
 
+let currentNomineeGuidance = {
+  nominee_name: "Savitri Sharma",
+  nominee_relation: "Mother",
+  nominee_share: "100%",
+  notes:
+    "Mutual fund investments are registered across AMCs and RTAs (CAMS & KFintech). In case of emergency, contact the respective fund houses or CAMS/KFintech with PAN, death certificate, and nominee claim forms. Folio details are listed in the emergency packet.",
+  updated_at: "2026-10-14T02:00:00Z",
+};
+
 export const handlers = [
   // Auth current user
   http.get(new RegExp("/api/v1/me$"), () => {
@@ -405,6 +414,29 @@ export const handlers = [
       success: true,
       message: "Holdings refreshed successfully.",
     });
+  }),
+
+  // Nominee Guidance
+  http.get(new RegExp("/api/v1/accounts/nominee-guidance$"), () => {
+    return HttpResponse.json(currentNomineeGuidance);
+  }),
+
+  http.put(new RegExp("/api/v1/accounts/nominee-guidance$"), async ({ request }) => {
+    const body = (await request.json().catch(() => ({}))) as {
+      nominee_name?: string;
+      nominee_relation?: string;
+      nominee_share?: string;
+      notes?: string;
+    };
+    currentNomineeGuidance = {
+      ...currentNomineeGuidance,
+      ...(body.nominee_name !== undefined ? { nominee_name: body.nominee_name } : {}),
+      ...(body.nominee_relation !== undefined ? { nominee_relation: body.nominee_relation } : {}),
+      ...(body.nominee_share !== undefined ? { nominee_share: body.nominee_share } : {}),
+      ...(body.notes !== undefined ? { notes: body.notes } : {}),
+      updated_at: new Date().toISOString(),
+    };
+    return HttpResponse.json(currentNomineeGuidance);
   }),
 
   // Mutual funds & CAS import

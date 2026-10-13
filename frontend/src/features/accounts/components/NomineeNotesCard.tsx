@@ -1,20 +1,65 @@
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/Card";
 import { Button } from "@/shared/ui/Button";
-import { UserCheck, FileText, Edit2, Check } from "lucide-react";
+import { UserCheck, FileText, Edit2, Loader2, Check } from "lucide-react";
+import { useNomineeGuidance, useUpdateNomineeGuidance } from "../api/useNomineeGuidance";
+
+const DEFAULT_NOMINEE_NAME = "Savitri Sharma";
+const DEFAULT_NOMINEE_RELATION = "Mother";
+const DEFAULT_NOMINEE_SHARE = "100%";
+const DEFAULT_NOTES =
+  "Mutual fund investments are registered across AMCs and RTAs (CAMS & KFintech). In case of emergency, contact the respective fund houses or CAMS/KFintech with PAN, death certificate, and nominee claim forms. Folio details are listed in the emergency packet.";
 
 export const NomineeNotesCard: React.FC = () => {
   const [isEditing, setIsEditing] = React.useState(false);
+  const [saveSuccess, setSaveSuccess] = React.useState(false);
 
-  const [nomineeName, setNomineeName] = React.useState("Savitri Sharma");
-  const [nomineeRelation, setNomineeRelation] = React.useState("Mother");
-  const [nomineeShare, setNomineeShare] = React.useState("100%");
-  const [notes, setNotes] = React.useState(
-    "Mutual fund investments are registered across AMCs and RTAs (CAMS & KFintech). In case of emergency, contact the respective fund houses or CAMS/KFintech with PAN, death certificate, and nominee claim forms. Folio details are listed in the emergency packet.",
-  );
+  const { data } = useNomineeGuidance();
+  const updateMutation = useUpdateNomineeGuidance();
 
-  const handleSave = (e: React.FormEvent) => {
+  const [nomineeName, setNomineeName] = React.useState(DEFAULT_NOMINEE_NAME);
+  const [nomineeRelation, setNomineeRelation] = React.useState(DEFAULT_NOMINEE_RELATION);
+  const [nomineeShare, setNomineeShare] = React.useState(DEFAULT_NOMINEE_SHARE);
+  const [notes, setNotes] = React.useState(DEFAULT_NOTES);
+
+  React.useEffect(() => {
+    if (data) {
+      setNomineeName(data.nominee_name ?? DEFAULT_NOMINEE_NAME);
+      setNomineeRelation(data.nominee_relation ?? DEFAULT_NOMINEE_RELATION);
+      setNomineeShare(data.nominee_share ?? DEFAULT_NOMINEE_SHARE);
+      setNotes(data.notes ?? DEFAULT_NOTES);
+    }
+  }, [data]);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      await updateMutation.mutateAsync({
+        nominee_name: nomineeName.trim(),
+        nominee_relation: nomineeRelation.trim(),
+        nominee_share: nomineeShare.trim(),
+        notes: notes.trim(),
+      });
+      setIsEditing(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch {
+      // Mutation error state will display error message
+    }
+  };
+
+  const handleCancel = () => {
+    if (data) {
+      setNomineeName(data.nominee_name ?? DEFAULT_NOMINEE_NAME);
+      setNomineeRelation(data.nominee_relation ?? DEFAULT_NOMINEE_RELATION);
+      setNomineeShare(data.nominee_share ?? DEFAULT_NOMINEE_SHARE);
+      setNotes(data.notes ?? DEFAULT_NOTES);
+    } else {
+      setNomineeName(DEFAULT_NOMINEE_NAME);
+      setNomineeRelation(DEFAULT_NOMINEE_RELATION);
+      setNomineeShare(DEFAULT_NOMINEE_SHARE);
+      setNotes(DEFAULT_NOTES);
+    }
     setIsEditing(false);
   };
 
@@ -26,27 +71,25 @@ export const NomineeNotesCard: React.FC = () => {
           <CardTitle className="text-base font-semibold text-slate-900">
             Nominee & Emergency Guidance Notes
           </CardTitle>
+          {saveSuccess && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 animate-in fade-in">
+              <Check className="h-3 w-3" /> Saved
+            </span>
+          )}
         </div>
 
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsEditing(!isEditing)}
-          className="text-slate-600"
-        >
-          {isEditing ? (
-            <>
-              <Check className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
-              Done
-            </>
-          ) : (
-            <>
-              <Edit2 className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
-              Edit Notes
-            </>
-          )}
-        </Button>
+        {!isEditing && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsEditing(true)}
+            className="text-slate-600 hover:text-slate-900"
+          >
+            <Edit2 className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
+            Edit Notes
+          </Button>
+        )}
       </CardHeader>
 
       <CardContent className="p-5 sm:p-6 space-y-4">
@@ -62,6 +105,7 @@ export const NomineeNotesCard: React.FC = () => {
                   type="text"
                   value={nomineeName}
                   onChange={(e) => setNomineeName(e.target.value)}
+                  placeholder="e.g. Savitri Sharma"
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
@@ -75,6 +119,7 @@ export const NomineeNotesCard: React.FC = () => {
                   type="text"
                   value={nomineeRelation}
                   onChange={(e) => setNomineeRelation(e.target.value)}
+                  placeholder="e.g. Mother"
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
@@ -88,6 +133,7 @@ export const NomineeNotesCard: React.FC = () => {
                   type="text"
                   value={nomineeShare}
                   onChange={(e) => setNomineeShare(e.target.value)}
+                  placeholder="e.g. 100%"
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
@@ -102,13 +148,41 @@ export const NomineeNotesCard: React.FC = () => {
                 rows={3}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
+                placeholder="Guidance on where folios are held, which RTAs to contact, etc."
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
 
-            <div className="flex justify-end">
-              <Button type="submit" size="sm">
-                Save Notes
+            {updateMutation.isError && (
+              <p className="text-xs text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-200" role="alert">
+                Failed to save nominee guidance: {updateMutation.error instanceof Error ? updateMutation.error.message : "Please check your network connection and try again."}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+                disabled={updateMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={updateMutation.isPending}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                {updateMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" aria-hidden="true" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Notes"
+                )}
               </Button>
             </div>
           </form>

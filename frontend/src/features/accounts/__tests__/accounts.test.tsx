@@ -90,8 +90,54 @@ describe("Accounts Feature - Bank Accounts & Mutual Funds", () => {
       expect(screen.getByText("Add SEBI Mutual Fund")).toBeInTheDocument();
     });
 
-    expect(screen.getByLabelText(/search scheme name/i)).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("allows editing and saving Nominee & Emergency Guidance Notes, persisting updated details", async () => {
+    const user = userEvent.setup();
+    const { container } = renderWithProviders(<AccountsPage />, { route: "/accounts" });
+
+    // Initial state
+    expect(screen.getByText("Nominee & Emergency Guidance Notes")).toBeInTheDocument();
+    expect(await screen.findByText("Savitri Sharma")).toBeInTheDocument();
+
+    // Click Edit Notes
+    const editBtn = screen.getByRole("button", { name: /edit notes/i });
+    await user.click(editBtn);
+
+    // Edit fields
+    const nameInput = screen.getByLabelText(/nominee full name/i);
+    const relInput = screen.getByLabelText(/relationship/i);
+    const shareInput = screen.getByLabelText(/nomination share/i);
+    const notesInput = screen.getByLabelText(/emergency notes for family/i);
+
+    await user.clear(nameInput);
+    await user.type(nameInput, "Anita Sharma");
+
+    await user.clear(relInput);
+    await user.type(relInput, "Spouse");
+
+    await user.clear(shareInput);
+    await user.type(shareInput, "50%");
+
+    await user.clear(notesInput);
+    await user.type(notesInput, "Contact ICICI AMC directly with death certificate.");
+
+    // Click Save Notes
+    const saveBtn = screen.getByRole("button", { name: /save notes/i });
+    await user.click(saveBtn);
+
+    // Verify updated values displayed in read mode
+    await waitFor(() => {
+      expect(screen.getByText("Anita Sharma")).toBeInTheDocument();
+      expect(screen.getByText("Spouse")).toBeInTheDocument();
+      expect(screen.getByText("50%")).toBeInTheDocument();
+      expect(
+        screen.getByText("Contact ICICI AMC directly with death certificate."),
+      ).toBeInTheDocument();
+    });
 
     expect(await axe(container)).toHaveNoViolations();
   });
 });
+

@@ -305,8 +305,16 @@ async def test_health_and_notifications_endpoints(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_send_emergency_alert_endpoint(client: AsyncClient) -> None:
+async def test_send_emergency_alert_endpoint(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     """Verifies sending emergency alert email with financial details and attachments."""
+    from app.domain.policies.escalation_policy import ChannelKind
+    from app.infrastructure.notifications.console_channel import ConsoleChannel
+
+    monkeypatch.setattr(
+        "app.interfaces.api.routers.notifications.create_default_channels",
+        lambda: [ConsoleChannel(kind=ChannelKind.EMAIL)],
+    )
+
     _, _, csrf = await _register_and_login(client)
     headers = {"X-CSRF-Token": csrf}
 
@@ -366,3 +374,55 @@ async def test_send_emergency_alert_endpoint(client: AsyncClient) -> None:
     assert notif_resp.status_code == 200
     items = notif_resp.json()
     assert any(item["recipient_label"] == "father@example.com" for item in items)
+
+
+@pytest.mark.asyncio
+async def test_nominee_guidance_persistence(client: AsyncClient) -> None:
+    """Verifies getting, updating, and persisting nominee guidance notes."""
+    _, _, csrf = await _register_and_login(client)
+    headers = {"X-CSRF-Token": csrf}
+
+    # 1. Initial GET should return defaults
+    get_resp = await client.get("/api/v1/accounts/nominee-guidance", headers=headers)
+    assert get_resp.status_code == 200
+    init_data = get_resp.json()
+    assert init_data["nominee_name"] == "Savitri Sharma"
+    assert init_data["nominee_relation"] == "Mother"
+    assert init_data["nominee_share"] == "100%"
+    assert "Mutual fund investments" in init_data["notes"]
+
+    # 2. PUT to update nominee guidance
+    update_payload = {
+        "nominee_name": "Anita Sharma",
+        "nominee_relation": "Spouse",
+        "nominee_share": "50%",
+        "notes": "Custom emergency guidance for spouse: contact ICICI AMC directly.",
+    }
+    put_resp = await client.put(
+        "/api/v1/accounts/nominee-guidance",
+        headers=headers,
+        json=update_payload,
+    )
+    assert put_resp.status_code == 200
+    updated_data = put_resp.json()
+    assert updated_data["nominee_name"] == "Anita Sharma"
+    assert updated_data["nominee_relation"] == "Spouse"
+    assert updated_data["nominee_share"] == "50%"
+    assert updated_data["notes"] == "Custom emergency guidance for spouse: contact ICICI AMC directly."
+
+    # 3. GET again should return the persisted values
+    get_resp2 = await client.get("/api/v1/accounts/nominee-guidance", headers=headers)
+    assert get_resp2.status_code == 200
+    persisted_data = get_resp2.json()
+    assert persisted_data["nominee_name"] == "Anita Sharma"
+    assert persisted_data["nominee_relation"] == "Spouse"
+    assert persisted_data["nominee_share"] == "50%"
+    assert persisted_data["notes"] == "Custom emergency guidance for spouse: contact ICICI AMC directly."
+
+    # 4. Packet preview should include updated guidance notes
+    packet_resp = await client.get("/api/v1/packet/preview", headers=headers)
+    assert packet_resp.status_code == 200
+    packet_data = packet_resp.json()
+    assert packet_data["nominee"]["nominee_name"] == "Anita Sharma"
+    assert packet_data["instructions"] == "Custom emergency guidance for spouse: contact ICICI AMC directly."
+

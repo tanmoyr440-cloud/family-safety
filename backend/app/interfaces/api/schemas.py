@@ -218,6 +218,21 @@ class UpdateGrowwAccountRequest(BaseModel):
     api_secret: str | None = None
 
 
+class NomineeGuidanceResponse(BaseModel):
+    nominee_name: str | None = None
+    nominee_relation: str | None = None
+    nominee_share: str | None = "100%"
+    notes: str | None = None
+    updated_at: datetime | None = None
+
+
+class UpdateNomineeGuidanceRequest(BaseModel):
+    nominee_name: str | None = Field(default=None, max_length=255)
+    nominee_relation: str | None = Field(default=None, max_length=64)
+    nominee_share: str | None = Field(default=None, max_length=32)
+    notes: str | None = Field(default=None, max_length=4000)
+
+
 # --- Documents & Emergency Packet Schemas ---
 class DocumentResponse(BaseModel):
     id: str
@@ -256,6 +271,7 @@ class PacketPreviewResponse(BaseModel):
     bank_accounts: list[BankAccountResponse] = Field(default_factory=list)
     documents: list[DocumentResponse]
     instructions: str
+    nominee: NomineeGuidanceResponse | None = None
 
 
 class CreatePacketShareRequest(BaseModel):

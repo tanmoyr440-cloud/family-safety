@@ -12,7 +12,11 @@ from app.application.ports.notification_channel import EmailAttachment, Outbound
 from app.application.ports.unit_of_work import UnitOfWork
 from app.domain.entities.owner import Owner
 from app.domain.policies.escalation_policy import ChannelKind
-from app.infrastructure.persistence.models import DocumentModel, OutboxModel
+from app.infrastructure.persistence.models import (
+    DocumentModel,
+    NomineeGuidanceModel,
+    OutboxModel,
+)
 from app.infrastructure.security.audit_logger import record_audit_event
 from app.infrastructure.storage.encrypted_document_store import EncryptedDocumentStore
 from app.interfaces.api.dependencies import (
@@ -109,7 +113,7 @@ async def send_emergency_alert(
         bank_accounts = await uow.bank_accounts.get_accounts_for_owner(current_owner.id)
         monitor = await uow.monitors.get_for_owner(current_owner.id)
 
-    # 2. Query available encrypted documents
+    # 2. Query available encrypted documents and nominee guidance
     session_factory = get_session_factory()
     async with session_factory() as session:
         stmt = (
@@ -118,6 +122,12 @@ async def send_emergency_alert(
             .order_by(DocumentModel.created_at.desc())
         )
         docs = (await session.execute(stmt)).scalars().all()
+
+        guidance_stmt = (
+            select(NomineeGuidanceModel)
+            .where(NomineeGuidanceModel.owner_id == current_owner.id)
+        )
+        guidance = (await session.execute(guidance_stmt)).scalar_one_or_none()
 
     # 3. Decrypt documents to attach to email
     doc_store = EncryptedDocumentStore()
@@ -206,9 +216,13 @@ async def send_emergency_alert(
         "bank_accounts": bank_accounts_data,
         "documents": doc_manifest,
         "nominee_notes": (
-            "Mutual fund investments are registered across AMCs and RTAs (CAMS & KFintech). "
-            "In case of emergency, contact the respective fund houses or CAMS/KFintech with PAN, "
-            "death certificate, and nominee claim forms. Folio details in emergency packet."
+            guidance.notes
+            if (guidance and guidance.notes)
+            else (
+                "Mutual fund investments are registered across AMCs and RTAs (CAMS & KFintech). "
+                "In case of emergency, contact the respective fund houses or CAMS/KFintech with PAN, "
+                "death certificate, and nominee claim forms. Folio details in emergency packet."
+            )
         ),
         "days_idle": max(0, days_idle),
         "subject": subject,
