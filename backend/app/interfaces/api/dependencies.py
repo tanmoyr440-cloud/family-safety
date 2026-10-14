@@ -32,6 +32,15 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
     return _session_factory
 
 
+def get_engine() -> AsyncEngine:
+    """Get or initialize the SQLAlchemy async engine."""
+    global _engine
+    if _engine is None:
+        get_session_factory()
+    assert _engine is not None
+    return _engine
+
+
 async def get_uow() -> AsyncIterator[UnitOfWork]:
     """Dependency provider for UnitOfWork."""
     factory = get_session_factory()

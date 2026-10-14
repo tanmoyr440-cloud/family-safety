@@ -56,71 +56,69 @@ logger = structlog.get_logger(__name__)
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan context manager."""
     from app.infrastructure.persistence.models import Base
-    from app.interfaces.api.dependencies import get_session_factory
-    import app.interfaces.api.dependencies as deps
+    from app.interfaces.api.dependencies import get_engine
 
-    get_session_factory()
-    if deps._engine is not None:
-        async with deps._engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+    engine = get_engine()
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
-            from sqlalchemy import text
+        from sqlalchemy import text
 
-            is_postgres = deps._engine.dialect.name == "postgresql"
-            tz_type = "TIMESTAMP WITH TIME ZONE" if is_postgres else "DATETIME"
+        is_postgres = engine.dialect.name == "postgresql"
+        tz_type = "TIMESTAMP WITH TIME ZONE" if is_postgres else "DATETIME"
 
-            # Ensure nominee_guidance table and index exist
-            await conn.execute(
-                text(
-                    f"""
-                    CREATE TABLE IF NOT EXISTS nominee_guidance (
-                        id VARCHAR(64) PRIMARY KEY,
-                        owner_id VARCHAR(64) NOT NULL UNIQUE REFERENCES owners(id) ON DELETE CASCADE,
-                        nominee_name VARCHAR(255),
-                        nominee_relation VARCHAR(64),
-                        nominee_share VARCHAR(32) DEFAULT '100%',
-                        notes TEXT,
-                        updated_at {tz_type} NOT NULL,
-                        nominees_json {'JSONB' if is_postgres else 'JSON'}
-                    );
-                    """
-                )
+        # Ensure nominee_guidance table and index exist
+        await conn.execute(
+            text(
+                f"""
+                CREATE TABLE IF NOT EXISTS nominee_guidance (
+                    id VARCHAR(64) PRIMARY KEY,
+                    owner_id VARCHAR(64) NOT NULL UNIQUE REFERENCES owners(id) ON DELETE CASCADE,
+                    nominee_name VARCHAR(255),
+                    nominee_relation VARCHAR(64),
+                    nominee_share VARCHAR(32) DEFAULT '100%',
+                    notes TEXT,
+                    updated_at {tz_type} NOT NULL,
+                    nominees_json {'JSONB' if is_postgres else 'JSON'}
+                );
+                """
             )
-            if is_postgres:
-                await conn.execute(
-                    text("ALTER TABLE nominee_guidance ADD COLUMN IF NOT EXISTS nominees_json JSONB;")
-                )
-                await conn.execute(
-                    text("CREATE INDEX IF NOT EXISTS ix_nominee_guidance_owner_id ON nominee_guidance (owner_id);")
-                )
-            else:
-                try:
-                    cols_res = await conn.execute(text("PRAGMA table_info(nominee_guidance)"))
-                    col_names = [row[1] for row in cols_res.fetchall()]
-                    if "nominees_json" not in col_names:
-                        await conn.execute(text("ALTER TABLE nominee_guidance ADD COLUMN nominees_json JSON;"))
-                except Exception as ex:
-                    logger.warning("Could not add nominees_json column to sqlite: %s", ex)
-
-            # Ensure contact_otps table and index exist
+        )
+        if is_postgres:
             await conn.execute(
-                text(
-                    f"""
-                    CREATE TABLE IF NOT EXISTS contact_otps (
-                        id VARCHAR(64) PRIMARY KEY,
-                        contact_id VARCHAR(64) NOT NULL UNIQUE REFERENCES contacts(id) ON DELETE CASCADE,
-                        otp_hash VARCHAR(255) NOT NULL,
-                        attempts INTEGER DEFAULT 0 NOT NULL,
-                        expires_at {tz_type} NOT NULL,
-                        created_at {tz_type} NOT NULL
-                    );
-                    """
-                )
+                text("ALTER TABLE nominee_guidance ADD COLUMN IF NOT EXISTS nominees_json JSONB;")
             )
-            if is_postgres:
-                await conn.execute(
-                    text("CREATE INDEX IF NOT EXISTS ix_contact_otps_contact_id ON contact_otps (contact_id);")
-                )
+            await conn.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_nominee_guidance_owner_id ON nominee_guidance (owner_id);")
+            )
+        else:
+            try:
+                cols_res = await conn.execute(text("PRAGMA table_info(nominee_guidance)"))
+                col_names = [row[1] for row in cols_res.fetchall()]
+                if "nominees_json" not in col_names:
+                    await conn.execute(text("ALTER TABLE nominee_guidance ADD COLUMN nominees_json JSON;"))
+            except Exception as ex:
+                logger.warning("Could not add nominees_json column to sqlite: %s", ex)
+
+        # Ensure contact_otps table and index exist
+        await conn.execute(
+            text(
+                f"""
+                CREATE TABLE IF NOT EXISTS contact_otps (
+                    id VARCHAR(64) PRIMARY KEY,
+                    contact_id VARCHAR(64) NOT NULL UNIQUE REFERENCES contacts(id) ON DELETE CASCADE,
+                    otp_hash VARCHAR(255) NOT NULL,
+                    attempts INTEGER DEFAULT 0 NOT NULL,
+                    expires_at {tz_type} NOT NULL,
+                    created_at {tz_type} NOT NULL
+                );
+                """
+            )
+        )
+        if is_postgres:
+            await conn.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_contact_otps_contact_id ON contact_otps (contact_id);")
+            )
     yield
 
 
