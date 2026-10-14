@@ -151,6 +151,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
                         isin LIKE 'INE%'
                         OR isin LIKE 'IN9%'
                         OR isin LIKE 'IN0%'
+                        OR fund_house = 'CDSL Demat Equity'
                         OR fund_house LIKE '%Demat%'
                         OR (
                             (folio_masked LIKE '120%' OR folio_masked LIKE 'XXXX%')
@@ -165,6 +166,13 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
                       );
                     """
                 )
+            )
+            # Backfill ISIN for known CDSL stocks if missing
+            await conn.execute(
+                text("UPDATE mutual_fund_holdings SET isin = 'INE1TAE01010' WHERE (isin IS NULL OR isin = '') AND scheme_name LIKE '%TATA MOTORS%';")
+            )
+            await conn.execute(
+                text("UPDATE mutual_fund_holdings SET isin = 'INE467B01029' WHERE (isin IS NULL OR isin = '') AND scheme_name LIKE '%TATA CONSULTANCY%';")
             )
         except Exception as ex:
             logger.warning("Could not auto-migrate CDSL Demat equity holdings: %s", ex)

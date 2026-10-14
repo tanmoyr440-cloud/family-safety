@@ -49,11 +49,15 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
   const { mutateAsync: deleteHolding, isPending: isDeleting } = useDeleteMutualFundHolding();
   const { mutateAsync: clearAllHoldings, isPending: isClearing } = useClearAllMutualFundHoldings();
 
-  // Separate Mutual Funds from Stocks
-  const mfHoldings = (allHoldings || []).filter(
-    (h) => (h.asset_type || "MUTUAL_FUND") === "MUTUAL_FUND",
-  );
-  const stockHoldings = (allHoldings || []).filter((h) => h.asset_type === "STOCK");
+  // Separate Mutual Funds from Stocks & Equities
+  const isStockHolding = (h: MutualFundHolding) =>
+    h.asset_type === "STOCK" ||
+    h.fund_house === "CDSL Demat Equity" ||
+    Boolean(h.fund_house?.includes("Demat")) ||
+    Boolean(h.isin?.startsWith("INE") || h.isin?.startsWith("IN9") || h.isin?.startsWith("IN0"));
+
+  const mfHoldings = (allHoldings || []).filter((h) => !isStockHolding(h));
+  const stockHoldings = (allHoldings || []).filter((h) => isStockHolding(h));
 
   const hasHoldings = Boolean(allHoldings && allHoldings.length > 0);
   const totalMfPaise = mfHoldings.reduce((acc, h) => acc + (h.value_paise || 0), 0);

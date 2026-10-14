@@ -71,7 +71,16 @@ class ManageMutualFunds:
             latest_nav: float | None = None
             nav_date: str | None = None
 
-            if h.asset_type == "STOCK":
+            # Determine if holding is an equity share or CDSL demat equity holding
+            is_stock = (
+                h.asset_type == "STOCK"
+                or h.fund_house == "CDSL Demat Equity"
+                or (h.fund_house is not None and "Demat" in h.fund_house)
+                or (h.isin is not None and h.isin.startswith(("INE", "IN9", "IN0")))
+            )
+            effective_asset_type = "STOCK" if is_stock else "MUTUAL_FUND"
+
+            if is_stock:
                 # 1. Query live stock quote feed (NSE / BSE / Yahoo Finance)
                 if self._stock_source is not None:
                     quote = await self._stock_source.get_quote(isin=h.isin, name=h.scheme_name)
@@ -105,7 +114,7 @@ class ManageMutualFunds:
                     latest_nav=latest_nav,
                     nav_date=nav_date,
                     value_paise=value_paise,
-                    asset_type=h.asset_type,
+                    asset_type=effective_asset_type,
                     isin=h.isin,
                     created_at=h.created_at,
                 )

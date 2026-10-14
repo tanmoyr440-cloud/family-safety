@@ -253,3 +253,58 @@ async def test_import_cas_monthly_refresh_updates_timestamp_and_units(
     assert tcs.asset_type == "STOCK"
 
 
+@pytest.mark.asyncio
+async def test_cdsl_demat_equity_evaluated_as_stock(
+    uow: InMemoryUnitOfWork, clock: FakeClock, source: FakeMutualFundSource
+) -> None:
+    from app.application.ports.stock_quote_source import StockQuoteDTO, StockQuoteSource
+    from app.application.use_cases.manage_mutual_funds import ManageMutualFunds
+
+    class FakeStockSource(StockQuoteSource):
+        async def get_quote(self, isin=None, symbol=None, name=None):
+            if name and "TATA MOTORS" in name:
+                return StockQuoteDTO(isin=isin, symbol="TMCV", company_name="Tata Motors Limited", exchange="NSE", price=415.25, as_of="2026-10-15")
+            if name and "CONSULTANCY" in name:
+                return StockQuoteDTO(isin=isin, symbol="TCS", company_name="TCS Limited", exchange="NSE", price=2304.90, as_of="2026-10-15")
+            return None
+
+    use_case = ImportCas(uow=uow, source=source, clock=clock)
+    parsed = [
+        ParsedCasHolding(
+            scheme_name="TATA MOTORS LIMITED EQ",
+            units=10.0,
+            folio="1208160012341938",
+            asset_type="STOCK",
+        ),
+        ParsedCasHolding(
+            scheme_name="TATA CONSULTANCY SERVICES LIMITED EQ NEW FV RE.1/-",
+            units=5.0,
+            folio="1208160012341938",
+            asset_type="STOCK",
+        ),
+    ]
+    with patch("app.application.use_cases.import_cas.CasParser.parse_pdf", return_value=parsed):
+        summary = await use_case.execute(owner_id="owner-demat", pdf_bytes=b"%PDF-mock")
+
+    assert summary.imported_count == 2
+    for h in summary.holdings:
+        assert h.asset_type == "STOCK"
+        assert h.fund_house == "CDSL Demat Equity"
+
+    # Now verify ManageMutualFunds evaluates them under STOCK with live stock pricing
+    manage_mf = ManageMutualFunds(uow=uow, source=source, clock=clock, stock_source=FakeStockSource())
+    valuations = await manage_mf.get_holdings_with_valuations("owner-demat")
+    assert len(valuations) == 2
+
+    tm = next(v for v in valuations if "TATA MOTORS" in v.scheme_name)
+    assert tm.asset_type == "STOCK"
+    assert tm.latest_nav == 415.25
+    assert tm.value_paise == 10 * 41525
+
+    tcs = next(v for v in valuations if "CONSULTANCY" in v.scheme_name)
+    assert tcs.asset_type == "STOCK"
+    assert tcs.latest_nav == 2304.90
+    assert tcs.value_paise == 5 * 230490
+
+
+
