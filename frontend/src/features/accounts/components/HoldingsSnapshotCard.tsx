@@ -45,7 +45,7 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
   const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
 
   const { data: allHoldings, isLoading: isLoadingHoldings } = useMutualFundHoldings();
-  const { data: summary, isLoading: isLoadingSummary } = usePortfolioSummary();
+  const { data: summary } = usePortfolioSummary();
   const { mutateAsync: deleteHolding, isPending: isDeleting } = useDeleteMutualFundHolding();
   const { mutateAsync: clearAllHoldings, isPending: isClearing } = useClearAllMutualFundHoldings();
 
