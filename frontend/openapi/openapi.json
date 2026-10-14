@@ -1358,13 +1358,35 @@
         }
       }
     },
+    "/api/v1/mutual-funds/summary": {
+      "get": {
+        "tags": [
+          "mutual-funds"
+        ],
+        "summary": "Get portfolio snapshot summary, asset breakdown, and monthly freshness reminder",
+        "description": "Compute portfolio summary metrics, breakdown across Mutual Funds & Stocks, and monthly refresh status.",
+        "operationId": "getPortfolioSummary",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/mutual-funds/holdings": {
       "get": {
         "tags": [
           "mutual-funds"
         ],
-        "summary": "List mutual fund holdings with live SEBI/AMFI valuations",
-        "description": "Retrieve all registered holdings for owner with real-time SEBI/AMFI valuations.",
+        "summary": "List mutual fund and stock holdings with live valuations",
+        "description": "Retrieve all registered holdings for owner with real-time SEBI/AMFI and NSE/BSE valuations.",
         "operationId": "listMutualFundHoldings",
         "responses": {
           "200": {
@@ -3230,6 +3252,22 @@
             ],
             "title": "Folio Masked"
           },
+          "asset_type": {
+            "type": "string",
+            "title": "Asset Type",
+            "default": "MUTUAL_FUND"
+          },
+          "isin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isin"
+          },
           "latest_nav": {
             "anyOf": [
               {
@@ -3816,6 +3854,76 @@
         },
         "type": "object",
         "title": "PaymentInstructionsSchema"
+      },
+      "PortfolioSummaryResponse": {
+        "properties": {
+          "last_updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Updated At"
+          },
+          "days_since_update": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Since Update"
+          },
+          "is_stale": {
+            "type": "boolean",
+            "title": "Is Stale",
+            "default": false
+          },
+          "reminder_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reminder Message"
+          },
+          "mf_count": {
+            "type": "integer",
+            "title": "Mf Count",
+            "default": 0
+          },
+          "stock_count": {
+            "type": "integer",
+            "title": "Stock Count",
+            "default": 0
+          },
+          "total_mf_value_paise": {
+            "type": "integer",
+            "title": "Total Mf Value Paise",
+            "default": 0
+          },
+          "total_stock_value_paise": {
+            "type": "integer",
+            "title": "Total Stock Value Paise",
+            "default": 0
+          },
+          "total_portfolio_value_paise": {
+            "type": "integer",
+            "title": "Total Portfolio Value Paise",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "PortfolioSummaryResponse"
       },
       "PublicOptOutRequest": {
         "properties": {

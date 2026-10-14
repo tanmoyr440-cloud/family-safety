@@ -465,6 +465,8 @@ class SqlAlchemyMutualFundHoldingRepository(MutualFundHoldingRepository):
                 fund_house=m.fund_house,
                 units=m.units,
                 folio_masked=m.folio_masked,
+                asset_type=getattr(m, "asset_type", "MUTUAL_FUND") or "MUTUAL_FUND",
+                isin=getattr(m, "isin", None),
                 created_at=_ensure_utc(m.created_at),
             )
             for m in models
@@ -482,6 +484,8 @@ class SqlAlchemyMutualFundHoldingRepository(MutualFundHoldingRepository):
             fund_house=model.fund_house,
             units=model.units,
             folio_masked=model.folio_masked,
+            asset_type=getattr(model, "asset_type", "MUTUAL_FUND") or "MUTUAL_FUND",
+            isin=getattr(model, "isin", None),
             created_at=_ensure_utc(model.created_at),
         )
 
@@ -496,6 +500,8 @@ class SqlAlchemyMutualFundHoldingRepository(MutualFundHoldingRepository):
                 fund_house=holding.fund_house,
                 units=holding.units,
                 folio_masked=holding.folio_masked,
+                asset_type=holding.asset_type,
+                isin=holding.isin,
                 created_at=_ensure_utc(holding.created_at) or datetime.now(UTC),
             )
             self._session.add(model)
@@ -505,6 +511,9 @@ class SqlAlchemyMutualFundHoldingRepository(MutualFundHoldingRepository):
             model.fund_house = holding.fund_house
             model.units = holding.units
             model.folio_masked = holding.folio_masked
+            model.asset_type = holding.asset_type
+            model.isin = holding.isin
+            model.created_at = _ensure_utc(holding.created_at) or model.created_at
 
     async def delete(self, holding_id: str) -> None:
         stmt = delete(MutualFundHoldingModel).where(MutualFundHoldingModel.id == holding_id)

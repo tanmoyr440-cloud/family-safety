@@ -6,6 +6,7 @@ export const accountKeys = {
   mfNav: (code: number) => [...accountKeys.all, "mf-nav", code] as const,
   bankAccounts: () => [...accountKeys.all, "bank-accounts"] as const,
   nomineeGuidance: () => [...accountKeys.all, "nominee-guidance"] as const,
+  portfolioSummary: () => [...accountKeys.all, "portfolio-summary"] as const,
 };
 
 

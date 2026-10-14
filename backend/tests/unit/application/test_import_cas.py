@@ -107,12 +107,14 @@ async def test_import_cas_cdsl_mixed_portfolio(
 
         # Check Demat Equity
         reliance = next(h for h in summary.holdings if "RELIANCE" in h.scheme_name)
-        assert reliance.fund_house == "CDSL Demat Equity"
+        assert reliance.asset_type == "STOCK"
+        assert "RELIANCE" in reliance.fund_house
         assert reliance.units == 10.0
         assert reliance.folio_masked == "XXXX5678"
 
         # Check Mutual Fund
         hdfc = next(h for h in summary.holdings if "HDFC" in h.scheme_name)
+        assert hdfc.asset_type == "MUTUAL_FUND"
         assert hdfc.fund_house == "HDFC Mutual Fund"
         assert hdfc.scheme_code == 130503  # Direct Plan picked!
         assert hdfc.units == 250.5
@@ -181,4 +183,73 @@ async def test_import_cas_with_isin_lookup_resolution(
         assert holding.units == 21.088
         assert holding.folio_masked == "XXXX2653"
         assert "SBI" in holding.fund_house
+
+
+@pytest.mark.asyncio
+async def test_import_cas_monthly_refresh_updates_timestamp_and_units(
+    uow: InMemoryUnitOfWork, clock: FakeClock, source: FakeMutualFundSource
+) -> None:
+    """Verify that uploading an updated monthly CAS statement updates units and timestamps."""
+    use_case = ImportCas(uow=uow, source=source, clock=clock)
+
+    # Initial upload on Jan 15
+    initial_items = [
+        ParsedCasHolding(
+            scheme_name="RELIANCE INDUSTRIES LTD",
+            units=10.0,
+            isin="INE002A01018",
+            asset_type="STOCK",
+        ),
+        ParsedCasHolding(
+            scheme_name="HDFC Small Cap Fund - Direct Plan - Growth",
+            units=100.0,
+            isin="INF179K01BE2",
+            asset_type="MUTUAL_FUND",
+        ),
+    ]
+    with patch("app.application.use_cases.import_cas.CasParser.parse_pdf", return_value=initial_items):
+        await use_case.execute(owner_id="owner-1", pdf_bytes=b"%PDF-mock")
+
+    # Time travels by 32 days to Feb 16
+    clock.advance(days=32)
+
+    # Updated monthly CAS upload
+    updated_items = [
+        ParsedCasHolding(
+            scheme_name="RELIANCE INDUSTRIES LTD",
+            units=12.0,  # 2 more shares bought
+            isin="INE002A01018",
+            asset_type="STOCK",
+        ),
+        ParsedCasHolding(
+            scheme_name="HDFC Small Cap Fund - Direct Plan - Growth",
+            units=110.5,  # Monthly SIP executed
+            isin="INF179K01BE2",
+            asset_type="MUTUAL_FUND",
+        ),
+        ParsedCasHolding(
+            scheme_name="TCS",
+            units=5.0,  # New stock added
+            isin="INE467B01029",
+            asset_type="STOCK",
+        ),
+    ]
+    with patch("app.application.use_cases.import_cas.CasParser.parse_pdf", return_value=updated_items):
+        summary = await use_case.execute(owner_id="owner-1", pdf_bytes=b"%PDF-mock")
+
+    assert summary.imported_count == 3
+    rel = next(h for h in summary.holdings if h.isin == "INE002A01018")
+    assert rel.units == 12.0
+    assert rel.created_at == clock.now()
+    assert rel.asset_type == "STOCK"
+
+    hdfc = next(h for h in summary.holdings if h.isin == "INF179K01BE2")
+    assert hdfc.units == 110.5
+    assert hdfc.created_at == clock.now()
+    assert hdfc.asset_type == "MUTUAL_FUND"
+
+    tcs = next(h for h in summary.holdings if h.isin == "INE467B01029")
+    assert tcs.units == 5.0
+    assert tcs.asset_type == "STOCK"
+
 

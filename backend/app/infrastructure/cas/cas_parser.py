@@ -29,6 +29,7 @@ class ParsedCasHolding:
     isin: str | None = None
     nav: float | None = None
     value_inr: float | None = None
+    asset_type: str = "MUTUAL_FUND"
 
 
 # Common regex patterns across CDSL, NSDL, CAMS & KFintech CAS PDFs
@@ -173,6 +174,7 @@ class CasParser:
                                     isin=scheme.isin,
                                     nav=nav,
                                     value_inr=val,
+                                    asset_type="MUTUAL_FUND",
                                 )
                             )
 
@@ -200,6 +202,7 @@ class CasParser:
                                     isin=mf.isin,
                                     nav=nav,
                                     value_inr=val,
+                                    asset_type="MUTUAL_FUND",
                                 )
                             )
 
@@ -221,6 +224,7 @@ class CasParser:
                                     isin=eq.isin,
                                     nav=price,
                                     value_inr=val,
+                                    asset_type="STOCK",
                                 )
                             )
 
@@ -443,6 +447,63 @@ class CasParser:
         return None
 
     @classmethod
+    def _classify_asset_type(
+        cls,
+        isin: str | None,
+        scheme_name: str,
+        current_section: str | None = None,
+    ) -> str:
+        """Classify asset as MUTUAL_FUND or STOCK based on ISIN, section, and naming."""
+        if isin:
+            isin_u = isin.strip().upper()
+            if isin_u.startswith(("INE", "IN9", "IN0")):
+                return "STOCK"
+            if isin_u.startswith("INF"):
+                return "MUTUAL_FUND"
+
+        if current_section == "STOCK":
+            return "STOCK"
+        if current_section == "MUTUAL_FUND":
+            return "MUTUAL_FUND"
+
+        name_u = scheme_name.upper()
+        is_mf = any(
+            kw in name_u
+            for kw in (
+                "FUND",
+                "GROWTH",
+                "DIRECT",
+                "REGULAR",
+                "INDEX",
+                "CAP",
+                "ELSS",
+                "SAVER",
+                "OPPORTUNITIES",
+                "BLUECHIP",
+                "LIQUID",
+                "SCHEME",
+                "ETF",
+            )
+        )
+        is_stock = any(
+            kw in name_u
+            for kw in (
+                " LTD",
+                " LIMITED",
+                " CORP",
+                " INDUSTRIES",
+                " ENTERPRISES",
+                " HOLDINGS",
+                " PHARMA",
+                " MOTORS",
+                " STEEL",
+            )
+        )
+        if is_stock and not is_mf:
+            return "STOCK"
+        return "MUTUAL_FUND"
+
+    @classmethod
     def parse_text(cls, text: str) -> list[ParsedCasHolding]:
         """Parse raw extracted text from a CDSL, NSDL, CAMS, or KFintech CAS statement."""
         holdings: list[ParsedCasHolding] = []
@@ -452,9 +513,22 @@ class CasParser:
         current_demat_account: str | None = None
         current_scheme: str | None = None
         current_isin: str | None = None
+        current_section: str | None = None
 
         for line in lines:
             upper_line = line.upper()
+
+            # Track section headers (CDSL / NSDL statement sections)
+            if any(
+                sec in upper_line
+                for sec in ("EQUITY SHARES", "STATEMENT OF HOLDINGS - EQUITIES", "EQUITIES")
+            ):
+                current_section = "STOCK"
+            elif any(
+                sec in upper_line
+                for sec in ("MUTUAL FUNDS", "STATEMENT OF HOLDINGS - MUTUAL FUNDS", "MUTUAL FUND FOLIOS")
+            ):
+                current_section = "MUTUAL_FUND"
 
             # 1. Detect Demat account / BO ID
             bo_match = _BO_ID_RE.search(line)
@@ -474,6 +548,7 @@ class CasParser:
             tabular_res = cls._try_parse_tabular_line(line)
             if tabular_res:
                 isin, scheme_name, units, line_folio, nav_val, val_val = tabular_res
+                asset_type = cls._classify_asset_type(isin, scheme_name, current_section)
                 holdings.append(
                     ParsedCasHolding(
                         scheme_name=scheme_name,
@@ -482,6 +557,7 @@ class CasParser:
                         isin=isin,
                         nav=nav_val,
                         value_inr=val_val,
+                        asset_type=asset_type,
                     )
                 )
                 current_scheme = None
@@ -495,12 +571,14 @@ class CasParser:
                 try:
                     units_val = float(raw_units)
                     if units_val > 0:
+                        asset_type = cls._classify_asset_type(current_isin, current_scheme, current_section)
                         holdings.append(
                             ParsedCasHolding(
                                 scheme_name=current_scheme,
                                 units=units_val,
                                 folio=current_folio or current_demat_account,
                                 isin=current_isin,
+                                asset_type=asset_type,
                             )
                         )
                         current_scheme = None
@@ -526,6 +604,7 @@ class CasParser:
                 if tokens:
                     tail_info = cls._parse_tail_tokens(tokens)
                     if tail_info and tail_info["units"] > 0:
+                        asset_type = cls._classify_asset_type(current_isin, current_scheme, current_section)
                         holdings.append(
                             ParsedCasHolding(
                                 scheme_name=current_scheme,
@@ -534,6 +613,7 @@ class CasParser:
                                 isin=current_isin,
                                 nav=tail_info.get("nav"),
                                 value_inr=tail_info.get("value"),
+                                asset_type=asset_type,
                             )
                         )
                         current_scheme = None
@@ -561,12 +641,12 @@ class CasParser:
 
     @classmethod
     def _deduplicate_holdings(cls, holdings: list[ParsedCasHolding]) -> list[ParsedCasHolding]:
-        """Deduplicate holdings by (scheme_name, isin/folio)."""
+        """Deduplicate holdings by (scheme_name, isin/folio, asset_type)."""
         unique_holdings: list[ParsedCasHolding] = []
-        seen: set[tuple[str, str | None]] = set()
+        seen: set[tuple[str, str | None, str]] = set()
 
         for h in holdings:
-            key = (h.scheme_name.lower(), h.isin or h.folio)
+            key = (h.scheme_name.lower(), h.isin or h.folio, h.asset_type)
             if key not in seen:
                 seen.add(key)
                 unique_holdings.append(h)

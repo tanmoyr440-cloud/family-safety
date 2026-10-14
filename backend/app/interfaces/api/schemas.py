@@ -372,10 +372,24 @@ class MutualFundHoldingResponse(BaseModel):
     fund_house: str
     units: float
     folio_masked: str | None = None
+    asset_type: str = "MUTUAL_FUND"
+    isin: str | None = None
     latest_nav: float | None = None
     nav_date: str | None = None
     value_paise: int
     created_at: datetime | None = None
+
+
+class PortfolioSummaryResponse(BaseModel):
+    last_updated_at: datetime | None = None
+    days_since_update: int | None = None
+    is_stale: bool = False
+    reminder_message: str | None = None
+    mf_count: int = 0
+    stock_count: int = 0
+    total_mf_value_paise: int = 0
+    total_stock_value_paise: int = 0
+    total_portfolio_value_paise: int = 0
 
 
 class CasImportResponse(BaseModel):
@@ -383,6 +397,7 @@ class CasImportResponse(BaseModel):
     total_value_paise: int = 0
     message: str = "CAS statement processed successfully."
     holdings: list[MutualFundHoldingResponse]
+
 
 
 

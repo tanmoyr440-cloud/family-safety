@@ -616,6 +616,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mutual-funds/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get portfolio snapshot summary, asset breakdown, and monthly freshness reminder
+         * @description Compute portfolio summary metrics, breakdown across Mutual Funds & Stocks, and monthly refresh status.
+         */
+        get: operations["getPortfolioSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/mutual-funds/holdings": {
         parameters: {
             query?: never;
@@ -624,8 +644,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List mutual fund holdings with live SEBI/AMFI valuations
-         * @description Retrieve all registered holdings for owner with real-time SEBI/AMFI valuations.
+         * List mutual fund and stock holdings with live valuations
+         * @description Retrieve all registered holdings for owner with real-time SEBI/AMFI and NSE/BSE valuations.
          */
         get: operations["listMutualFundHoldings"];
         put?: never;
@@ -1377,6 +1397,13 @@ export interface components {
             units: number;
             /** Folio Masked */
             folio_masked?: string | null;
+            /**
+             * Asset Type
+             * @default MUTUAL_FUND
+             */
+            asset_type: string;
+            /** Isin */
+            isin?: string | null;
             /** Latest Nav */
             latest_nav?: number | null;
             /** Nav Date */
@@ -1588,6 +1615,45 @@ export interface components {
             portal_url?: string | null;
             /** Notes */
             notes?: string | null;
+        };
+        /** PortfolioSummaryResponse */
+        PortfolioSummaryResponse: {
+            /** Last Updated At */
+            last_updated_at?: string | null;
+            /** Days Since Update */
+            days_since_update?: number | null;
+            /**
+             * Is Stale
+             * @default false
+             */
+            is_stale: boolean;
+            /** Reminder Message */
+            reminder_message?: string | null;
+            /**
+             * Mf Count
+             * @default 0
+             */
+            mf_count: number;
+            /**
+             * Stock Count
+             * @default 0
+             */
+            stock_count: number;
+            /**
+             * Total Mf Value Paise
+             * @default 0
+             */
+            total_mf_value_paise: number;
+            /**
+             * Total Stock Value Paise
+             * @default 0
+             */
+            total_stock_value_paise: number;
+            /**
+             * Total Portfolio Value Paise
+             * @default 0
+             */
+            total_portfolio_value_paise: number;
         };
         /** PublicOptOutRequest */
         PublicOptOutRequest: {
@@ -2826,6 +2892,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getPortfolioSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortfolioSummaryResponse"];
                 };
             };
         };

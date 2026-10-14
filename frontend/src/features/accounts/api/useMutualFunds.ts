@@ -8,6 +8,7 @@ export type MutualFundScheme = components["schemas"]["MutualFundSchemeResponse"]
 export type MutualFundNav = components["schemas"]["MutualFundNavResponse"];
 export type MutualFundHolding = components["schemas"]["MutualFundHoldingResponse"];
 export type AddMutualFundHoldingRequest = components["schemas"]["AddMutualFundHoldingRequest"];
+export type PortfolioSummary = components["schemas"]["PortfolioSummaryResponse"];
 
 export function useMutualFundHoldings() {
   return useQuery({
@@ -15,6 +16,17 @@ export function useMutualFundHoldings() {
     queryFn: async () => {
       const result = await api.GET("/api/v1/mutual-funds/holdings");
       return unwrap<MutualFundHolding[]>(result);
+    },
+    staleTime: 60_000,
+  });
+}
+
+export function usePortfolioSummary() {
+  return useQuery({
+    queryKey: accountKeys.portfolioSummary(),
+    queryFn: async () => {
+      const result = await api.GET("/api/v1/mutual-funds/summary");
+      return unwrap<PortfolioSummary>(result);
     },
     staleTime: 60_000,
   });
@@ -62,6 +74,7 @@ export function useAddMutualFundHolding() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: accountKeys.mutualFunds() });
+      queryClient.invalidateQueries({ queryKey: accountKeys.portfolioSummary() });
     },
   });
 }
@@ -78,6 +91,7 @@ export function useDeleteMutualFundHolding() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: accountKeys.mutualFunds() });
+      queryClient.invalidateQueries({ queryKey: accountKeys.portfolioSummary() });
     },
   });
 }
@@ -92,7 +106,9 @@ export function useClearAllMutualFundHoldings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: accountKeys.mutualFunds() });
+      queryClient.invalidateQueries({ queryKey: accountKeys.portfolioSummary() });
     },
   });
 }
+
 

@@ -139,3 +139,35 @@ async def test_cas_import_endpoint(client: AsyncClient) -> None:
     assert "holdings" in data
     assert data["imported_count"] == 0
 
+
+@pytest.mark.asyncio
+async def test_portfolio_summary_endpoint(client: AsyncClient) -> None:
+    """Verifies portfolio summary returns counts, valuations, and monthly freshness reminders."""
+    _, _, csrf = await _register_and_login(client)
+    headers = {"X-CSRF-Token": csrf}
+
+    # 1. Summary when empty
+    empty_summary = await client.get("/api/v1/mutual-funds/summary")
+    assert empty_summary.status_code == 200
+    data = empty_summary.json()
+    assert data["mf_count"] == 0
+    assert data["stock_count"] == 0
+    assert data["is_stale"] is False
+    assert "No portfolio holdings" in data["reminder_message"]
+
+    # 2. Add holding and check summary
+    await client.post(
+        "/api/v1/mutual-funds/holdings",
+        headers=headers,
+        json={"scheme_code": 122639, "units": 50.0},
+    )
+    summary_resp = await client.get("/api/v1/mutual-funds/summary")
+    assert summary_resp.status_code == 200
+    s_data = summary_resp.json()
+    assert s_data["mf_count"] == 1
+    assert s_data["stock_count"] == 0
+    assert s_data["days_since_update"] == 0
+    assert s_data["is_stale"] is False
+    assert "Portfolio snapshot is up to date" in s_data["reminder_message"]
+
+

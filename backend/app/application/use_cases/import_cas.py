@@ -52,6 +52,7 @@ class ImportCas:
         async with self._uow:
             # Load existing holdings for this owner
             existing = await self._uow.mutual_funds.get_holdings_for_owner(owner_id)
+            existing_by_isin = {h.isin: h for h in existing if h.isin}
             existing_by_name = {h.scheme_name.lower(): h for h in existing}
             existing_by_key = {
                 (h.scheme_name.lower(), h.folio_masked): h
@@ -73,9 +74,12 @@ class ImportCas:
                     else:
                         folio_masked = cleaned_folio
 
-                is_mf = item.isin is None or item.isin.startswith("INF")
+                is_stock = item.asset_type == "STOCK" or (
+                    item.isin is not None and item.isin.startswith(("INE", "IN9", "IN0"))
+                )
+                asset_type = "STOCK" if is_stock else "MUTUAL_FUND"
 
-                if is_mf:
+                if not is_stock:
                     # Check ISIN registry (instantaneous & offline)
                     isin_info = None
                     if item.isin:
@@ -141,21 +145,30 @@ class ImportCas:
 
                             eq_db = ISINDb()
                             eq_info = eq_db.isin_lookup(item.isin)
-                            if eq_info and eq_info.name:
-                                official_name = eq_info.name
+                            if eq_info:
+                                if eq_info.name:
+                                    official_name = eq_info.name
+                                if eq_info.symbol:
+                                    fund_house = f"{eq_info.symbol} · {eq_info.exchange or 'NSE'}"
+                                elif eq_info.issuer:
+                                    fund_house = eq_info.issuer
                         except Exception:
                             pass
 
-                # Check if already exists for this owner
+                # Check if already exists for this owner (matching ISIN first)
                 match = (
-                    existing_by_key.get((official_name.lower(), folio_masked))
+                    (existing_by_isin.get(item.isin) if item.isin else None)
+                    or existing_by_key.get((official_name.lower(), folio_masked))
                     or existing_by_name.get(official_name.lower())
                     or existing_by_code.get(scheme_code)
                 )
                 if match:
-                    # Update units and folio
+                    # Update units, folio, and refresh timestamp for monthly refresh
                     match.units = item.units
                     match.folio_masked = folio_masked or match.folio_masked
+                    match.asset_type = asset_type
+                    match.isin = item.isin or match.isin
+                    match.created_at = self._clock.now()
                     await self._uow.mutual_funds.save(match)
                     imported_holdings.append(match)
                 else:
@@ -167,6 +180,8 @@ class ImportCas:
                         fund_house=fund_house,
                         units=item.units,
                         folio_masked=folio_masked,
+                        asset_type=asset_type,
+                        isin=item.isin,
                         created_at=self._clock.now(),
                     )
                     await self._uow.mutual_funds.save(new_holding)

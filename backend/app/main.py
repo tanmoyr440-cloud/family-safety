@@ -119,6 +119,25 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
             await conn.execute(
                 text("CREATE INDEX IF NOT EXISTS ix_contact_otps_contact_id ON contact_otps (contact_id);")
             )
+
+        # Ensure mutual_fund_holdings has asset_type and isin columns
+        if is_postgres:
+            await conn.execute(
+                text("ALTER TABLE mutual_fund_holdings ADD COLUMN IF NOT EXISTS asset_type VARCHAR(32) DEFAULT 'MUTUAL_FUND';")
+            )
+            await conn.execute(
+                text("ALTER TABLE mutual_fund_holdings ADD COLUMN IF NOT EXISTS isin VARCHAR(32);")
+            )
+        else:
+            try:
+                mf_cols_res = await conn.execute(text("PRAGMA table_info(mutual_fund_holdings)"))
+                mf_col_names = [row[1] for row in mf_cols_res.fetchall()]
+                if "asset_type" not in mf_col_names:
+                    await conn.execute(text("ALTER TABLE mutual_fund_holdings ADD COLUMN asset_type VARCHAR(32) DEFAULT 'MUTUAL_FUND';"))
+                if "isin" not in mf_col_names:
+                    await conn.execute(text("ALTER TABLE mutual_fund_holdings ADD COLUMN isin VARCHAR(32);"))
+            except Exception as ex:
+                logger.warning("Could not add asset_type/isin columns to sqlite: %s", ex)
     yield
 
 

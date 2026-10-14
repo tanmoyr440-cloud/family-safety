@@ -14,9 +14,12 @@ from app.application.ports.unit_of_work import UnitOfWork
 from app.domain.entities.mutual_fund_holding import MutualFundHolding
 
 
+from app.application.ports.stock_quote_source import StockQuoteSource
+
+
 @dataclass(frozen=True)
 class MutualFundHoldingValuationDTO:
-    """Holding with live SEBI/AMFI valuation details."""
+    """Holding with live SEBI/AMFI or NSE/BSE stock valuation details."""
 
     id: str
     owner_id: str
@@ -28,21 +31,25 @@ class MutualFundHoldingValuationDTO:
     latest_nav: float | None
     nav_date: str | None
     value_paise: int
-    created_at: datetime | None
+    asset_type: str = "MUTUAL_FUND"
+    isin: str | None = None
+    created_at: datetime | None = None
 
 
 class ManageMutualFunds:
-    """Use case orchestrating mutual fund scheme searches and owner holdings."""
+    """Use case orchestrating mutual fund scheme searches, stock quotes, and owner holdings."""
 
     def __init__(
         self,
         uow: UnitOfWork,
         source: MutualFundSource,
         clock: Clock,
+        stock_source: StockQuoteSource | None = None,
     ) -> None:
         self._uow = uow
         self._source = source
         self._clock = clock
+        self._stock_source = stock_source
 
     async def search_schemes(self, query: str) -> list[MutualFundSchemeDTO]:
         """Search registered mutual fund schemes by query string."""
@@ -55,15 +62,26 @@ class ManageMutualFunds:
     async def get_holdings_with_valuations(
         self, owner_id: str
     ) -> list[MutualFundHoldingValuationDTO]:
-        """Fetch owner's registered holdings with live SEBI/AMFI valuations."""
+        """Fetch owner's registered holdings with live SEBI/AMFI and official stock valuations."""
         async with self._uow:
             holdings = await self._uow.mutual_funds.get_holdings_for_owner(owner_id)
 
         results: list[MutualFundHoldingValuationDTO] = []
         for h in holdings:
-            nav_dto = await self._source.get_latest_nav(h.scheme_code)
-            latest_nav = nav_dto.nav if nav_dto else None
-            nav_date = nav_dto.nav_date if nav_dto else None
+            latest_nav: float | None = None
+            nav_date: str | None = None
+
+            if h.asset_type == "STOCK" and self._stock_source is not None:
+                quote = await self._stock_source.get_quote(isin=h.isin, name=h.scheme_name)
+                if quote:
+                    latest_nav = quote.price
+                    nav_date = quote.as_of
+            elif h.asset_type != "STOCK":
+                nav_dto = await self._source.get_latest_nav(h.scheme_code)
+                if nav_dto:
+                    latest_nav = nav_dto.nav
+                    nav_date = nav_dto.nav_date
+
             value_paise = h.calculate_value_paise(latest_nav) if latest_nav is not None else 0
 
             results.append(
@@ -78,6 +96,8 @@ class ManageMutualFunds:
                     latest_nav=latest_nav,
                     nav_date=nav_date,
                     value_paise=value_paise,
+                    asset_type=h.asset_type,
+                    isin=h.isin,
                     created_at=h.created_at,
                 )
             )

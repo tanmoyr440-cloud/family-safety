@@ -463,6 +463,20 @@ export const handlers = [
     return HttpResponse.json([]);
   }),
 
+  http.get(new RegExp("/api/v1/mutual-funds/summary$"), () => {
+    return HttpResponse.json({
+      last_updated_at: "2026-10-10T12:00:00Z",
+      days_since_update: 4,
+      is_stale: false,
+      reminder_message: "Portfolio snapshot is up to date (updated 4 days ago).",
+      mf_count: 0,
+      stock_count: 0,
+      total_mf_value_paise: 0,
+      total_stock_value_paise: 0,
+      total_portfolio_value_paise: 0,
+    });
+  }),
+
   http.delete(new RegExp("/api/v1/mutual-funds/holdings/(?<id>[^/]+)$"), () => {
     return HttpResponse.json({
       message: "Mutual fund holding removed successfully.",

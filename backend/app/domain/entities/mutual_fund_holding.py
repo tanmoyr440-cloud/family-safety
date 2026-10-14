@@ -15,10 +15,12 @@ class MutualFundHolding:
     fund_house: str
     units: float
     folio_masked: str | None = None
+    asset_type: str = "MUTUAL_FUND"
+    isin: str | None = None
     created_at: datetime | None = None
 
-    def calculate_value_paise(self, nav: float) -> int:
-        """Calculate current valuation in integer paise based on latest NAV."""
-        if nav < 0 or self.units < 0:
+    def calculate_value_paise(self, nav: float | None) -> int:
+        """Calculate current valuation in integer paise based on latest NAV or share price."""
+        if nav is None or nav < 0 or self.units < 0:
             return 0
         return int(round(self.units * nav * 100))

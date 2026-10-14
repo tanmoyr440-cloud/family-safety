@@ -31,6 +31,7 @@ export function useImportCas() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: accountKeys.mutualFunds() });
+      queryClient.invalidateQueries({ queryKey: accountKeys.portfolioSummary() });
     },
   });
 }

@@ -80,22 +80,27 @@ def test_parse_cdsl_tabular_statement():
     assert reliance.isin == "INE002A01018"
     assert reliance.units == 10.0
     assert reliance.folio == "1208160012345678"
+    assert reliance.asset_type == "STOCK"
 
     infosys = next(h for h in holdings if "INFOSYS" in h.scheme_name)
     assert infosys.isin == "INE009A01021"
     assert infosys.units == 25.0
+    assert infosys.asset_type == "STOCK"
 
     tata = next(h for h in holdings if "TATA" in h.scheme_name)
     assert tata.isin == "INE123A01010"
     assert tata.units == 50.0
+    assert tata.asset_type == "STOCK"
 
     birla = next(h for h in holdings if "ADITYA BIRLA" in h.scheme_name)
     assert birla.isin == "INF209K01165"
     assert birla.units == 150.25
+    assert birla.asset_type == "MUTUAL_FUND"
 
     hdfc = next(h for h in holdings if "HDFC" in h.scheme_name)
     assert hdfc.isin == "INF179K01BE2"
     assert hdfc.units == 250.5
+    assert hdfc.asset_type == "MUTUAL_FUND"
 
 
 def test_parse_cdsl_name_first_statement():

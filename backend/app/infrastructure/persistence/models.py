@@ -327,6 +327,8 @@ class MutualFundHoldingModel(Base):
     fund_house: Mapped[str] = mapped_column(String(255), nullable=False)
     units: Mapped[float] = mapped_column(Float, nullable=False)
     folio_masked: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    asset_type: Mapped[str] = mapped_column(String(32), default="MUTUAL_FUND", nullable=False)
+    isin: Mapped[str | None] = mapped_column(String(32), nullable=True)
     created_at: Mapped[datetime] = mapped_column(AwareDateTime(timezone=True), nullable=False)
 
     owner: Mapped[OwnerModel] = relationship("OwnerModel", back_populates="mutual_fund_holdings")
