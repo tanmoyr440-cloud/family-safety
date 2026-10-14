@@ -271,3 +271,67 @@ async def test_cross_origin_header_based_auth(client: AsyncClient) -> None:
         headers={"Authorization": f"Bearer {new_access_token}"},
     )
     assert me_resp_2.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_login_does_not_reset_inactivity_clock(client: AsyncClient) -> None:
+    """Verifies that authenticating/logging in does NOT reset the inactivity clock.
+
+    Only explicitly calling POST /api/v1/activity/check-in resets the clock.
+    """
+    from datetime import UTC, datetime, timedelta
+    from app.interfaces.api.dependencies import get_session_factory
+    from app.infrastructure.persistence.models import InactivityMonitorModel
+    from sqlalchemy import update
+
+    tag = str(uuid.uuid4())[:8]
+    email = f"clock_{tag}@example.com"
+    pwd = "StrongPassword123!"
+
+    reg_resp = await client.post(
+        "/api/v1/auth/register",
+        json={"name": "Clock Test User", "email": email, "phone": "+919876543210", "password": pwd},
+    )
+    assert reg_resp.status_code == 201
+    owner_id = reg_resp.json()["id"]
+
+    # Manually backdate the monitor's last_activity_at to 25 days ago
+    past_time = datetime.now(UTC) - timedelta(days=25)
+    session_factory = get_session_factory()
+    async with session_factory() as session:
+        stmt = (
+            update(InactivityMonitorModel)
+            .where(InactivityMonitorModel.owner_id == owner_id)
+            .values(last_activity_at=past_time)
+        )
+        await session.execute(stmt)
+        await session.commit()
+
+    # Log in
+    login_resp = await client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": pwd},
+    )
+    assert login_resp.status_code == 200
+    access_token = login_resp.json()["access_token"]
+    csrf_token = login_resp.json()["csrf_token"]
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "X-CSRF-Token": csrf_token,
+    }
+
+    # Fetch monitor: days_idle must reflect 25 days (NOT reset by login!)
+    monitor_resp = await client.get("/api/v1/monitor", headers=headers)
+    assert monitor_resp.status_code == 200
+    data = monitor_resp.json()
+    assert data["days_idle"] == 25
+
+    # Now perform explicit check-in
+    check_in_resp = await client.post("/api/v1/activity/check-in", headers=headers)
+    assert check_in_resp.status_code == 200
+
+    # Monitor should now show days_idle == 0
+    fresh_monitor = await client.get("/api/v1/monitor", headers=headers)
+    assert fresh_monitor.status_code == 200
+    assert fresh_monitor.json()["days_idle"] == 0
+

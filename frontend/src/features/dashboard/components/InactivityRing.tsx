@@ -91,8 +91,8 @@ export const InactivityRing: React.FC<InactivityRingProps> = ({ status, classNam
               <span className="text-xs text-slate-500">days until emergency family alert</span>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed max-w-sm">
-              Your 90-day clock resets whenever you tap &ldquo;I&apos;m okay&rdquo; or when activity
-              is detected.
+              Your 90-day clock only resets when you explicitly click &ldquo;I&apos;m okay, check in&rdquo;.
+              Simply logging in to the app does not reset the clock.
             </p>
           </div>
         </div>

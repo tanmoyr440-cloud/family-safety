@@ -46,6 +46,9 @@ export const CheckInButton: React.FC<CheckInButtonProps> = ({ className }) => {
           </>
         )}
       </button>
+      <p className="text-xs text-slate-500">
+        Click to reset your 90-day inactivity clock. Merely logging into the app does not reset it.
+      </p>
 
       {successNotice && (
         <div
