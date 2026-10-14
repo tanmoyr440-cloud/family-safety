@@ -3,7 +3,7 @@ services:
     name: family-safety-backend
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: alembic -c backend/alembic.ini upgrade head; uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.2

@@ -19,7 +19,7 @@ from app.infrastructure.groww.exceptions import (
     GrowwFeatureDisabledError,
 )
 from app.infrastructure.persistence.models import NomineeGuidanceModel
-from app.interfaces.api.dependencies import get_current_owner, get_session_factory
+from app.interfaces.api.dependencies import get_current_owner, get_engine, get_session_factory
 from app.interfaces.api.errors import (
     AppException,
     FeatureDisabledException,
@@ -121,44 +121,43 @@ def _extract_nominees(row: NomineeGuidanceModel | None) -> list[NomineeItem]:
     return []
 
 
-async def _ensure_nominees_schema(session: AsyncSession) -> None:
+async def _ensure_nominees_schema() -> None:
     """Ensure the nominee_guidance table and nominees_json column exist on current database."""
     try:
-        bind = session.bind
-        is_pg = bind.dialect.name == "postgresql" if bind else False
-        tz_type = "TIMESTAMP WITH TIME ZONE" if is_pg else "DATETIME"
-        create_sql = f"""
-            CREATE TABLE IF NOT EXISTS nominee_guidance (
-                id VARCHAR(64) PRIMARY KEY,
-                owner_id VARCHAR(64) NOT NULL UNIQUE REFERENCES owners(id) ON DELETE CASCADE,
-                nominee_name VARCHAR(255),
-                nominee_relation VARCHAR(64),
-                nominee_share VARCHAR(32) DEFAULT '100%',
-                notes TEXT,
-                updated_at {tz_type} NOT NULL,
-                nominees_json {'JSONB' if is_pg else 'JSON'}
-            );
-        """
-        await session.execute(text(create_sql))
-        if is_pg:
-            await session.execute(
-                text("ALTER TABLE nominee_guidance ADD COLUMN IF NOT EXISTS nominees_json JSONB;")
-            )
-            await session.execute(
-                text("CREATE INDEX IF NOT EXISTS ix_nominee_guidance_owner_id ON nominee_guidance (owner_id);")
-            )
-        else:
-            try:
-                cols_res = await session.execute(text("PRAGMA table_info(nominee_guidance)"))
-                col_names = [r[1] for r in cols_res.fetchall()]
-                if "nominees_json" not in col_names:
-                    await session.execute(text("ALTER TABLE nominee_guidance ADD COLUMN nominees_json JSON;"))
-            except Exception:
-                pass
-        await session.commit()
+        engine = get_engine()
+        async with engine.begin() as conn:
+            is_pg = engine.dialect.name == "postgresql"
+            tz_type = "TIMESTAMP WITH TIME ZONE" if is_pg else "DATETIME"
+            create_sql = f"""
+                CREATE TABLE IF NOT EXISTS nominee_guidance (
+                    id VARCHAR(64) PRIMARY KEY,
+                    owner_id VARCHAR(64) NOT NULL UNIQUE REFERENCES owners(id) ON DELETE CASCADE,
+                    nominee_name VARCHAR(255),
+                    nominee_relation VARCHAR(64),
+                    nominee_share VARCHAR(32) DEFAULT '100%',
+                    notes TEXT,
+                    updated_at {tz_type} NOT NULL,
+                    nominees_json {'JSONB' if is_pg else 'JSON'}
+                );
+            """
+            await conn.execute(text(create_sql))
+            if is_pg:
+                await conn.execute(
+                    text("ALTER TABLE nominee_guidance ADD COLUMN IF NOT EXISTS nominees_json JSONB;")
+                )
+                await conn.execute(
+                    text("CREATE INDEX IF NOT EXISTS ix_nominee_guidance_owner_id ON nominee_guidance (owner_id);")
+                )
+            else:
+                try:
+                    cols_res = await conn.execute(text("PRAGMA table_info(nominee_guidance)"))
+                    col_names = [r[1] for r in cols_res.fetchall()]
+                    if "nominees_json" not in col_names:
+                        await conn.execute(text("ALTER TABLE nominee_guidance ADD COLUMN nominees_json JSON;"))
+                except Exception:
+                    pass
     except Exception as ddl_err:
         logger.warning("Auto DDL migration check encountered error: %s", ddl_err)
-        await session.rollback()
 
 
 @router.get(
@@ -180,7 +179,7 @@ async def get_nominee_guidance(
             except Exception as q_exc:
                 logger.warning("Nominee query failed, running schema self-heal: %s", q_exc)
                 await session.rollback()
-                await _ensure_nominees_schema(session)
+                await _ensure_nominees_schema()
                 stmt = select(NomineeGuidanceModel).where(NomineeGuidanceModel.owner_id == current_owner.id)
                 row = (await session.execute(stmt)).scalar_one_or_none()
 
@@ -235,7 +234,7 @@ async def update_nominee_guidance(
             except Exception as q_exc:
                 logger.warning("Nominee query in update failed, running schema self-heal: %s", q_exc)
                 await session.rollback()
-                await _ensure_nominees_schema(session)
+                await _ensure_nominees_schema()
                 stmt = select(NomineeGuidanceModel).where(NomineeGuidanceModel.owner_id == current_owner.id)
                 row = (await session.execute(stmt)).scalar_one_or_none()
 
