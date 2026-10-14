@@ -254,3 +254,48 @@ def test_folio_header_does_not_capture_cumulative_word():
     assert sbi.folio != "Cumulative"
     assert sbi.folio == "34012653"
 
+
+def test_classify_cdsl_demat_equity_funds_under_stocks():
+    """Verify CDSL Demat equity funds and ETFs held in Demat account are categorized as STOCK."""
+    sample_text = """
+    CENTRAL DEPOSITORY SERVICES (INDIA) LIMITED
+    STATEMENT OF HOLDINGS - DEMAT
+    BO ID: 1208160012345678
+    HOLDING STATEMENT AS ON 30-SEP-2026
+    RELIANCE INDUSTRIES LTD INE002A01018 10.000 2950.00 29500.00
+    NIPPON INDIA ETF NIFTY BEES INF732E01015 100.000 257.50 25750.00
+    GROWW NIFTY TOTAL MARKET INDEX FUND INF917V01014 500.000 15.20 7600.00
+    PARAG PARIKH FLEXI CAP EQUITY FUND INF879O01019 250.000 78.40 19600.00
+    """
+    holdings = CasParser.parse_text(sample_text)
+    assert len(holdings) == 4
+
+    reliance = next(h for h in holdings if "RELIANCE" in h.scheme_name)
+    assert reliance.asset_type == "STOCK"
+
+    nifty_bees = next(h for h in holdings if "BEES" in h.scheme_name)
+    assert nifty_bees.asset_type == "STOCK"
+
+    groww_index = next(h for h in holdings if "GROWW" in h.scheme_name)
+    assert groww_index.asset_type == "STOCK"
+
+    parag_parikh = next(h for h in holdings if "PARAG PARIKH" in h.scheme_name)
+    assert parag_parikh.asset_type == "STOCK"
+
+
+def test_classify_cams_regular_mutual_fund_as_mutual_fund():
+    """Verify standard CAMS AMC folio mutual fund is categorized as MUTUAL_FUND."""
+    sample_text = """
+    COMPUTER AGE MANAGEMENT SERVICES LIMITED
+    CONSOLIDATED ACCOUNT STATEMENT
+    MUTUAL FUNDS
+    Folio No: 12345678/90
+    HDFC Liquid Fund - Growth
+    ISIN: INF179K01103
+    Closing Balance: 45.250
+    """
+    holdings = CasParser.parse_text(sample_text)
+    assert len(holdings) == 1
+    assert holdings[0].asset_type == "MUTUAL_FUND"
+
+

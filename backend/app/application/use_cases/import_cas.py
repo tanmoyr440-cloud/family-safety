@@ -135,11 +135,14 @@ class ImportCas:
                         unique_id = item.isin or item.scheme_name
                         scheme_code = 100000 + (abs(hash(unique_id)) % 800000)
                 else:
-                    # Demat Equity holding (INE... or corporate demat asset)
+                    # Demat Equity holding (Stocks or CDSL Demat Equity Funds)
                     fund_house = "CDSL Demat Equity"
                     unique_id = item.isin or item.scheme_name
                     scheme_code = 200000 + (abs(hash(unique_id)) % 700000)
-                    if item.isin:
+                    official_name = item.scheme_name
+
+                    # 1. For stocks (INE...), look up ticker in ISINDb
+                    if item.isin and not item.isin.startswith("INF"):
                         try:
                             from casparser_isin import ISINDb
 
@@ -154,6 +157,46 @@ class ImportCas:
                                     fund_house = eq_info.issuer
                         except Exception:
                             pass
+
+                    # 2. For CDSL Demat Equity funds / ETFs (INF...), resolve AMFI scheme code and fund house
+                    if item.isin and item.isin.startswith("INF"):
+                        fund_house = "CDSL Demat Equity Fund"
+                        try:
+                            from casparser_isin import MFISINDb
+
+                            mf_db = MFISINDb()
+                            res = mf_db.direct_isin_lookup(item.isin)
+                            if res and res[0].get("amfi_code"):
+                                try:
+                                    scheme_code = int(res[0]["amfi_code"])
+                                except (ValueError, TypeError):
+                                    pass
+                                if res[0].get("name"):
+                                    official_name = res[0]["name"]
+                        except Exception:
+                            pass
+
+                        if scheme_code >= 200000:
+                            search_term = re.sub(
+                                r"\s*-\s*(?:DIRECT|REGULAR|PLAN|GROWTH|IDCW|DIVIDEND|DP|RP|DIR|REG|GR)\b.*$",
+                                "",
+                                item.scheme_name,
+                                flags=re.IGNORECASE,
+                            ).strip(" -:")
+                            words = search_term.split()
+                            if len(words) > 4:
+                                search_term = " ".join(words[:4])
+                            if search_term:
+                                search_results = await self._source.search_schemes(search_term)
+                                if search_results:
+                                    best = self._select_best_scheme_match(search_results, item.scheme_name)
+                                    scheme_code = best.scheme_code
+                                    official_name = best.scheme_name
+
+                        if scheme_code < 200000:
+                            nav_info = await self._source.get_latest_nav(scheme_code)
+                            if nav_info and nav_info.fund_house:
+                                fund_house = f"{nav_info.fund_house} (Demat)"
 
                 # Check if already exists for this owner (matching ISIN first)
                 match = (

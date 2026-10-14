@@ -528,7 +528,7 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
                       <tfoot className="bg-slate-50/80 border-t border-slate-200">
                         <tr>
                           <td colSpan={3} className="px-4 py-2.5 font-semibold text-slate-800 text-xs">
-                            Total Stocks & Equities Valuation ({stockHoldings.length} stocks)
+                            Total Stocks & Equities Valuation ({stockHoldings.length} holdings)
                           </td>
                           <td className="px-4 py-2.5 text-right font-bold text-slate-900 text-sm">
                             <MoneyText paise={totalStockPaise} />
@@ -542,9 +542,9 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
               </div>
             ) : (
               <div className="text-center py-8 px-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 space-y-2">
-                <p className="text-xs font-semibold text-slate-700">No stock holdings in this snapshot</p>
+                <p className="text-xs font-semibold text-slate-700">No stock or demat equity holdings in this snapshot</p>
                 <p className="text-[11px] text-slate-500">
-                  Upload your CDSL or NSDL CAS statement to automatically import your demat equity shares.
+                  Upload your CDSL or NSDL CAS statement to automatically import your demat stocks, ETFs, and equity funds.
                 </p>
               </div>
             )

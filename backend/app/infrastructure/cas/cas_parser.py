@@ -183,6 +183,13 @@ class CasParser:
                         dp = acc.dp_id or ""
                         cl = acc.client_id or ""
                         acc_id = f"{dp}{cl}".strip() or cl or dp or None
+                        is_demat_account = bool(
+                            dp or cl or (acc.type and acc.type.upper() in ("CDSL", "NSDL"))
+                        )
+                        is_cdsl = bool(
+                            (data.file_type and "CDSL" in str(data.file_type).upper())
+                            or (acc.type and "CDSL" in str(acc.type).upper())
+                        )
 
                         for mf in acc.mutual_funds:
                             try:
@@ -194,6 +201,38 @@ class CasParser:
                             nav = float(mf.nav) if mf.nav is not None else None
                             val = float(mf.value) if mf.value is not None else None
                             name = mf.name or mf.isin
+
+                            # CDSL Demat Equity funds should be under Stocks & Equities
+                            name_u = name.upper()
+                            is_equity_indicator = any(
+                                kw in name_u
+                                for kw in (
+                                    "EQUITY",
+                                    "ETF",
+                                    "INDEX",
+                                    "BEES",
+                                    "CAP",
+                                    "GROWTH",
+                                    "BLUECHIP",
+                                    "OPPORTUNITIES",
+                                    "SAVER",
+                                    "ELSS",
+                                    "VALUE",
+                                    "CONTRA",
+                                    "FOCUSED",
+                                    "NIFTY",
+                                    "SENSEX",
+                                    "MIDCAP",
+                                    "SMALLCAP",
+                                    "LARGECAP",
+                                )
+                            ) or getattr(mf, "type", None) == "EQUITY"
+
+                            if (is_demat_account and is_equity_indicator) or (is_cdsl and is_demat_account):
+                                asset_type = "STOCK"
+                            else:
+                                asset_type = "MUTUAL_FUND"
+
                             holdings.append(
                                 ParsedCasHolding(
                                     scheme_name=name,
@@ -202,7 +241,7 @@ class CasParser:
                                     isin=mf.isin,
                                     nav=nav,
                                     value_inr=val,
-                                    asset_type="MUTUAL_FUND",
+                                    asset_type=asset_type,
                                 )
                             )
 
@@ -452,21 +491,77 @@ class CasParser:
         isin: str | None,
         scheme_name: str,
         current_section: str | None = None,
+        is_demat: bool = False,
     ) -> str:
-        """Classify asset as MUTUAL_FUND or STOCK based on ISIN, section, and naming."""
-        if isin:
-            isin_u = isin.strip().upper()
-            if isin_u.startswith(("INE", "IN9", "IN0")):
-                return "STOCK"
-            if isin_u.startswith("INF"):
-                return "MUTUAL_FUND"
+        """Classify asset as MUTUAL_FUND or STOCK based on ISIN, Demat context, section, and naming."""
+        isin_u = isin.strip().upper() if isin else ""
+        name_u = scheme_name.upper()
 
+        # 1. Standard Indian Demat Equities (INE..., IN9..., IN0...)
+        if isin_u.startswith(("INE", "IN9", "IN0")):
+            return "STOCK"
+
+        # Explicit Debt / Liquid / Cash funds are always MUTUAL_FUND
+        is_debt_or_liquid = any(
+            kw in name_u
+            for kw in (
+                "LIQUID",
+                "DEBT",
+                "OVERNIGHT",
+                "MONEY MARKET",
+                "GILT",
+                "BOND",
+                "TREASURY",
+                "FLOATER",
+            )
+        )
+        if is_debt_or_liquid:
+            return "MUTUAL_FUND"
+
+        # 2. CDSL / NSDL Demat Account Holdings:
+        # In CDSL statements, Demat equity funds, ETFs, and Demat shares belong under Stocks & Equities
+        is_equity_indicator = any(
+            kw in name_u
+            for kw in (
+                "EQUITY",
+                "ETF",
+                "INDEX",
+                "BEES",
+                "CAP",
+                "BLUECHIP",
+                "OPPORTUNITIES",
+                "ELSS",
+                "VALUE",
+                "CONTRA",
+                "FOCUSED",
+                "NIFTY",
+                "SENSEX",
+                "MIDCAP",
+                "SMALLCAP",
+                "LARGECAP",
+                "SHARES",
+            )
+        )
+
+        # If holding is under an explicit Demat Holdings statement or Equity Shares section
         if current_section == "STOCK":
             return "STOCK"
+
+        # If held in Demat account with equity characteristics (CDSL Demat Equity funds)
+        if is_demat and is_equity_indicator and current_section != "MUTUAL_FUND":
+            return "STOCK"
+
+        # If name explicitly says "EQUITY FUND" or "ETF" or "BEES" in Demat mode
+        if is_demat and any(kw in name_u for kw in ("EQUITY FUND", "ETF", "BEES")):
+            return "STOCK"
+
+        # 3. Standard Mutual Funds in AMC/RTA Folios (CAMS / KFintech) or Mutual Funds section
+        if isin_u.startswith("INF"):
+            return "MUTUAL_FUND"
+
         if current_section == "MUTUAL_FUND":
             return "MUTUAL_FUND"
 
-        name_u = scheme_name.upper()
         is_mf = any(
             kw in name_u
             for kw in (
@@ -521,7 +616,13 @@ class CasParser:
             # Track section headers (CDSL / NSDL statement sections)
             if any(
                 sec in upper_line
-                for sec in ("EQUITY SHARES", "STATEMENT OF HOLDINGS - EQUITIES", "EQUITIES")
+                for sec in (
+                    "EQUITY SHARES",
+                    "STATEMENT OF HOLDINGS - EQUITIES",
+                    "EQUITIES",
+                    "HOLDING STATEMENT",
+                    "STATEMENT OF HOLDINGS",
+                )
             ):
                 current_section = "STOCK"
             elif any(
@@ -548,7 +649,13 @@ class CasParser:
             tabular_res = cls._try_parse_tabular_line(line)
             if tabular_res:
                 isin, scheme_name, units, line_folio, nav_val, val_val = tabular_res
-                asset_type = cls._classify_asset_type(isin, scheme_name, current_section)
+                is_demat_line = bool(
+                    current_demat_account
+                    or (line_folio and len(line_folio) >= 8 and line_folio.isdigit())
+                )
+                asset_type = cls._classify_asset_type(
+                    isin, scheme_name, current_section, is_demat=is_demat_line
+                )
                 holdings.append(
                     ParsedCasHolding(
                         scheme_name=scheme_name,
@@ -571,7 +678,13 @@ class CasParser:
                 try:
                     units_val = float(raw_units)
                     if units_val > 0:
-                        asset_type = cls._classify_asset_type(current_isin, current_scheme, current_section)
+                        is_demat_line = bool(
+                            current_demat_account
+                            or (current_folio and len(current_folio) >= 8 and current_folio.isdigit())
+                        )
+                        asset_type = cls._classify_asset_type(
+                            current_isin, current_scheme, current_section, is_demat=is_demat_line
+                        )
                         holdings.append(
                             ParsedCasHolding(
                                 scheme_name=current_scheme,

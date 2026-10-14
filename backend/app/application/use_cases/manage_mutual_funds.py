@@ -71,12 +71,21 @@ class ManageMutualFunds:
             latest_nav: float | None = None
             nav_date: str | None = None
 
-            if h.asset_type == "STOCK" and self._stock_source is not None:
-                quote = await self._stock_source.get_quote(isin=h.isin, name=h.scheme_name)
-                if quote:
-                    latest_nav = quote.price
-                    nav_date = quote.as_of
-            elif h.asset_type != "STOCK":
+            if h.asset_type == "STOCK":
+                # 1. Query live stock quote feed (NSE / BSE / Yahoo Finance)
+                if self._stock_source is not None:
+                    quote = await self._stock_source.get_quote(isin=h.isin, name=h.scheme_name)
+                    if quote:
+                        latest_nav = quote.price
+                        nav_date = quote.as_of
+
+                # 2. For Demat Equity Funds / ETFs without live ticker, fall back to official AMFI NAV
+                if latest_nav is None and h.scheme_code != 0:
+                    nav_dto = await self._source.get_latest_nav(h.scheme_code)
+                    if nav_dto:
+                        latest_nav = nav_dto.nav
+                        nav_date = nav_dto.nav_date
+            else:
                 nav_dto = await self._source.get_latest_nav(h.scheme_code)
                 if nav_dto:
                     latest_nav = nav_dto.nav

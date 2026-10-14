@@ -138,6 +138,36 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
                     await conn.execute(text("ALTER TABLE mutual_fund_holdings ADD COLUMN isin VARCHAR(32);"))
             except Exception as ex:
                 logger.warning("Could not add asset_type/isin columns to sqlite: %s", ex)
+
+        # Migrate previously imported CDSL Demat equity funds to 'STOCK'
+        try:
+            await conn.execute(
+                text(
+                    """
+                    UPDATE mutual_fund_holdings
+                    SET asset_type = 'STOCK'
+                    WHERE asset_type != 'STOCK'
+                      AND (
+                        isin LIKE 'INE%'
+                        OR isin LIKE 'IN9%'
+                        OR isin LIKE 'IN0%'
+                        OR fund_house LIKE '%Demat%'
+                        OR (
+                            (folio_masked LIKE '120%' OR folio_masked LIKE 'XXXX%')
+                            AND (
+                                scheme_name LIKE '%Equity%'
+                                OR scheme_name LIKE '%EQUITY%'
+                                OR scheme_name LIKE '%ETF%'
+                                OR scheme_name LIKE '%Index%'
+                                OR scheme_name LIKE '%BeES%'
+                            )
+                        )
+                      );
+                    """
+                )
+            )
+        except Exception as ex:
+            logger.warning("Could not auto-migrate CDSL Demat equity holdings: %s", ex)
     yield
 
 
