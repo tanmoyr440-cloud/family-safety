@@ -197,3 +197,55 @@ def test_parse_scheme_names_containing_index_numbers():
     bharat = next(h for h in holdings if "BHARAT 22" in h.scheme_name)
     assert "BHARAT 22" in bharat.scheme_name
     assert bharat.units == 200.0
+
+
+def test_parse_cdsl_mutual_fund_with_folio_and_units():
+    """Verify CDSL Section 3 line where folio number precedes unit balance."""
+    sample_text = """
+    CENTRAL DEPOSITORY SERVICES (INDIA) LIMITED
+    CONSOLIDATED ACCOUNT STATEMENT
+    BO ID: 1208160012345678
+    MUTUAL FUNDS
+    Sr No. ISIN Security Name Folio No. Current Balance Market Price Value (INR)
+    1 INF200K01362 SBI Contra Fund - Growth 34012653 21.088 412.50 8,698.83
+    """
+    holdings = CasParser.parse_text(sample_text)
+    assert len(holdings) == 1
+    sbi = holdings[0]
+    assert sbi.isin == "INF200K01362"
+    assert "SBI Contra Fund" in sbi.scheme_name
+    assert sbi.units == 21.088  # MUST NOT be 34012653 (the folio number)!
+    assert sbi.folio == "34012653"
+    assert sbi.nav == 412.50
+    assert sbi.value_inr == 8698.83
+
+
+def test_parse_cdsl_mutual_fund_name_first_with_folio_slash():
+    """Verify holding extraction when folio contains slashes and name precedes ISIN."""
+    sample_text = """
+    BO ID: 1208160099999999
+    HDFC Small Cap Fund INF179K01BE2 12345/67 250.500 120.50 30185.25
+    """
+    holdings = CasParser.parse_text(sample_text)
+    assert len(holdings) == 1
+    hdfc = holdings[0]
+    assert hdfc.isin == "INF179K01BE2"
+    assert hdfc.units == 250.500
+    assert hdfc.folio == "12345/67"
+    assert hdfc.nav == 120.50
+    assert hdfc.value_inr == 30185.25
+
+
+def test_folio_header_does_not_capture_cumulative_word():
+    """Verify header 'Folio No. Cumulative Closing Balance' does not capture 'Cumulative' as folio."""
+    sample_text = """
+    CONSOLIDATED ACCOUNT STATEMENT
+    Folio No. Cumulative Closing Balance (Units)
+    1 INF200K01362 SBI Contra Fund - Growth 34012653 21.088 412.50 8,698.83
+    """
+    holdings = CasParser.parse_text(sample_text)
+    assert len(holdings) == 1
+    sbi = holdings[0]
+    assert sbi.folio != "Cumulative"
+    assert sbi.folio == "34012653"
+

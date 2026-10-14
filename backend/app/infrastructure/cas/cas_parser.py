@@ -3,9 +3,12 @@
 import io
 import re
 from dataclasses import dataclass
-from typing import BinaryIO
+from typing import Any, BinaryIO
 
+import structlog
 from pypdf import PdfReader
+
+logger = structlog.get_logger(__name__)
 
 
 class CasDecryptionError(Exception):
@@ -29,8 +32,9 @@ class ParsedCasHolding:
 
 
 # Common regex patterns across CDSL, NSDL, CAMS & KFintech CAS PDFs
+# Lookahead (?=[A-Z0-9\/\-]*\d) ensures the folio contains at least one digit and never captures words like 'Cumulative'
 _FOLIO_RE = re.compile(
-    r"(?:Folio\s*(?:No|Number)?[:\.\s]+)([0-9A-Z\/\-]+)",
+    r"(?:Folio\s*(?:No|Number)?[:\.\s]+)(?=[A-Z0-9\/\-]*\d)([0-9A-Z\/\-]+)",
     re.IGNORECASE,
 )
 _BO_ID_RE = re.compile(
@@ -120,35 +124,153 @@ class CasParser:
         return cls.parse_pdf(pdf_file, password)
 
     @classmethod
+    def _parse_with_casparser(
+        cls,
+        pdf_bytes: bytes,
+        password_candidates: list[str],
+    ) -> list[ParsedCasHolding] | None:
+        """Attempt to parse PDF using casparser library (handles CAMS, KFintech, CDSL, NSDL)."""
+        try:
+            import casparser
+            from casparser.exceptions import IncorrectPasswordError
+            from casparser.types import CASData, NSDLCASData
+        except ImportError:
+            return None
+
+        cands = password_candidates if password_candidates else [""]
+
+        for pw in cands:
+            try:
+                stream = io.BytesIO(pdf_bytes)
+                data = casparser.read_cas_pdf(stream, password=pw, output="dict")
+                holdings: list[ParsedCasHolding] = []
+
+                if isinstance(data, CASData):
+                    for folio in data.folios:
+                        folio_str = str(folio.folio).strip() if folio.folio else None
+                        for scheme in folio.schemes:
+                            try:
+                                units = float(scheme.close)
+                            except (ValueError, TypeError):
+                                continue
+                            if units <= 0:
+                                continue
+                            nav = None
+                            val = None
+                            if scheme.valuation:
+                                try:
+                                    if scheme.valuation.nav is not None:
+                                        nav = float(scheme.valuation.nav)
+                                    if scheme.valuation.value is not None:
+                                        val = float(scheme.valuation.value)
+                                except (ValueError, TypeError):
+                                    pass
+                            holdings.append(
+                                ParsedCasHolding(
+                                    scheme_name=scheme.scheme,
+                                    units=units,
+                                    folio=folio_str,
+                                    isin=scheme.isin,
+                                    nav=nav,
+                                    value_inr=val,
+                                )
+                            )
+
+                elif isinstance(data, NSDLCASData):
+                    for acc in data.accounts:
+                        dp = acc.dp_id or ""
+                        cl = acc.client_id or ""
+                        acc_id = f"{dp}{cl}".strip() or cl or dp or None
+
+                        for mf in acc.mutual_funds:
+                            try:
+                                units = float(mf.balance)
+                            except (ValueError, TypeError):
+                                continue
+                            if units <= 0:
+                                continue
+                            nav = float(mf.nav) if mf.nav is not None else None
+                            val = float(mf.value) if mf.value is not None else None
+                            name = mf.name or mf.isin
+                            holdings.append(
+                                ParsedCasHolding(
+                                    scheme_name=name,
+                                    units=units,
+                                    folio=mf.folio or acc_id,
+                                    isin=mf.isin,
+                                    nav=nav,
+                                    value_inr=val,
+                                )
+                            )
+
+                        for eq in acc.equities:
+                            try:
+                                units = float(eq.num_shares)
+                            except (ValueError, TypeError):
+                                continue
+                            if units <= 0:
+                                continue
+                            price = float(eq.price) if eq.price is not None else None
+                            val = float(eq.value) if eq.value is not None else None
+                            name = eq.name or eq.symbol or eq.isin
+                            holdings.append(
+                                ParsedCasHolding(
+                                    scheme_name=name,
+                                    units=units,
+                                    folio=acc_id,
+                                    isin=eq.isin,
+                                    nav=price,
+                                    value_inr=val,
+                                )
+                            )
+
+                if holdings:
+                    return cls._deduplicate_holdings(holdings)
+
+            except IncorrectPasswordError:
+                continue
+            except Exception as exc:
+                logger.warning("casparser attempt failed, falling back to text parsing", error=str(exc))
+                break
+
+        return None
+
+    @classmethod
     def parse_pdf(
         cls,
         pdf_file: bytes | BinaryIO,
         password: str | None = None,
     ) -> list[ParsedCasHolding]:
         """Extract holdings from PDF bytes or stream."""
-        stream = io.BytesIO(pdf_file) if isinstance(pdf_file, bytes) else pdf_file
+        pdf_bytes = pdf_file.read() if hasattr(pdf_file, "read") else pdf_file
+        cleaned_pw = (password or "").strip()
+        candidates: list[str] = []
+        if cleaned_pw:
+            for cand in [
+                cleaned_pw,
+                cleaned_pw.upper(),
+                cleaned_pw.lower(),
+                cleaned_pw.replace(" ", ""),
+                cleaned_pw.replace(" ", "").upper(),
+                cleaned_pw.replace("-", ""),
+                cleaned_pw.replace("-", "").upper(),
+            ]:
+                if cand not in candidates:
+                    candidates.append(cand)
 
+        # 1. Attempt native parsing via casparser
+        casparser_holdings = cls._parse_with_casparser(pdf_bytes, candidates)
+        if casparser_holdings:
+            return casparser_holdings
+
+        # 2. Fall back to pypdf decryption and extraction
+        stream = io.BytesIO(pdf_bytes)
         try:
             reader = PdfReader(stream)
         except Exception as exc:
             raise CasParsingError(f"Failed to read PDF file: {exc}") from exc
 
         if reader.is_encrypted:
-            cleaned_pw = (password or "").strip()
-            candidates: list[str] = []
-            if cleaned_pw:
-                candidates.extend(
-                    [
-                        cleaned_pw,
-                        cleaned_pw.upper(),
-                        cleaned_pw.lower(),
-                        cleaned_pw.replace(" ", ""),
-                        cleaned_pw.replace(" ", "").upper(),
-                        cleaned_pw.replace("-", ""),
-                        cleaned_pw.replace("-", "").upper(),
-                    ]
-                )
-
             decrypted = False
             for pw_candidate in candidates:
                 try:
@@ -179,10 +301,85 @@ class CasParser:
         return cls.parse_text(full_text)
 
     @classmethod
-    def _try_parse_tabular_line(cls, line: str) -> tuple[str, str, float] | None:
+    def _parse_tail_tokens(
+        cls,
+        tokens: list[str],
+    ) -> dict[str, Any] | None:
+        """Extract units, folio, nav, and value from the numeric/identifier tail of a tabular row."""
+        if not tokens:
+            return None
+
+        first_tok = tokens[0].strip()
+        is_non_numeric_folio = ("/" in first_tok or "-" in first_tok) and any(c.isdigit() for c in first_tok)
+
+        if is_non_numeric_folio:
+            folio = first_tok
+            rest = tokens[1:]
+        else:
+            folio = None
+            rest = tokens
+
+        nums: list[float] = []
+        for t in rest:
+            try:
+                nums.append(float(t.replace(",", "")))
+            except ValueError:
+                break
+
+        if folio is not None:
+            if not nums:
+                return None
+            units = nums[0]
+            nav = nums[1] if len(nums) > 1 else None
+            val = nums[2] if len(nums) > 2 else None
+            if len(nums) >= 4 and abs(nums[0] - nums[1]) < 1e-4:
+                units = nums[0]
+                nav = nums[2]
+                val = nums[3]
+            return {"units": units, "folio": folio, "nav": nav, "value": val}
+
+        if len(nums) >= 4:
+            # If nums[0] == nums[1], this is [Current Balance, Free Balance, Price, Value]
+            if abs(nums[0] - nums[1]) < 1e-4:
+                return {"units": nums[0], "folio": None, "nav": nums[2], "value": nums[3]}
+            # If nums[1] * nums[2] ≈ nums[3], nums[0] is an integer folio (e.g. 34012653 21.088 412.50 8,698.83)
+            prod_1_2 = nums[1] * nums[2]
+            if abs(prod_1_2 - nums[3]) < max(1.0, nums[3] * 0.05):
+                f_str = str(int(nums[0])) if nums[0].is_integer() else tokens[0]
+                return {"units": nums[1], "folio": f_str, "nav": nums[2], "value": nums[3]}
+            # Or if nums[0] * nums[2] ≈ nums[3]
+            prod_0_2 = nums[0] * nums[2]
+            if abs(prod_0_2 - nums[3]) < max(1.0, nums[3] * 0.05):
+                return {"units": nums[0], "folio": None, "nav": nums[2], "value": nums[3]}
+
+        if len(nums) == 3:
+            # Check if nums[0] * nums[1] ≈ nums[2] (units * price ≈ value)
+            if abs(nums[0] * nums[1] - nums[2]) < max(1.0, nums[2] * 0.05):
+                return {"units": nums[0], "folio": None, "nav": nums[1], "value": nums[2]}
+
+        if len(nums) >= 2:
+            # If first token is large integer without decimal point (e.g. 34012653) and second token has decimal or is units
+            if "." not in tokens[0] and len(tokens[0]) >= 6 and ("." in tokens[1] or nums[1] < nums[0]):
+                return {
+                    "units": nums[1],
+                    "folio": tokens[0],
+                    "nav": nums[2] if len(nums) > 2 else None,
+                    "value": nums[3] if len(nums) > 3 else None,
+                }
+            return {"units": nums[0], "folio": None, "nav": nums[1], "value": nums[2] if len(nums) > 2 else None}
+
+        if len(nums) == 1:
+            return {"units": nums[0], "folio": None, "nav": None, "value": None}
+
+        return None
+
+    @classmethod
+    def _try_parse_tabular_line(
+        cls, line: str
+    ) -> tuple[str, str, float, str | None, float | None, float | None] | None:
         """Parse a single line representing a CDSL or NSDL table row.
 
-        Returns (isin, scheme_name, units) if matched, else None.
+        Returns (isin, scheme_name, units, folio, nav, value_inr) if matched, else None.
         """
         m = _ISIN_RE.search(line)
         if not m:
@@ -196,42 +393,52 @@ class CasParser:
         is_serial_before = (not before) or bool(re.match(r"^\d+[\.\)]?$", before))
         if is_serial_before:
             tokens = after.split()
-            num_start_idx = None
+            tail_start = None
             for i in range(len(tokens) - 1, -1, -1):
                 tok = tokens[i].replace(",", "")
                 try:
                     float(tok)
-                    num_start_idx = i
+                    tail_start = i
                 except ValueError:
+                    if ("/" in tok or "-" in tok) and any(c.isdigit() for c in tok) and i > 0:
+                        tail_start = i
                     break
 
-            if num_start_idx is not None and num_start_idx > 0:
-                # Check if token immediately before num_start_idx is an index prefix (e.g. NIFTY 50)
-                prev_word = tokens[num_start_idx - 1].upper().strip(" -:")
-                if prev_word in _INDEX_PREFIX_KEYWORDS and num_start_idx + 1 < len(tokens):
-                    num_start_idx += 1
+            if tail_start is not None and tail_start > 0:
+                # Check if token immediately before tail_start is an index prefix (e.g. NIFTY 50)
+                prev_word = tokens[tail_start - 1].upper().strip(" -:")
+                if prev_word in _INDEX_PREFIX_KEYWORDS and tail_start + 1 < len(tokens):
+                    tail_start += 1
 
-                name_tokens = tokens[:num_start_idx]
+                name_tokens = tokens[:tail_start]
                 scheme_name = " ".join(name_tokens).strip(" -:")
                 if len(scheme_name) >= 3:
-                    try:
-                        units = float(tokens[num_start_idx].replace(",", ""))
-                        if units > 0:
-                            return isin, scheme_name, units
-                    except (ValueError, IndexError):
-                        pass
+                    tail_info = cls._parse_tail_tokens(tokens[tail_start:])
+                    if tail_info and tail_info["units"] > 0:
+                        return (
+                            isin,
+                            scheme_name,
+                            tail_info["units"],
+                            tail_info.get("folio"),
+                            tail_info.get("nav"),
+                            tail_info.get("value"),
+                        )
 
         # Case 2: ISIN is in the middle of the row (name appears before ISIN)
         if before and not re.match(r"^\d+[\.\)]?$", before):
             clean_name = re.sub(r"^\d+[\.\)]?\s+", "", before).strip(" -:")
             tokens = after.split()
             if tokens and len(clean_name) >= 3:
-                try:
-                    units = float(tokens[0].replace(",", ""))
-                    if units > 0:
-                        return isin, clean_name, units
-                except ValueError:
-                    pass
+                tail_info = cls._parse_tail_tokens(tokens)
+                if tail_info and tail_info["units"] > 0:
+                    return (
+                        isin,
+                        clean_name,
+                        tail_info["units"],
+                        tail_info.get("folio"),
+                        tail_info.get("nav"),
+                        tail_info.get("value"),
+                    )
 
         return None
 
@@ -266,13 +473,15 @@ class CasParser:
             # 3. Try single-line tabular extraction (CDSL / NSDL format)
             tabular_res = cls._try_parse_tabular_line(line)
             if tabular_res:
-                isin, scheme_name, units = tabular_res
+                isin, scheme_name, units, line_folio, nav_val, val_val = tabular_res
                 holdings.append(
                     ParsedCasHolding(
                         scheme_name=scheme_name,
                         units=units,
-                        folio=current_folio or current_demat_account,
+                        folio=line_folio or current_folio or current_demat_account,
                         isin=isin,
+                        nav=nav_val,
+                        value_inr=val_val,
                     )
                 )
                 current_scheme = None
@@ -311,26 +520,25 @@ class CasParser:
 
             # 6. Check for multi-line numeric units line
             # When pypdf outputs table cells vertically:
-            # (e.g. Line 1: ISIN/Name, Line 2: Name/ISIN, Line 3: Units)
+            # (e.g. Line 1: ISIN/Name, Line 2: Name/ISIN, Line 3: Units / Numbers)
             if (current_scheme and current_isin) or (current_scheme and current_folio):
                 tokens = line.split()
                 if tokens:
-                    try:
-                        first_num = float(tokens[0].replace(",", ""))
-                        if first_num > 0 and len(tokens[0]) <= 15:
-                            holdings.append(
-                                ParsedCasHolding(
-                                    scheme_name=current_scheme,
-                                    units=first_num,
-                                    folio=current_folio or current_demat_account,
-                                    isin=current_isin,
-                                )
+                    tail_info = cls._parse_tail_tokens(tokens)
+                    if tail_info and tail_info["units"] > 0:
+                        holdings.append(
+                            ParsedCasHolding(
+                                scheme_name=current_scheme,
+                                units=tail_info["units"],
+                                folio=tail_info.get("folio") or current_folio or current_demat_account,
+                                isin=current_isin,
+                                nav=tail_info.get("nav"),
+                                value_inr=tail_info.get("value"),
                             )
-                            current_scheme = None
-                            current_isin = None
-                            continue
-                    except ValueError:
-                        pass
+                        )
+                        current_scheme = None
+                        current_isin = None
+                        continue
 
             # 7. Check for Scheme Name candidate
             if any(upper_line.startswith(p) for p in _IGNORE_LINE_STARTS):
@@ -349,7 +557,11 @@ class CasParser:
                 if len(clean_scheme) >= 4 and not clean_scheme.upper().startswith("TOTAL"):
                     current_scheme = clean_scheme
 
-        # Deduplicate holdings by (scheme_name, isin/folio)
+        return cls._deduplicate_holdings(holdings)
+
+    @classmethod
+    def _deduplicate_holdings(cls, holdings: list[ParsedCasHolding]) -> list[ParsedCasHolding]:
+        """Deduplicate holdings by (scheme_name, isin/folio)."""
         unique_holdings: list[ParsedCasHolding] = []
         seen: set[tuple[str, str | None]] = set()
 
@@ -360,3 +572,4 @@ class CasParser:
                 unique_holdings.append(h)
 
         return unique_holdings
+

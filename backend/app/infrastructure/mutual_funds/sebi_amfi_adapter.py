@@ -24,7 +24,7 @@ from app.application.ports.mutual_fund_source import (
 logger = structlog.get_logger(__name__)
 
 MFAPI_BASE_URL = "https://api.mfapi.in/mf"
-AMFI_RAW_NAV_URL = "https://www.amfiindia.com/spages/NAVAll.txt"
+AMFI_RAW_NAV_URL = "https://portal.amfiindia.com/spages/NAVAll.txt"
 
 
 class SebiAmfiMutualFundAdapter(MutualFundSource):
@@ -50,7 +50,7 @@ class SebiAmfiMutualFundAdapter(MutualFundSource):
 
         search_url = f"{self._base_url}/search"
         try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
+            async with httpx.AsyncClient(timeout=self._timeout, follow_redirects=True) as client:
                 response = await client.get(search_url, params={"q": cleaned_query})
                 if response.status_code != 200:
                     logger.warning(
@@ -94,7 +94,7 @@ class SebiAmfiMutualFundAdapter(MutualFundSource):
 
         url = f"{self._base_url}/{scheme_code}/latest"
         try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
+            async with httpx.AsyncClient(timeout=self._timeout, follow_redirects=True) as client:
                 response = await client.get(url)
                 if response.status_code != 200:
                     logger.warning(

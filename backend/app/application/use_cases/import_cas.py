@@ -57,6 +57,7 @@ class ImportCas:
                 (h.scheme_name.lower(), h.folio_masked): h
                 for h in existing
             }
+            existing_by_code = {h.scheme_code: h for h in existing if h.scheme_code and h.scheme_code > 100000}
 
             for item in parsed_items:
                 scheme_code = 100000
@@ -75,6 +76,19 @@ class ImportCas:
                 is_mf = item.isin is None or item.isin.startswith("INF")
 
                 if is_mf:
+                    # Check ISIN registry (instantaneous & offline)
+                    isin_info = None
+                    if item.isin:
+                        try:
+                            from casparser_isin import MFISINDb
+
+                            mf_db = MFISINDb()
+                            res = mf_db.direct_isin_lookup(item.isin)
+                            if res:
+                                isin_info = res[0]
+                        except Exception:
+                            isin_info = None
+
                     # Clean scheme name for AMFI search:
                     # Remove trailing plan/growth suffixes that break SEBI/AMFI searches
                     search_term = re.sub(
@@ -99,6 +113,19 @@ class ImportCas:
                         if nav_info:
                             fund_house = nav_info.fund_house
                             official_name = nav_info.scheme_name
+                    elif isin_info:
+                        try:
+                            scheme_code = int(isin_info["amfi_code"])
+                        except (ValueError, TypeError):
+                            scheme_code = 100000 + (abs(hash(item.isin or item.scheme_name)) % 800000)
+                        official_name = isin_info.get("name") or item.scheme_name
+                        nav_info = await self._source.get_latest_nav(scheme_code)
+                        if nav_info:
+                            fund_house = nav_info.fund_house
+                            official_name = nav_info.scheme_name
+                        else:
+                            name_parts = official_name.split()
+                            fund_house = f"{name_parts[0].title()} Mutual Fund" if name_parts else "Mutual Fund AMC"
                     else:
                         # Fallback for MF when offline or not in open AMFI registry
                         unique_id = item.isin or item.scheme_name
@@ -108,10 +135,22 @@ class ImportCas:
                     fund_house = "CDSL Demat Equity"
                     unique_id = item.isin or item.scheme_name
                     scheme_code = 200000 + (abs(hash(unique_id)) % 700000)
+                    if item.isin:
+                        try:
+                            from casparser_isin import ISINDb
+
+                            eq_db = ISINDb()
+                            eq_info = eq_db.isin_lookup(item.isin)
+                            if eq_info and eq_info.name:
+                                official_name = eq_info.name
+                        except Exception:
+                            pass
 
                 # Check if already exists for this owner
-                match = existing_by_key.get((official_name.lower(), folio_masked)) or existing_by_name.get(
-                    official_name.lower()
+                match = (
+                    existing_by_key.get((official_name.lower(), folio_masked))
+                    or existing_by_name.get(official_name.lower())
+                    or existing_by_code.get(scheme_code)
                 )
                 if match:
                     # Update units and folio

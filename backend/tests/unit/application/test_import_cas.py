@@ -31,6 +31,17 @@ class FakeMutualFundSource(MutualFundSource):
         return [s for s in self.schemes if all(w in s.scheme_name.upper() for w in q.split()[:2])]
 
     async def get_latest_nav(self, scheme_code: int) -> MutualFundNavDTO | None:
+        if scheme_code == 102414:
+            return MutualFundNavDTO(
+                scheme_code=102414,
+                scheme_name="SBI Contra Fund - Regular Plan - Growth",
+                fund_house="SBI Mutual Fund",
+                scheme_type="Open Ended Schemes",
+                scheme_category="Equity - Contra",
+                isin_growth="INF200K01362",
+                nav=412.50,
+                nav_date="2026-01-15",
+            )
         return MutualFundNavDTO(
             scheme_code=scheme_code,
             scheme_name="HDFC Small Cap Fund - Direct Plan - Growth",
@@ -143,3 +154,31 @@ async def test_import_cas_updates_existing_units(
         stored = await uow.mutual_funds.get_holdings_for_owner("owner-1")
         assert len(stored) == 1
         assert stored[0].units == 15.0
+
+
+@pytest.mark.asyncio
+async def test_import_cas_with_isin_lookup_resolution(
+    uow: InMemoryUnitOfWork, clock: FakeClock, source: FakeMutualFundSource
+) -> None:
+    """Verify holding is accurately resolved using offline AMFI ISIN database when search_schemes has no match."""
+    use_case = ImportCas(uow=uow, source=source, clock=clock)
+
+    mock_parsed = [
+        ParsedCasHolding(
+            scheme_name="SBI Contra Fund - Growth",
+            units=21.088,
+            folio="34012653",
+            isin="INF200K01362",
+        ),
+    ]
+    with patch("app.application.use_cases.import_cas.CasParser.parse_pdf", return_value=mock_parsed):
+        summary = await use_case.execute(owner_id="owner-1", pdf_bytes=b"%PDF-mock")
+
+        assert summary.imported_count == 1
+        holding = summary.holdings[0]
+        assert holding.scheme_code == 102414
+        assert "SBI CONTRA FUND" in holding.scheme_name.upper()
+        assert holding.units == 21.088
+        assert holding.folio_masked == "XXXX2653"
+        assert "SBI" in holding.fund_house
+
