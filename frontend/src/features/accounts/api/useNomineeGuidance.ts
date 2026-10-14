@@ -5,6 +5,7 @@ import { accountKeys } from "./keys";
 import type { components } from "@/shared/api/schema";
 
 export type NomineeGuidance = components["schemas"]["NomineeGuidanceResponse"];
+export type NomineeItem = components["schemas"]["NomineeItem"];
 export type UpdateNomineeGuidanceRequest = components["schemas"]["UpdateNomineeGuidanceRequest"];
 
 export function useNomineeGuidance() {

@@ -218,15 +218,23 @@ class UpdateGrowwAccountRequest(BaseModel):
     api_secret: str | None = None
 
 
+class NomineeItem(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    relation: str = Field(..., min_length=1, max_length=64)
+    share: str = Field(default="100%", max_length=32)
+
+
 class NomineeGuidanceResponse(BaseModel):
+    nominees: list[NomineeItem] = []
     nominee_name: str | None = None
     nominee_relation: str | None = None
-    nominee_share: str | None = "100%"
+    nominee_share: str | None = None
     notes: str | None = None
     updated_at: datetime | None = None
 
 
 class UpdateNomineeGuidanceRequest(BaseModel):
+    nominees: list[NomineeItem] | None = None
     nominee_name: str | None = Field(default=None, max_length=255)
     nominee_relation: str | None = Field(default=None, max_length=64)
     nominee_share: str | None = Field(default=None, max_length=32)

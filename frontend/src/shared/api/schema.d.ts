@@ -287,7 +287,7 @@ export interface paths {
         put?: never;
         /**
          * Add a new trusted contact
-         * @description Register a new trusted contact with consent pending.
+         * @description Register a new trusted contact with consent pending and generate verification OTP.
          */
         post: operations["createContact"];
         delete?: never;
@@ -331,7 +331,7 @@ export interface paths {
         put?: never;
         /**
          * Send or resend consent verification OTP
-         * @description Send an invitation and verification OTP to contact's phone.
+         * @description Send an invitation and verification OTP to contact's phone and email.
          */
         post: operations["sendContactVerificationOtp"];
         delete?: never;
@@ -351,7 +351,7 @@ export interface paths {
         put?: never;
         /**
          * Verify contact consent via OTP (Public)
-         * @description Public endpoint for contacts to confirm consent using OTP token.
+         * @description Public endpoint for contacts to confirm consent using real OTP token.
          */
         post: operations["verifyContactPublic"];
         delete?: never;
@@ -517,7 +517,7 @@ export interface paths {
         };
         /**
          * Get nominee and emergency guidance instructions
-         * @description Retrieve the registered nominee and emergency guidance for the owner.
+         * @description Retrieve the registered nominees and emergency guidance for the owner.
          */
         get: operations["getNomineeGuidance"];
         /**
@@ -674,8 +674,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Import portfolio from CAMS / KFintech Consolidated Account Statement (CAS) PDF
-         * @description Parse encrypted or unencrypted CAS PDF, map to SEBI/AMFI registry, and import holdings.
+         * Import portfolio from CDSL / NSDL / CAMS / KFintech Consolidated Account Statement (CAS) PDF
+         * @description Parse encrypted or unencrypted CAS PDF (CDSL, NSDL, CAMS, KFintech), map to SEBI/AMFI registry, and import holdings.
          */
         post: operations["importCasStatement"];
         delete?: never;
@@ -1303,20 +1303,15 @@ export interface components {
             owner: components["schemas"]["OwnerResponse"];
             /** Csrf Token */
             csrf_token: string;
+            /** Access Token */
             access_token?: string | null;
+            /** Refresh Token */
             refresh_token?: string | null;
             /**
              * Mfa Required
              * @default false
              */
             mfa_required: boolean;
-        };
-        /** RefreshResponse */
-        RefreshResponse: {
-            message?: string;
-            csrf_token?: string;
-            access_token?: string | null;
-            refresh_token?: string | null;
         };
         /** MarkInstallmentPaidRequest */
         MarkInstallmentPaidRequest: {
@@ -1429,6 +1424,36 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** NomineeGuidanceResponse */
+        NomineeGuidanceResponse: {
+            /**
+             * Nominees
+             * @default []
+             */
+            nominees: components["schemas"]["NomineeItem"][];
+            /** Nominee Name */
+            nominee_name?: string | null;
+            /** Nominee Relation */
+            nominee_relation?: string | null;
+            /** Nominee Share */
+            nominee_share?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** NomineeItem */
+        NomineeItem: {
+            /** Name */
+            name: string;
+            /** Relation */
+            relation: string;
+            /**
+             * Share
+             * @default 100%
+             */
+            share: string;
+        };
         /** NotificationLogItemResponse */
         NotificationLogItemResponse: {
             /** Id */
@@ -1521,21 +1546,6 @@ export interface components {
             instructions: string;
             nominee?: components["schemas"]["NomineeGuidanceResponse"] | null;
         };
-        /** NomineeGuidanceResponse */
-        NomineeGuidanceResponse: {
-            nominee_name?: string | null;
-            nominee_relation?: string | null;
-            nominee_share?: string | null;
-            notes?: string | null;
-            updated_at?: string | null;
-        };
-        /** UpdateNomineeGuidanceRequest */
-        UpdateNomineeGuidanceRequest: {
-            nominee_name?: string | null;
-            nominee_relation?: string | null;
-            nominee_share?: string | null;
-            notes?: string | null;
-        };
         /** PacketShareResponse */
         PacketShareResponse: {
             /** Id */
@@ -1617,6 +1627,23 @@ export interface components {
             token: string;
             /** Otp */
             otp: string;
+        };
+        /** RefreshResponse */
+        RefreshResponse: {
+            /**
+             * Message
+             * @default Session refreshed successfully.
+             */
+            message: string;
+            /**
+             * Csrf Token
+             * @default
+             */
+            csrf_token: string;
+            /** Access Token */
+            access_token?: string | null;
+            /** Refresh Token */
+            refresh_token?: string | null;
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -1744,6 +1771,19 @@ export interface components {
              */
             parent_repeat_every_days: number;
         };
+        /** UpdateNomineeGuidanceRequest */
+        UpdateNomineeGuidanceRequest: {
+            /** Nominees */
+            nominees?: components["schemas"]["NomineeItem"][] | null;
+            /** Nominee Name */
+            nominee_name?: string | null;
+            /** Nominee Relation */
+            nominee_relation?: string | null;
+            /** Nominee Share */
+            nominee_share?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -1867,7 +1907,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ActionResponse"];
+                    "application/json": components["schemas"]["RefreshResponse"];
                 };
             };
         };
@@ -2864,7 +2904,6 @@ export interface operations {
         };
     };
     deleteMutualFundHolding: {
-
         parameters: {
             query?: never;
             header?: never;

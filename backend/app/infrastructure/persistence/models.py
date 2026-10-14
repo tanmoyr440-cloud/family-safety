@@ -361,6 +361,7 @@ class NomineeGuidanceModel(Base):
     owner_id: Mapped[str] = mapped_column(
         String(64), ForeignKey("owners.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
     )
+    nominees_json: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True, default=list)
     nominee_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     nominee_relation: Mapped[str | None] = mapped_column(String(64), nullable=True)
     nominee_share: Mapped[str | None] = mapped_column(String(32), default="100%", nullable=True)

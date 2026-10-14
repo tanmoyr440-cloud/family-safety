@@ -1,14 +1,29 @@
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/Card";
 import { Button } from "@/shared/ui/Button";
-import { UserCheck, FileText, Edit2, Loader2, Check } from "lucide-react";
-import { useNomineeGuidance, useUpdateNomineeGuidance } from "../api/useNomineeGuidance";
+import {
+  UserCheck,
+  FileText,
+  Edit2,
+  Loader2,
+  Check,
+  Plus,
+  Trash2,
+  Users,
+  AlertCircle,
+} from "lucide-react";
+import {
+  useNomineeGuidance,
+  useUpdateNomineeGuidance,
+  type NomineeItem,
+} from "../api/useNomineeGuidance";
 
-const DEFAULT_NOMINEE_NAME = "Savitri Sharma";
-const DEFAULT_NOMINEE_RELATION = "Mother";
-const DEFAULT_NOMINEE_SHARE = "100%";
-const DEFAULT_NOTES =
-  "Mutual fund investments are registered across AMCs and RTAs (CAMS & KFintech). In case of emergency, contact the respective fund houses or CAMS/KFintech with PAN, death certificate, and nominee claim forms. Folio details are listed in the emergency packet.";
+interface EditableNominee {
+  id: string;
+  name: string;
+  relation: string;
+  share: string;
+}
 
 export const NomineeNotesCard: React.FC = () => {
   const [isEditing, setIsEditing] = React.useState(false);
@@ -17,33 +32,96 @@ export const NomineeNotesCard: React.FC = () => {
   const { data, isLoading, isError } = useNomineeGuidance();
   const updateMutation = useUpdateNomineeGuidance();
 
-  const [nomineeName, setNomineeName] = React.useState(DEFAULT_NOMINEE_NAME);
-  const [nomineeRelation, setNomineeRelation] = React.useState(DEFAULT_NOMINEE_RELATION);
-  const [nomineeShare, setNomineeShare] = React.useState(DEFAULT_NOMINEE_SHARE);
-  const [notes, setNotes] = React.useState(DEFAULT_NOTES);
+  const [nominees, setNominees] = React.useState<EditableNominee[]>([]);
+  const [notes, setNotes] = React.useState("");
 
+  // Sync state when data loads or changes
   React.useEffect(() => {
     if (data) {
-      setNomineeName(data.nominee_name ?? DEFAULT_NOMINEE_NAME);
-      setNomineeRelation(data.nominee_relation ?? DEFAULT_NOMINEE_RELATION);
-      setNomineeShare(data.nominee_share ?? DEFAULT_NOMINEE_SHARE);
-      setNotes(data.notes ?? DEFAULT_NOTES);
+      if (data.nominees && data.nominees.length > 0) {
+        setNominees(
+          data.nominees.map((n, i) => ({
+            id: `nominee-${i}-${Date.now()}`,
+            name: n.name ?? "",
+            relation: n.relation ?? "",
+            share: n.share ?? "100%",
+          })),
+        );
+      } else if (data.nominee_name) {
+        setNominees([
+          {
+            id: `nominee-0-${Date.now()}`,
+            name: data.nominee_name,
+            relation: data.nominee_relation ?? "",
+            share: data.nominee_share ?? "100%",
+          },
+        ]);
+      } else {
+        setNominees([]);
+      }
+      setNotes(data.notes ?? "");
     }
   }, [data]);
+
+  const handleAddNominee = () => {
+    setNominees((prev) => [
+      ...prev,
+      {
+        id: `nominee-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        name: "",
+        relation: "",
+        share: prev.length === 0 ? "100%" : "50%",
+      },
+    ]);
+  };
+
+  const handleRemoveNominee = (id: string) => {
+    setNominees((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  const handleNomineeChange = (
+    id: string,
+    field: "name" | "relation" | "share",
+    value: string,
+  ) => {
+    setNominees((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, [field]: value } : n)),
+    );
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Filter out empty rows
+      const validNominees: NomineeItem[] = nominees
+        .map((n) => ({
+          name: n.name.trim(),
+          relation: n.relation.trim(),
+          share: n.share.trim() || "100%",
+        }))
+        .filter((n) => n.name.length > 0);
+
       const updated = await updateMutation.mutateAsync({
-        nominee_name: nomineeName.trim(),
-        nominee_relation: nomineeRelation.trim(),
-        nominee_share: nomineeShare.trim(),
-        notes: notes.trim(),
+        nominees: validNominees,
+        nominee_name: validNominees[0]?.name ?? null,
+        nominee_relation: validNominees[0]?.relation ?? null,
+        nominee_share: validNominees[0]?.share ?? null,
+        notes: notes.trim() || null,
       });
+
       if (updated) {
-        setNomineeName(updated.nominee_name ?? "");
-        setNomineeRelation(updated.nominee_relation ?? "");
-        setNomineeShare(updated.nominee_share ?? "");
+        if (updated.nominees && updated.nominees.length > 0) {
+          setNominees(
+            updated.nominees.map((n, i) => ({
+              id: `nominee-${i}-${Date.now()}`,
+              name: n.name ?? "",
+              relation: n.relation ?? "",
+              share: n.share ?? "100%",
+            })),
+          );
+        } else {
+          setNominees([]);
+        }
         setNotes(updated.notes ?? "");
       }
       setIsEditing(false);
@@ -56,18 +134,40 @@ export const NomineeNotesCard: React.FC = () => {
 
   const handleCancel = () => {
     if (data) {
-      setNomineeName(data.nominee_name ?? DEFAULT_NOMINEE_NAME);
-      setNomineeRelation(data.nominee_relation ?? DEFAULT_NOMINEE_RELATION);
-      setNomineeShare(data.nominee_share ?? DEFAULT_NOMINEE_SHARE);
-      setNotes(data.notes ?? DEFAULT_NOTES);
+      if (data.nominees && data.nominees.length > 0) {
+        setNominees(
+          data.nominees.map((n, i) => ({
+            id: `nominee-${i}-${Date.now()}`,
+            name: n.name ?? "",
+            relation: n.relation ?? "",
+            share: n.share ?? "100%",
+          })),
+        );
+      } else if (data.nominee_name) {
+        setNominees([
+          {
+            id: `nominee-0-${Date.now()}`,
+            name: data.nominee_name,
+            relation: data.nominee_relation ?? "",
+            share: data.nominee_share ?? "100%",
+          },
+        ]);
+      } else {
+        setNominees([]);
+      }
+      setNotes(data.notes ?? "");
     } else {
-      setNomineeName(DEFAULT_NOMINEE_NAME);
-      setNomineeRelation(DEFAULT_NOMINEE_RELATION);
-      setNomineeShare(DEFAULT_NOMINEE_SHARE);
-      setNotes(DEFAULT_NOTES);
+      setNominees([]);
+      setNotes("");
     }
     setIsEditing(false);
   };
+
+  const activeNominees = data?.nominees && data.nominees.length > 0
+    ? data.nominees
+    : data?.nominee_name
+      ? [{ name: data.nominee_name, relation: data.nominee_relation ?? "", share: data.nominee_share ?? "100%" }]
+      : [];
 
   return (
     <Card className="border-slate-200 shadow-sm overflow-hidden">
@@ -75,7 +175,7 @@ export const NomineeNotesCard: React.FC = () => {
         <div className="flex items-center gap-2">
           <UserCheck className="h-5 w-5 text-purple-600" aria-hidden="true" />
           <CardTitle className="text-base font-semibold text-slate-900">
-            Nominee & Emergency Guidance Notes
+            Nominee &amp; Emergency Guidance Notes
           </CardTitle>
           {saveSuccess && (
             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 animate-in fade-in">
@@ -94,84 +194,174 @@ export const NomineeNotesCard: React.FC = () => {
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => setIsEditing(true)}
+            onClick={() => {
+              if (nominees.length === 0) {
+                handleAddNominee();
+              }
+              setIsEditing(true);
+            }}
             disabled={isLoading}
             className="text-slate-600 hover:text-slate-900"
           >
             <Edit2 className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
-            Edit Notes
+            {activeNominees.length > 0 ? "Edit Details" : "Add Nominees"}
           </Button>
         )}
       </CardHeader>
 
       <CardContent className="p-5 sm:p-6 space-y-4">
         {isEditing ? (
-          <form onSubmit={handleSave} className="space-y-4 text-xs">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label htmlFor="nominee-name" className="block font-medium text-slate-700 mb-1">
-                  Nominee Full Name
-                </label>
-                <input
-                  id="nominee-name"
-                  type="text"
-                  value={nomineeName}
-                  onChange={(e) => setNomineeName(e.target.value)}
-                  placeholder="e.g. Savitri Sharma"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
+          <form onSubmit={handleSave} className="space-y-5 text-xs">
+            {/* Nominees list editor */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-900 text-xs flex items-center gap-1.5">
+                  <Users className="h-4 w-4 text-purple-600" aria-hidden="true" />
+                  Registered Nominees
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddNominee}
+                  className="h-7 text-xs gap-1 border-purple-200 text-purple-700 hover:bg-purple-50"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add Nominee
+                </Button>
               </div>
 
-              <div>
-                <label htmlFor="nominee-rel" className="block font-medium text-slate-700 mb-1">
-                  Relationship
-                </label>
-                <input
-                  id="nominee-rel"
-                  type="text"
-                  value={nomineeRelation}
-                  onChange={(e) => setNomineeRelation(e.target.value)}
-                  placeholder="e.g. Mother"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
+              {nominees.length === 0 ? (
+                <div className="p-4 rounded-xl border border-dashed border-slate-300 text-center space-y-2 bg-slate-50">
+                  <p className="text-slate-500 text-xs">No nominees added yet.</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddNominee}
+                    className="h-8 text-xs gap-1"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add First Nominee
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {nominees.map((nominee, idx) => (
+                    <div
+                      key={nominee.id}
+                      className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end p-3 rounded-xl bg-purple-50/40 border border-purple-100"
+                    >
+                      <div className="sm:col-span-5">
+                        <label
+                          htmlFor={`nominee-name-${nominee.id}`}
+                          className="block font-medium text-slate-700 mb-1 text-[11px]"
+                        >
+                          Nominee {idx + 1} Full Name
+                        </label>
+                        <input
+                          id={`nominee-name-${nominee.id}`}
+                          type="text"
+                          value={nominee.name}
+                          onChange={(e) =>
+                            handleNomineeChange(nominee.id, "name", e.target.value)
+                          }
+                          placeholder="e.g. Legal Full Name"
+                          className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
 
-              <div>
-                <label htmlFor="nominee-share" className="block font-medium text-slate-700 mb-1">
-                  Nomination Share (%)
-                </label>
-                <input
-                  id="nominee-share"
-                  type="text"
-                  value={nomineeShare}
-                  onChange={(e) => setNomineeShare(e.target.value)}
-                  placeholder="e.g. 100%"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
+                      <div className="sm:col-span-4">
+                        <label
+                          htmlFor={`nominee-rel-${nominee.id}`}
+                          className="block font-medium text-slate-700 mb-1 text-[11px]"
+                        >
+                          Relationship
+                        </label>
+                        <input
+                          id={`nominee-rel-${nominee.id}`}
+                          type="text"
+                          value={nominee.relation}
+                          onChange={(e) =>
+                            handleNomineeChange(nominee.id, "relation", e.target.value)
+                          }
+                          placeholder="e.g. Mother, Father, Spouse"
+                          className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label
+                          htmlFor={`nominee-share-${nominee.id}`}
+                          className="block font-medium text-slate-700 mb-1 text-[11px]"
+                        >
+                          Share (%)
+                        </label>
+                        <input
+                          id={`nominee-share-${nominee.id}`}
+                          type="text"
+                          value={nominee.share}
+                          onChange={(e) =>
+                            handleNomineeChange(nominee.id, "share", e.target.value)
+                          }
+                          placeholder="e.g. 100% or 50%"
+                          className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-1 flex justify-end">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveNominee(nominee.id)}
+                          className="h-8 w-8 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50"
+                          title="Remove Nominee"
+                          aria-label={`Remove nominee ${nominee.name || idx + 1}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
+            {/* Emergency Notes section */}
             <div>
               <label htmlFor="emergency-notes" className="block font-medium text-slate-700 mb-1">
-                Emergency Notes for Family
+                Emergency Instructions Included in Parent Packet
               </label>
               <textarea
                 id="emergency-notes"
                 rows={3}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Guidance on where folios are held, which RTAs to contact, etc."
+                placeholder="Guidance on where folios are held, RTAs to contact (CAMS/KFintech), claim steps, etc."
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
+              <p className="text-[11px] text-slate-500 mt-1">
+                These instructions will be presented to your emergency contacts if safety alerts are triggered.
+              </p>
             </div>
 
             {updateMutation.isError && (
-              <p className="text-xs text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-200" role="alert">
-                Failed to save nominee guidance: {updateMutation.error instanceof Error ? updateMutation.error.message : "Please check your network connection and try again."}
-              </p>
+              <div
+                className="flex items-center gap-2 text-xs text-red-700 bg-red-50 p-2.5 rounded-lg border border-red-200"
+                role="alert"
+              >
+                <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+                <span>
+                  Failed to save nominee guidance:{" "}
+                  {updateMutation.error instanceof Error
+                    ? updateMutation.error.message
+                    : "Please check your connection and try again."}
+                </span>
+              </div>
             )}
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
               <Button
                 type="button"
                 variant="outline"
@@ -193,33 +383,74 @@ export const NomineeNotesCard: React.FC = () => {
                     Saving...
                   </>
                 ) : (
-                  "Save Notes"
+                  "Save Nominees & Guidance"
                 )}
               </Button>
             </div>
           </form>
         ) : (
-          <div className="space-y-3 text-xs">
+          <div className="space-y-4 text-xs">
             {isError && (
-              <div className="text-[11px] text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
-                Notice: Default guidance template is shown. Customize your nominee instructions by clicking Edit Notes.
+              <div className="flex items-center gap-2 text-[11px] text-red-700 bg-red-50 p-2.5 rounded-lg border border-red-200">
+                <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+                <span>Unable to load nominee guidance. Please refresh to try again.</span>
               </div>
             )}
-            {/* Nominee details grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-purple-50/50 p-3.5 rounded-xl border border-purple-100">
-              <div>
-                <span className="text-muted-foreground block text-[11px] mb-0.5">Nominee Name</span>
-                <span className="font-semibold text-slate-900">{nomineeName}</span>
+
+            {/* Nominees section */}
+            {activeNominees.length === 0 ? (
+              <div className="p-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 text-center space-y-1.5">
+                <Users className="h-5 w-5 text-slate-400 mx-auto" />
+                <p className="font-medium text-slate-700">No nominees registered yet</p>
+                <p className="text-slate-500 text-[11px] max-w-sm mx-auto">
+                  Add your nominee details so your family knows who is entitled to claim your mutual funds and stocks.
+                </p>
+                <div className="pt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      handleAddNominee();
+                      setIsEditing(true);
+                    }}
+                    className="h-7 text-xs gap-1 border-purple-200 text-purple-700 hover:bg-purple-50"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Add Nominee
+                  </Button>
+                </div>
               </div>
-              <div>
-                <span className="text-muted-foreground block text-[11px] mb-0.5">Relationship</span>
-                <span className="font-semibold text-slate-900">{nomineeRelation}</span>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
+                    Registered Nominees ({activeNominees.length})
+                  </span>
+                </div>
+                <div className="divide-y divide-purple-100 rounded-xl border border-purple-100 bg-purple-50/30 overflow-hidden">
+                  {activeNominees.map((nom, idx) => (
+                    <div
+                      key={idx}
+                      className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 sm:px-4"
+                    >
+                      <div>
+                        <span className="text-muted-foreground block text-[11px]">Nominee Name</span>
+                        <span className="font-semibold text-slate-900">{nom.name}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[11px]">Relationship</span>
+                        <span className="font-medium text-slate-800">{nom.relation || "—"}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[11px]">Share</span>
+                        <span className="font-semibold text-purple-700">{nom.share || "100%"}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div>
-                <span className="text-muted-foreground block text-[11px] mb-0.5">Share</span>
-                <span className="font-semibold text-slate-900">{nomineeShare}</span>
-              </div>
-            </div>
+            )}
 
             {/* Emergency Guidance Notes */}
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
@@ -227,7 +458,15 @@ export const NomineeNotesCard: React.FC = () => {
                 <FileText className="h-4 w-4 text-slate-500" aria-hidden="true" />
                 Emergency Instructions Included in Parent Packet
               </div>
-              <p className="text-slate-600 leading-relaxed text-xs">{notes}</p>
+              {data?.notes ? (
+                <p className="text-slate-700 leading-relaxed text-xs whitespace-pre-line">
+                  {data.notes}
+                </p>
+              ) : (
+                <p className="text-slate-400 italic text-[11px]">
+                  No custom emergency instructions added yet. Click &ldquo;Edit Details&rdquo; above to add guidance for your emergency contacts.
+                </p>
+              )}
             </div>
           </div>
         )}

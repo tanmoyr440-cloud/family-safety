@@ -35,7 +35,6 @@ describe("Accounts Feature - Bank Accounts & Mutual Funds", () => {
 
     // Nominee notes
     expect(screen.getByText("Nominee & Emergency Guidance Notes")).toBeInTheDocument();
-    expect(screen.getByText("Savitri Sharma")).toBeInTheDocument();
 
     expect(await axe(container)).toHaveNoViolations();
   });
@@ -101,15 +100,15 @@ describe("Accounts Feature - Bank Accounts & Mutual Funds", () => {
     expect(screen.getByText("Nominee & Emergency Guidance Notes")).toBeInTheDocument();
     expect(await screen.findByText("Savitri Sharma")).toBeInTheDocument();
 
-    // Click Edit Notes
-    const editBtn = screen.getByRole("button", { name: /edit notes/i });
+    // Click Edit Details
+    const editBtn = screen.getByRole("button", { name: /edit details/i });
     await user.click(editBtn);
 
     // Edit fields
-    const nameInput = screen.getByLabelText(/nominee full name/i);
-    const relInput = screen.getByLabelText(/relationship/i);
-    const shareInput = screen.getByLabelText(/nomination share/i);
-    const notesInput = screen.getByLabelText(/emergency notes for family/i);
+    const nameInput = screen.getByLabelText(/nominee 1 full name/i);
+    const relInput = screen.getAllByLabelText(/relationship/i)[0]!;
+    const shareInput = screen.getAllByLabelText(/share/i)[0]!;
+    const notesInput = screen.getByLabelText(/emergency instructions/i);
 
     await user.clear(nameInput);
     await user.type(nameInput, "Anita Sharma");
@@ -120,18 +119,30 @@ describe("Accounts Feature - Bank Accounts & Mutual Funds", () => {
     await user.clear(shareInput);
     await user.type(shareInput, "50%");
 
+    // Add a second nominee
+    const addNomineeBtn = screen.getByRole("button", { name: /add nominee/i });
+    await user.click(addNomineeBtn);
+
+    const nameInput2 = screen.getByLabelText(/nominee 2 full name/i);
+    await user.type(nameInput2, "Rohan Sharma");
+
+    const relInput2 = screen.getAllByLabelText(/relationship/i)[1]!;
+    await user.type(relInput2, "Son");
+
     await user.clear(notesInput);
     await user.type(notesInput, "Contact ICICI AMC directly with death certificate.");
 
-    // Click Save Notes
-    const saveBtn = screen.getByRole("button", { name: /save notes/i });
+    // Click Save Nominees & Guidance
+    const saveBtn = screen.getByRole("button", { name: /save nominees & guidance/i });
     await user.click(saveBtn);
 
     // Verify updated values displayed in read mode
     await waitFor(() => {
       expect(screen.getByText("Anita Sharma")).toBeInTheDocument();
+      expect(screen.getByText("Rohan Sharma")).toBeInTheDocument();
       expect(screen.getByText("Spouse")).toBeInTheDocument();
-      expect(screen.getByText("50%")).toBeInTheDocument();
+      expect(screen.getByText("Son")).toBeInTheDocument();
+      expect(screen.getAllByText("50%")).toHaveLength(2);
       expect(
         screen.getByText("Contact ICICI AMC directly with death certificate."),
       ).toBeInTheDocument();

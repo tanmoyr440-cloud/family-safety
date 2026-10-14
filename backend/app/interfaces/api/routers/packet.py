@@ -40,6 +40,7 @@ from app.interfaces.api.schemas import (
     LoanResponse,
     NextDueSchema,
     NomineeGuidanceResponse,
+    NomineeItem,
     PacketPreviewResponse,
     PacketShareResponse,
     PaymentInstructionsSchema,
@@ -183,21 +184,33 @@ async def preview_packet(
         for d in doc_rows
     ]
 
-    nominee_dto = (
-        NomineeGuidanceResponse(
-            nominee_name=guidance.nominee_name,
-            nominee_relation=guidance.nominee_relation,
-            nominee_share=guidance.nominee_share,
-            notes=guidance.notes,
-            updated_at=guidance.updated_at,
+    nominees_list: list[NomineeItem] = []
+    if guidance and guidance.nominees_json and isinstance(guidance.nominees_json, list):
+        for item in guidance.nominees_json:
+            if isinstance(item, dict) and item.get("name"):
+                nominees_list.append(
+                    NomineeItem(
+                        name=str(item["name"]),
+                        relation=str(item.get("relation", "")),
+                        share=str(item.get("share", "100%")),
+                    )
+                )
+    elif guidance and guidance.nominee_name:
+        nominees_list.append(
+            NomineeItem(
+                name=guidance.nominee_name,
+                relation=guidance.nominee_relation or "",
+                share=guidance.nominee_share or "100%",
+            )
         )
-        if guidance
-        else NomineeGuidanceResponse(
-            nominee_name="Savitri Sharma",
-            nominee_relation="Mother",
-            nominee_share="100%",
-            notes="Mutual fund investments are registered across AMCs and RTAs (CAMS & KFintech). In case of emergency, contact the respective fund houses or CAMS/KFintech with PAN, death certificate, and nominee claim forms. Folio details are listed in the emergency packet.",
-        )
+
+    nominee_dto = NomineeGuidanceResponse(
+        nominees=nominees_list,
+        nominee_name=nominees_list[0].name if nominees_list else (guidance.nominee_name if guidance else None),
+        nominee_relation=nominees_list[0].relation if nominees_list else (guidance.nominee_relation if guidance else None),
+        nominee_share=nominees_list[0].share if nominees_list else (guidance.nominee_share if guidance else None),
+        notes=guidance.notes if guidance else None,
+        updated_at=guidance.updated_at if guidance else None,
     )
 
     instructions = (
@@ -472,21 +485,33 @@ async def get_public_packet_session(
         for d in doc_rows
     ]
 
-    nominee_dto = (
-        NomineeGuidanceResponse(
-            nominee_name=guidance.nominee_name,
-            nominee_relation=guidance.nominee_relation,
-            nominee_share=guidance.nominee_share,
-            notes=guidance.notes,
-            updated_at=guidance.updated_at,
+    nominees_list: list[NomineeItem] = []
+    if guidance and guidance.nominees_json and isinstance(guidance.nominees_json, list):
+        for item in guidance.nominees_json:
+            if isinstance(item, dict) and item.get("name"):
+                nominees_list.append(
+                    NomineeItem(
+                        name=str(item["name"]),
+                        relation=str(item.get("relation", "")),
+                        share=str(item.get("share", "100%")),
+                    )
+                )
+    elif guidance and guidance.nominee_name:
+        nominees_list.append(
+            NomineeItem(
+                name=guidance.nominee_name,
+                relation=guidance.nominee_relation or "",
+                share=guidance.nominee_share or "100%",
+            )
         )
-        if guidance
-        else NomineeGuidanceResponse(
-            nominee_name="Savitri Sharma",
-            nominee_relation="Mother",
-            nominee_share="100%",
-            notes="Mutual fund investments are registered across AMCs and RTAs (CAMS & KFintech). In case of emergency, contact the respective fund houses or CAMS/KFintech with PAN, death certificate, and nominee claim forms. Folio details are listed in the emergency packet.",
-        )
+
+    nominee_dto = NomineeGuidanceResponse(
+        nominees=nominees_list,
+        nominee_name=nominees_list[0].name if nominees_list else (guidance.nominee_name if guidance else None),
+        nominee_relation=nominees_list[0].relation if nominees_list else (guidance.nominee_relation if guidance else None),
+        nominee_share=nominees_list[0].share if nominees_list else (guidance.nominee_share if guidance else None),
+        notes=guidance.notes if guidance else None,
+        updated_at=guidance.updated_at if guidance else None,
     )
 
     instructions = (

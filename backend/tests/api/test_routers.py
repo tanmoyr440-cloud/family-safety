@@ -231,10 +231,11 @@ async def test_accounts_and_packet_endpoints(client: AsyncClient) -> None:
     )
     assert update_groww.status_code == 200
 
-    # Nominee guidance GET default
+    # Nominee guidance GET default empty
     nom_get = await client.get("/api/v1/accounts/nominee-guidance")
     assert nom_get.status_code == 200
-    assert nom_get.json()["nominee_name"] == "Savitri Sharma"
+    assert nom_get.json()["nominees"] == []
+    assert nom_get.json()["nominee_name"] is None
 
     # Nominee guidance PUT update
     nom_put = await client.put(
@@ -404,25 +405,25 @@ async def test_send_emergency_alert_endpoint(client: AsyncClient, monkeypatch: p
 
 @pytest.mark.asyncio
 async def test_nominee_guidance_persistence(client: AsyncClient) -> None:
-    """Verifies getting, updating, and persisting nominee guidance notes."""
+    """Verifies getting, updating, and persisting multiple nominee guidance notes."""
     _, _, csrf = await _register_and_login(client)
     headers = {"X-CSRF-Token": csrf}
 
-    # 1. Initial GET should return defaults
+    # 1. Initial GET should return empty nominees
     get_resp = await client.get("/api/v1/accounts/nominee-guidance", headers=headers)
     assert get_resp.status_code == 200
     init_data = get_resp.json()
-    assert init_data["nominee_name"] == "Savitri Sharma"
-    assert init_data["nominee_relation"] == "Mother"
-    assert init_data["nominee_share"] == "100%"
-    assert "Mutual fund investments" in init_data["notes"]
+    assert init_data["nominees"] == []
+    assert init_data["nominee_name"] is None
+    assert init_data["notes"] is None
 
-    # 2. PUT to update nominee guidance
+    # 2. PUT to update nominee guidance with multiple nominees
     update_payload = {
-        "nominee_name": "Anita Sharma",
-        "nominee_relation": "Spouse",
-        "nominee_share": "50%",
-        "notes": "Custom emergency guidance for spouse: contact ICICI AMC directly.",
+        "nominees": [
+            {"name": "Anita Sharma", "relation": "Spouse", "share": "50%"},
+            {"name": "Rohan Sharma", "relation": "Son", "share": "50%"},
+        ],
+        "notes": "Custom emergency guidance for family: contact ICICI AMC directly.",
     }
     put_resp = await client.put(
         "/api/v1/accounts/nominee-guidance",
@@ -431,24 +432,25 @@ async def test_nominee_guidance_persistence(client: AsyncClient) -> None:
     )
     assert put_resp.status_code == 200
     updated_data = put_resp.json()
+    assert len(updated_data["nominees"]) == 2
+    assert updated_data["nominees"][0]["name"] == "Anita Sharma"
+    assert updated_data["nominees"][1]["name"] == "Rohan Sharma"
     assert updated_data["nominee_name"] == "Anita Sharma"
-    assert updated_data["nominee_relation"] == "Spouse"
-    assert updated_data["nominee_share"] == "50%"
-    assert updated_data["notes"] == "Custom emergency guidance for spouse: contact ICICI AMC directly."
+    assert updated_data["notes"] == "Custom emergency guidance for family: contact ICICI AMC directly."
 
     # 3. GET again should return the persisted values
     get_resp2 = await client.get("/api/v1/accounts/nominee-guidance", headers=headers)
     assert get_resp2.status_code == 200
-    persisted_data = get_resp2.json()
-    assert persisted_data["nominee_name"] == "Anita Sharma"
-    assert persisted_data["nominee_relation"] == "Spouse"
-    assert persisted_data["nominee_share"] == "50%"
-    assert persisted_data["notes"] == "Custom emergency guidance for spouse: contact ICICI AMC directly."
+    persisted = get_resp2.json()
+    assert len(persisted["nominees"]) == 2
+    assert persisted["nominees"][0]["name"] == "Anita Sharma"
+    assert persisted["nominees"][1]["name"] == "Rohan Sharma"
+    assert persisted["notes"] == "Custom emergency guidance for family: contact ICICI AMC directly."
 
     # 4. Packet preview should include updated guidance notes
     packet_resp = await client.get("/api/v1/packet/preview", headers=headers)
     assert packet_resp.status_code == 200
     packet_data = packet_resp.json()
     assert packet_data["nominee"]["nominee_name"] == "Anita Sharma"
-    assert packet_data["instructions"] == "Custom emergency guidance for spouse: contact ICICI AMC directly."
+    assert packet_data["instructions"] == "Custom emergency guidance for family: contact ICICI AMC directly."
 

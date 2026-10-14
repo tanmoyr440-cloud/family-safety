@@ -23,17 +23,9 @@ from app.interfaces.api.schemas import (
     ActionResponse,
     GrowwAccountResponse,
     NomineeGuidanceResponse,
+    NomineeItem,
     UpdateGrowwAccountRequest,
     UpdateNomineeGuidanceRequest,
-)
-
-DEFAULT_NOMINEE_NAME = "Savitri Sharma"
-DEFAULT_NOMINEE_RELATION = "Mother"
-DEFAULT_NOMINEE_SHARE = "100%"
-DEFAULT_NOMINEE_NOTES = (
-    "Mutual fund investments are registered across AMCs and RTAs (CAMS & KFintech). "
-    "In case of emergency, contact the respective fund houses or CAMS/KFintech with PAN, "
-    "death certificate, and nominee claim forms. Folio details are listed in the emergency packet."
 )
 
 router = APIRouter(tags=["accounts"])
@@ -96,6 +88,33 @@ async def refresh_groww_holdings(
     return ActionResponse(message="Holdings refreshed successfully.")
 
 
+def _extract_nominees(row: NomineeGuidanceModel | None) -> list[NomineeItem]:
+    if not row:
+        return []
+    if row.nominees_json and isinstance(row.nominees_json, list) and len(row.nominees_json) > 0:
+        nominees: list[NomineeItem] = []
+        for item in row.nominees_json:
+            if isinstance(item, dict) and item.get("name"):
+                nominees.append(
+                    NomineeItem(
+                        name=str(item["name"]),
+                        relation=str(item.get("relation", "")),
+                        share=str(item.get("share", "100%")),
+                    )
+                )
+        if nominees:
+            return nominees
+    if row.nominee_name:
+        return [
+            NomineeItem(
+                name=row.nominee_name,
+                relation=row.nominee_relation or "",
+                share=row.nominee_share or "100%",
+            )
+        ]
+    return []
+
+
 @router.get(
     "/accounts/nominee-guidance",
     response_model=NomineeGuidanceResponse,
@@ -105,7 +124,7 @@ async def refresh_groww_holdings(
 async def get_nominee_guidance(
     current_owner: Owner = Depends(get_current_owner),
 ) -> NomineeGuidanceResponse:
-    """Retrieve the registered nominee and emergency guidance for the owner."""
+    """Retrieve the registered nominees and emergency guidance for the owner."""
     session_factory = get_session_factory()
     try:
         async with session_factory() as session:
@@ -113,26 +132,30 @@ async def get_nominee_guidance(
             row = (await session.execute(stmt)).scalar_one_or_none()
             if not row:
                 return NomineeGuidanceResponse(
-                    nominee_name=DEFAULT_NOMINEE_NAME,
-                    nominee_relation=DEFAULT_NOMINEE_RELATION,
-                    nominee_share=DEFAULT_NOMINEE_SHARE,
-                    notes=DEFAULT_NOMINEE_NOTES,
+                    nominees=[],
+                    nominee_name=None,
+                    nominee_relation=None,
+                    nominee_share=None,
+                    notes=None,
                     updated_at=None,
                 )
+            nominees = _extract_nominees(row)
             return NomineeGuidanceResponse(
-                nominee_name=row.nominee_name if row.nominee_name is not None else DEFAULT_NOMINEE_NAME,
-                nominee_relation=row.nominee_relation if row.nominee_relation is not None else DEFAULT_NOMINEE_RELATION,
-                nominee_share=row.nominee_share if row.nominee_share is not None else DEFAULT_NOMINEE_SHARE,
-                notes=row.notes if row.notes is not None else DEFAULT_NOMINEE_NOTES,
+                nominees=nominees,
+                nominee_name=nominees[0].name if nominees else None,
+                nominee_relation=nominees[0].relation if nominees else None,
+                nominee_share=nominees[0].share if nominees else None,
+                notes=row.notes,
                 updated_at=row.updated_at,
             )
     except Exception as exc:
         logger.error("Failed to load nominee guidance: %s", exc)
         return NomineeGuidanceResponse(
-            nominee_name=DEFAULT_NOMINEE_NAME,
-            nominee_relation=DEFAULT_NOMINEE_RELATION,
-            nominee_share=DEFAULT_NOMINEE_SHARE,
-            notes=DEFAULT_NOMINEE_NOTES,
+            nominees=[],
+            nominee_name=None,
+            nominee_relation=None,
+            nominee_share=None,
+            notes=None,
             updated_at=None,
         )
 
@@ -154,35 +177,55 @@ async def update_nominee_guidance(
         async with session_factory() as session:
             stmt = select(NomineeGuidanceModel).where(NomineeGuidanceModel.owner_id == current_owner.id)
             row = (await session.execute(stmt)).scalar_one_or_none()
+
+            final_nominees: list[dict[str, Any]] = []
+            if body.nominees is not None:
+                final_nominees = [
+                    {"name": n.name.strip(), "relation": n.relation.strip(), "share": n.share.strip()}
+                    for n in body.nominees
+                    if n.name.strip()
+                ]
+            elif body.nominee_name and body.nominee_name.strip():
+                final_nominees = [
+                    {
+                        "name": body.nominee_name.strip(),
+                        "relation": (body.nominee_relation or "").strip(),
+                        "share": (body.nominee_share or "100%").strip(),
+                    }
+                ]
+
+            primary = final_nominees[0] if final_nominees else None
+            clean_notes = body.notes.strip() if body.notes else None
+
             if not row:
                 row = NomineeGuidanceModel(
                     id=str(uuid.uuid4()),
                     owner_id=current_owner.id,
-                    nominee_name=body.nominee_name,
-                    nominee_relation=body.nominee_relation,
-                    nominee_share=body.nominee_share or "100%",
-                    notes=body.notes,
+                    nominees_json=final_nominees,
+                    nominee_name=primary["name"] if primary else None,
+                    nominee_relation=primary["relation"] if primary else None,
+                    nominee_share=primary["share"] if primary else None,
+                    notes=clean_notes,
                     updated_at=now,
                 )
                 session.add(row)
             else:
-                if body.nominee_name is not None:
-                    row.nominee_name = body.nominee_name
-                if body.nominee_relation is not None:
-                    row.nominee_relation = body.nominee_relation
-                if body.nominee_share is not None:
-                    row.nominee_share = body.nominee_share
-                if body.notes is not None:
-                    row.notes = body.notes
+                row.nominees_json = final_nominees
+                row.nominee_name = primary["name"] if primary else None
+                row.nominee_relation = primary["relation"] if primary else None
+                row.nominee_share = primary["share"] if primary else None
+                row.notes = clean_notes
                 row.updated_at = now
 
             await session.commit()
             await session.refresh(row)
 
+            nominees_dto = _extract_nominees(row)
             return NomineeGuidanceResponse(
-                nominee_name=row.nominee_name,
-                nominee_relation=row.nominee_relation,
-                nominee_share=row.nominee_share,
+                nominees=nominees_dto,
+                nominee_name=nominees_dto[0].name if nominees_dto else None,
+                nominee_relation=nominees_dto[0].relation if nominees_dto else None,
+                nominee_share=nominees_dto[0].share if nominees_dto else None,
                 notes=row.notes,
                 updated_at=row.updated_at,
             )

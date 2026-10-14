@@ -125,7 +125,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ActionResponse"
+                  "$ref": "#/components/schemas/RefreshResponse"
                 }
               }
             }
@@ -482,7 +482,7 @@
           "contacts"
         ],
         "summary": "Add a new trusted contact",
-        "description": "Register a new trusted contact with consent pending.",
+        "description": "Register a new trusted contact with consent pending and generate verification OTP.",
         "operationId": "createContact",
         "parameters": [
           {
@@ -636,7 +636,7 @@
           "contacts"
         ],
         "summary": "Send or resend consent verification OTP",
-        "description": "Send an invitation and verification OTP to contact's phone.",
+        "description": "Send an invitation and verification OTP to contact's phone and email.",
         "operationId": "sendContactVerificationOtp",
         "parameters": [
           {
@@ -679,7 +679,7 @@
           "contacts"
         ],
         "summary": "Verify contact consent via OTP (Public)",
-        "description": "Public endpoint for contacts to confirm consent using OTP token.",
+        "description": "Public endpoint for contacts to confirm consent using real OTP token.",
         "operationId": "verifyContactPublic",
         "requestBody": {
           "content": {
@@ -1094,6 +1094,68 @@
         }
       }
     },
+    "/api/v1/accounts/nominee-guidance": {
+      "get": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Get nominee and emergency guidance instructions",
+        "description": "Retrieve the registered nominees and emergency guidance for the owner.",
+        "operationId": "getNomineeGuidance",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NomineeGuidanceResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Update nominee details and emergency guidance instructions",
+        "description": "Upsert nominee and emergency guidance instructions.",
+        "operationId": "updateNomineeGuidance",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNomineeGuidanceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NomineeGuidanceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/bank-accounts": {
       "get": {
         "tags": [
@@ -1360,6 +1422,26 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "mutual-funds"
+        ],
+        "summary": "Clear all mutual fund holdings snapshot data",
+        "description": "Delete all mutual fund holdings in owner's portfolio snapshot.",
+        "operationId": "clearAllMutualFundHoldings",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/mutual-funds/holdings/{id}": {
@@ -1410,8 +1492,8 @@
         "tags": [
           "mutual-funds"
         ],
-        "summary": "Import portfolio from CAMS / KFintech Consolidated Account Statement (CAS) PDF",
-        "description": "Parse encrypted or unencrypted CAS PDF, map to SEBI/AMFI registry, and import holdings.",
+        "summary": "Import portfolio from CDSL / NSDL / CAMS / KFintech Consolidated Account Statement (CAS) PDF",
+        "description": "Parse encrypted or unencrypted CAS PDF (CDSL, NSDL, CAMS, KFintech), map to SEBI/AMFI registry, and import holdings.",
         "operationId": "importCasStatement",
         "requestBody": {
           "content": {
@@ -2930,6 +3012,28 @@
             "type": "string",
             "title": "Csrf Token"
           },
+          "access_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Token"
+          },
+          "refresh_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Token"
+          },
           "mfa_required": {
             "type": "boolean",
             "title": "Mfa Required",
@@ -3284,6 +3388,104 @@
         ],
         "title": "NextDueSchema"
       },
+      "NomineeGuidanceResponse": {
+        "properties": {
+          "nominees": {
+            "items": {
+              "$ref": "#/components/schemas/NomineeItem"
+            },
+            "type": "array",
+            "title": "Nominees",
+            "default": []
+          },
+          "nominee_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nominee Name"
+          },
+          "nominee_relation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nominee Relation"
+          },
+          "nominee_share": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nominee Share"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "title": "NomineeGuidanceResponse"
+      },
+      "NomineeItem": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "relation": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Relation"
+          },
+          "share": {
+            "type": "string",
+            "maxLength": 32,
+            "title": "Share",
+            "default": "100%"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "relation"
+        ],
+        "title": "NomineeItem"
+      },
       "NotificationLogItemResponse": {
         "properties": {
           "id": {
@@ -3494,6 +3696,16 @@
           "instructions": {
             "type": "string",
             "title": "Instructions"
+          },
+          "nominee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NomineeGuidanceResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -3695,6 +3907,44 @@
           "otp"
         ],
         "title": "PublicVerifyContactRequest"
+      },
+      "RefreshResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Session refreshed successfully."
+          },
+          "csrf_token": {
+            "type": "string",
+            "title": "Csrf Token",
+            "default": ""
+          },
+          "access_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Token"
+          },
+          "refresh_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Token"
+          }
+        },
+        "type": "object",
+        "title": "RefreshResponse"
       },
       "RegisterRequest": {
         "properties": {
@@ -4039,6 +4289,74 @@
           "warning_days"
         ],
         "title": "UpdateMonitorConfigRequest"
+      },
+      "UpdateNomineeGuidanceRequest": {
+        "properties": {
+          "nominees": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/NomineeItem"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nominees"
+          },
+          "nominee_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nominee Name"
+          },
+          "nominee_relation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nominee Relation"
+          },
+          "nominee_share": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nominee Share"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "title": "UpdateNomineeGuidanceRequest"
       },
       "ValidationError": {
         "properties": {

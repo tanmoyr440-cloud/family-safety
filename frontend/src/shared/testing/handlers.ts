@@ -20,7 +20,21 @@ import {
   makeSchedulerHealth,
 } from "./factories";
 
-let currentNomineeGuidance = {
+let currentNomineeGuidance: {
+  nominees: Array<{ name: string; relation: string; share: string }>;
+  nominee_name: string | null;
+  nominee_relation: string | null;
+  nominee_share: string | null;
+  notes: string | null;
+  updated_at: string | null;
+} = {
+  nominees: [
+    {
+      name: "Savitri Sharma",
+      relation: "Mother",
+      share: "100%",
+    },
+  ],
   nominee_name: "Savitri Sharma",
   nominee_relation: "Mother",
   nominee_share: "100%",
@@ -423,16 +437,29 @@ export const handlers = [
 
   http.put(new RegExp("/api/v1/accounts/nominee-guidance$"), async ({ request }) => {
     const body = (await request.json().catch(() => ({}))) as {
+      nominees?: Array<{ name: string; relation: string; share: string }>;
       nominee_name?: string;
       nominee_relation?: string;
       nominee_share?: string;
       notes?: string;
     };
+    const newNominees =
+      body.nominees ??
+      (body.nominee_name
+        ? [
+            {
+              name: body.nominee_name,
+              relation: body.nominee_relation ?? "",
+              share: body.nominee_share ?? "100%",
+            },
+          ]
+        : []);
     currentNomineeGuidance = {
       ...currentNomineeGuidance,
-      ...(body.nominee_name !== undefined ? { nominee_name: body.nominee_name } : {}),
-      ...(body.nominee_relation !== undefined ? { nominee_relation: body.nominee_relation } : {}),
-      ...(body.nominee_share !== undefined ? { nominee_share: body.nominee_share } : {}),
+      nominees: newNominees,
+      nominee_name: newNominees[0]?.name ?? null,
+      nominee_relation: newNominees[0]?.relation ?? null,
+      nominee_share: newNominees[0]?.share ?? null,
       ...(body.notes !== undefined ? { notes: body.notes } : {}),
       updated_at: new Date().toISOString(),
     };
