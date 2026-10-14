@@ -1,15 +1,13 @@
 // Family Safety Net - Lightweight Offline & PWA Service Worker
-const CACHE_NAME = "fsn-cache-v1";
+const CACHE_NAME = "fsn-cache-v2";
 const STATIC_ASSETS = [
-  "/",
-  "/index.html",
   "/manifest.webmanifest",
   "/icons/icon-192.svg",
   "/icons/icon-512.svg",
   "/icons/icon-maskable.svg",
 ];
 
-// Install: Cache critical shell assets
+// Install: Cache critical static assets (excluding index.html to prevent stale chunk hashing)
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -19,7 +17,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// Activate: Purge old cache versions
+// Activate: Purge old cache versions immediately
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
@@ -37,6 +35,12 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 // Fetch: Strategy depending on request type
 self.addEventListener("fetch", (event) => {
   const { request } = event;
@@ -47,7 +51,28 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 1. API calls: Network-first
+  // 1. HTML Navigations / Document requests: Network-First with Offline Cache Fallback
+  // This guarantees users always receive the newest index.html pointing to fresh deploy chunk hashes.
+  if (request.mode === "navigate" || request.destination === "document") {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put("/index.html", responseClone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match("/index.html");
+        }),
+    );
+    return;
+  }
+
+  // 2. API calls: Network-first
   if (url.pathname.startsWith("/api/")) {
     event.respondWith(
       fetch(request).catch(() => {
@@ -67,49 +92,30 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 2. Static Assets & App Shell: Cache-first with Network Fallback
+  // 3. Static Assets: Cache-first with Network Fallback
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Fetch in background to revalidate cache
-        fetch(request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, networkResponse);
-              });
-            }
-          })
-          .catch(() => {
-            // Revalidation failed, cached version used
-          });
         return cachedResponse;
       }
 
       // Not in cache: fetch from network
-      return fetch(request)
-        .then((networkResponse) => {
-          if (
-            networkResponse &&
-            networkResponse.status === 200 &&
-            (url.pathname.startsWith("/assets/") ||
-              url.pathname.startsWith("/icons/") ||
-              url.pathname.endsWith(".js") ||
-              url.pathname.endsWith(".css"))
-          ) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          // If HTML navigation failed offline, return cached root index.html
-          if (request.mode === "navigate") {
-            return caches.match("/index.html");
-          }
-        });
+      return fetch(request).then((networkResponse) => {
+        if (
+          networkResponse &&
+          networkResponse.status === 200 &&
+          (url.pathname.startsWith("/assets/") ||
+            url.pathname.startsWith("/icons/") ||
+            url.pathname.endsWith(".js") ||
+            url.pathname.endsWith(".css"))
+        ) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, responseClone);
+          });
+        }
+        return networkResponse;
+      });
     }),
   );
 });

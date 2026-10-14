@@ -110,3 +110,5 @@ out/
 .vite/
 */.vite/
 .eslintcache
+*.tsbuildinfo
+

@@ -9,32 +9,65 @@ import { MfaEnrollPage } from "@/features/auth/pages/MfaEnrollPage";
 import { CheckInLandingPage } from "@/features/dashboard/pages/CheckInLandingPage";
 import { VerifyContactPage } from "@/features/contacts/pages/VerifyContactPage";
 import { NotFoundPage } from "./pages/Placeholders";
+import { RouteErrorBoundary } from "./RouteErrorBoundary";
+
+/**
+ * Resilient lazy loader that detects chunk mismatch errors after new production deployments
+ * and automatically refreshes once to fetch the latest application bundle.
+ */
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T }>,
+): React.LazyExoticComponent<T> {
+  return React.lazy(async () => {
+    const hasBeenRefreshed = sessionStorage.getItem("lazy_retry_refreshed") === "true";
+
+    try {
+      const component = await factory();
+      sessionStorage.removeItem("lazy_retry_refreshed");
+      return component;
+    } catch (error: unknown) {
+      const errStr = String(error);
+      const isChunkLoadError =
+        errStr.includes("dynamically imported module") ||
+        errStr.includes("Failed to fetch") ||
+        errStr.includes("loading chunk") ||
+        errStr.includes("ChunkLoadError");
+
+      if (isChunkLoadError && !hasBeenRefreshed) {
+        sessionStorage.setItem("lazy_retry_refreshed", "true");
+        window.location.reload();
+        return new Promise<{ default: T }>(() => {});
+      }
+      throw error;
+    }
+  });
+}
 
 // Route-level code-splitting: isolate owner app from parent-facing packet bundles
-const DashboardPage = React.lazy(() =>
+const DashboardPage = lazyWithRetry(() =>
   import("@/features/dashboard/pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
 );
-const AccountsPage = React.lazy(() =>
+const AccountsPage = lazyWithRetry(() =>
   import("@/features/accounts/pages/AccountsPage").then((m) => ({ default: m.AccountsPage })),
 );
-const LoansPage = React.lazy(() =>
+const LoansPage = lazyWithRetry(() =>
   import("@/features/loans/pages/LoansPage").then((m) => ({ default: m.LoansPage })),
 );
-const ContactsPage = React.lazy(() =>
+const ContactsPage = lazyWithRetry(() =>
   import("@/features/contacts/pages/ContactsPage").then((m) => ({ default: m.ContactsPage })),
 );
-const DocumentsPage = React.lazy(() =>
+const DocumentsPage = lazyWithRetry(() =>
   import("@/features/documents/pages/DocumentsPage").then((m) => ({ default: m.DocumentsPage })),
 );
-const NotificationsPage = React.lazy(() =>
+const NotificationsPage = lazyWithRetry(() =>
   import("@/features/notifications/pages/NotificationsPage").then((m) => ({
     default: m.NotificationsPage,
   })),
 );
-const SettingsPage = React.lazy(() =>
+const SettingsPage = lazyWithRetry(() =>
   import("@/features/settings/pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
 );
-const PublicPacketPage = React.lazy(() =>
+const PublicPacketPage = lazyWithRetry(() =>
   import("@/features/packet/pages/PublicPacketPage").then((m) => ({ default: m.PublicPacketPage })),
 );
 
@@ -53,28 +86,33 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+    errorElement: <RouteErrorBoundary />,
   },
   {
     path: "/register",
     element: <RegisterPage />,
+    errorElement: <RouteErrorBoundary />,
   },
 
   // Public Check-in Magic Link Route (isolated, no owner chrome)
   {
     path: "/checkin/:token",
     element: <CheckInLandingPage />,
+    errorElement: <RouteErrorBoundary />,
   },
 
   // Public Parent Contact Verification Route (isolated, no owner chrome)
   {
     path: "/verify-contact/:token",
     element: <VerifyContactPage />,
+    errorElement: <RouteErrorBoundary />,
   },
 
   // Public Parent Packet Route (isolated, code-split from owner bundle)
   {
     path: "/p/:token",
     element: withSuspense(<PublicPacketPage />),
+    errorElement: <RouteErrorBoundary />,
   },
 
   // Protected Owner App Routes
@@ -85,6 +123,7 @@ export const router = createBrowserRouter([
         <Layout />
       </ProtectedRoute>
     ),
+    errorElement: <RouteErrorBoundary />,
     children: [
       { index: true, element: withSuspense(<DashboardPage />) },
       { path: "accounts", element: withSuspense(<AccountsPage />) },

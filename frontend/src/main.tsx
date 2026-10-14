@@ -3,6 +3,17 @@ import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import "./index.css";
 
+// Handle dynamic import chunk loading failures (e.g. after a new release is deployed)
+window.addEventListener("vite:preloadError", (event) => {
+  console.warn("Vite chunk preload error detected, refreshing page...", event);
+  const lastReload = sessionStorage.getItem("last_preload_reload");
+  const now = Date.now();
+  if (!lastReload || now - Number(lastReload) > 10000) {
+    sessionStorage.setItem("last_preload_reload", String(now));
+    window.location.reload();
+  }
+});
+
 async function enableMocking(): Promise<void> {
   if (import.meta.env.VITE_ENABLE_MOCK === "true") {
     const { worker } = await import("./shared/testing/browser");
@@ -35,4 +46,3 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
       });
   });
 }
-
