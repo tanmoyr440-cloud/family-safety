@@ -23,8 +23,16 @@ class Settings(BaseSettings):
     cors_origins: list[str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
     ]
-    cors_origin_regex: str | None = r"^https:\/\/.*\.vercel\.app$"
+    cors_origin_regex: str | None = (
+        r"^(https:\/\/.*\.vercel\.app|https:\/\/.*\.onrender\.com|http:\/\/localhost:\d+|http:\/\/127\.0\.0\.1:\d+)$"
+    )
 
     # Database
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/family_safety_net"

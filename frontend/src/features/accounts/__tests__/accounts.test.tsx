@@ -96,13 +96,13 @@ describe("Accounts Feature - Bank Accounts & Mutual Funds", () => {
     const user = userEvent.setup();
     const { container } = renderWithProviders(<AccountsPage />, { route: "/accounts" });
 
-    // Initial state
+    // Initial state: clean empty state with no hardcoded dummy data
     expect(screen.getByText("Nominee & Emergency Guidance Notes")).toBeInTheDocument();
-    expect(await screen.findByText("Savitri Sharma")).toBeInTheDocument();
+    expect(await screen.findByText(/no nominees registered yet/i)).toBeInTheDocument();
 
-    // Click Edit Details
-    const editBtn = screen.getByRole("button", { name: /edit details/i });
-    await user.click(editBtn);
+    // Click Add Nominees
+    const addBtn = screen.getByRole("button", { name: /add nominees/i });
+    await user.click(addBtn);
 
     // Edit fields
     const nameInput = screen.getByLabelText(/nominee 1 full name/i);
@@ -110,12 +110,9 @@ describe("Accounts Feature - Bank Accounts & Mutual Funds", () => {
     const shareInput = screen.getAllByLabelText(/share/i)[0]!;
     const notesInput = screen.getByLabelText(/emergency instructions/i);
 
-    await user.clear(nameInput);
     await user.type(nameInput, "Anita Sharma");
-
     await user.clear(relInput);
     await user.type(relInput, "Spouse");
-
     await user.clear(shareInput);
     await user.type(shareInput, "50%");
 

@@ -28,19 +28,12 @@ let currentNomineeGuidance: {
   notes: string | null;
   updated_at: string | null;
 } = {
-  nominees: [
-    {
-      name: "Savitri Sharma",
-      relation: "Mother",
-      share: "100%",
-    },
-  ],
-  nominee_name: "Savitri Sharma",
-  nominee_relation: "Mother",
-  nominee_share: "100%",
-  notes:
-    "Mutual fund investments are registered across AMCs and RTAs (CAMS & KFintech). In case of emergency, contact the respective fund houses or CAMS/KFintech with PAN, death certificate, and nominee claim forms. Folio details are listed in the emergency packet.",
-  updated_at: "2026-10-14T02:00:00Z",
+  nominees: [],
+  nominee_name: null,
+  nominee_relation: null,
+  nominee_share: null,
+  notes: null,
+  updated_at: null,
 };
 
 export const handlers = [

@@ -1,6 +1,7 @@
 """FastAPI application entrypoint."""
 
 import logging
+import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -48,6 +49,7 @@ def setup_logging() -> None:
 
 
 setup_logging()
+logger = structlog.get_logger(__name__)
 
 
 @asynccontextmanager
@@ -78,15 +80,27 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
                         nominee_relation VARCHAR(64),
                         nominee_share VARCHAR(32) DEFAULT '100%',
                         notes TEXT,
-                        updated_at {tz_type} NOT NULL
+                        updated_at {tz_type} NOT NULL,
+                        nominees_json {'JSONB' if is_postgres else 'JSON'}
                     );
                     """
                 )
             )
             if is_postgres:
                 await conn.execute(
+                    text("ALTER TABLE nominee_guidance ADD COLUMN IF NOT EXISTS nominees_json JSONB;")
+                )
+                await conn.execute(
                     text("CREATE INDEX IF NOT EXISTS ix_nominee_guidance_owner_id ON nominee_guidance (owner_id);")
                 )
+            else:
+                try:
+                    cols_res = await conn.execute(text("PRAGMA table_info(nominee_guidance)"))
+                    col_names = [row[1] for row in cols_res.fetchall()]
+                    if "nominees_json" not in col_names:
+                        await conn.execute(text("ALTER TABLE nominee_guidance ADD COLUMN nominees_json JSON;"))
+                except Exception as ex:
+                    logger.warning("Could not add nominees_json column to sqlite: %s", ex)
 
             # Ensure contact_otps table and index exist
             await conn.execute(
@@ -137,7 +151,38 @@ app.add_middleware(
 @app.middleware("http")
 async def security_headers_middleware(request: Request, call_next: Any) -> Response:
     """Attach defensive security headers to all responses."""
-    response: Response = await call_next(request)
+    try:
+        response: Response = await call_next(request)
+    except Exception as exc:
+        logger.exception(
+            "Unhandled error processing %s %s: %s", request.method, request.url.path, exc
+        )
+        response = JSONResponse(
+            status_code=500,
+            content={
+                "type": "https://familysafetynet.app/errors/internal-server-error",
+                "title": "Internal Server Error",
+                "status": 500,
+                "code": "INTERNAL_SERVER_ERROR",
+                "detail": "An unexpected internal error occurred.",
+            },
+            media_type="application/problem+json",
+        )
+
+    # Attach CORS headers if missing (e.g. on unhandled errors)
+    origin = request.headers.get("origin")
+    if origin and "access-control-allow-origin" not in response.headers:
+        if (origin in settings.cors_origins) or (
+            settings.cors_origin_regex and re.match(settings.cors_origin_regex, origin)
+        ):
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "*"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Expose-Headers"] = (
+                "X-CSRF-Token, X-Access-Token, X-Refresh-Token, Authorization"
+            )
+
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
