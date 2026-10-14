@@ -139,5 +139,116 @@ describe("Accounts Feature - Bank Accounts & Mutual Funds", () => {
 
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  it("allows removing an individual mutual fund holding with confirmation dialog", async () => {
+    const { http, HttpResponse } = await import("msw");
+    const { server } = await import("@/shared/testing/setup");
+
+    let holdings = [
+      {
+        id: "mf-test-1",
+        scheme_code: 122639,
+        scheme_name: "Parag Parikh Flexi Cap Fund",
+        fund_house: "PPFAS Mutual Fund",
+        units: 50.0,
+        folio_masked: "XXXX5678",
+        latest_nav: 85.5,
+        nav_date: "14-Oct-2026",
+        value_paise: 427500,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+
+    server.use(
+      http.get(new RegExp("/api/v1/mutual-funds/holdings$"), () => {
+        return HttpResponse.json(holdings);
+      }),
+      http.delete(new RegExp("/api/v1/mutual-funds/holdings/(?<id>[^/]+)$"), ({ params }) => {
+        holdings = holdings.filter((h) => h.id !== params.id);
+        return HttpResponse.json({ message: "Mutual fund holding removed successfully." });
+      }),
+    );
+
+    const user = userEvent.setup();
+    const { container } = renderWithProviders(<AccountsPage />, { route: "/accounts" });
+
+    // Verify holding is listed
+    expect(await screen.findByText("Parag Parikh Flexi Cap Fund")).toBeInTheDocument();
+    expect(screen.getByText("Folio: XXXX5678")).toBeInTheDocument();
+
+    // Click trash button on the row
+    const deleteBtn = screen.getByRole("button", { name: /remove parag parikh flexi cap fund/i });
+    await user.click(deleteBtn);
+
+    // Verify confirmation dialog opens
+    expect(await screen.findByRole("heading", { name: /remove mutual fund holding\?/i })).toBeInTheDocument();
+    expect(screen.getByText(/are you sure you want to remove "parag parikh flexi cap fund"/i)).toBeInTheDocument();
+
+    // Confirm deletion
+    const confirmBtn = screen.getByRole("button", { name: /^remove holding$/i });
+    await user.click(confirmBtn);
+
+    // Verify success banner and holding is removed
+    await waitFor(() => {
+      expect(screen.getByText(/removed "parag parikh flexi cap fund" from portfolio/i)).toBeInTheDocument();
+    });
+
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("allows clearing all portfolio holdings snapshot data with confirmation dialog", async () => {
+    const { http, HttpResponse } = await import("msw");
+    const { server } = await import("@/shared/testing/setup");
+
+    let holdings = [
+      {
+        id: "mf-test-1",
+        scheme_code: 122639,
+        scheme_name: "Parag Parikh Flexi Cap Fund",
+        fund_house: "PPFAS Mutual Fund",
+        units: 50.0,
+        folio_masked: "XXXX5678",
+        latest_nav: 85.5,
+        nav_date: "14-Oct-2026",
+        value_paise: 427500,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+
+    server.use(
+      http.get(new RegExp("/api/v1/mutual-funds/holdings$"), () => {
+        return HttpResponse.json(holdings);
+      }),
+      http.delete(new RegExp("/api/v1/mutual-funds/holdings$"), () => {
+        holdings = [];
+        return HttpResponse.json({ message: "Successfully removed all portfolio holdings." });
+      }),
+    );
+
+    const user = userEvent.setup();
+    const { container } = renderWithProviders(<AccountsPage />, { route: "/accounts" });
+
+    // Verify holding is present and Clear All button is visible in header
+    expect(await screen.findByText("Parag Parikh Flexi Cap Fund")).toBeInTheDocument();
+    const clearAllBtn = screen.getByRole("button", { name: /clear all/i });
+    await user.click(clearAllBtn);
+
+    // Verify confirmation dialog
+    expect(await screen.findByRole("heading", { name: /clear portfolio holdings snapshot\?/i })).toBeInTheDocument();
+    expect(screen.getByText(/this will delete all 1 mutual fund holdings/i)).toBeInTheDocument();
+
+    // Confirm clear all
+    const confirmClearBtn = screen.getByRole("button", { name: /clear all data/i });
+    await user.click(confirmClearBtn);
+
+    // Verify success banner and empty state displayed
+    await waitFor(() => {
+      expect(screen.getByText(/all portfolio holdings snapshot data cleared successfully/i)).toBeInTheDocument();
+      expect(screen.getByText(/no mutual fund holdings added yet/i)).toBeInTheDocument();
+    });
+
+    expect(await axe(container)).toHaveNoViolations();
+  });
 });
+
 

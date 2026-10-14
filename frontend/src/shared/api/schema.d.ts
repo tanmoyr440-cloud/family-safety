@@ -634,7 +634,11 @@ export interface paths {
          * @description Register a new mutual fund holding with official metadata fetched from SEBI/AMFI.
          */
         post: operations["addMutualFundHolding"];
-        delete?: never;
+        /**
+         * Clear all mutual fund holdings snapshot data
+         * @description Delete all mutual fund holdings in owner's portfolio snapshot.
+         */
+        delete: operations["clearAllMutualFundHoldings"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2839,7 +2843,28 @@ export interface operations {
             };
         };
     };
+    clearAllMutualFundHoldings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionResponse"];
+                };
+            };
+        };
+    };
     deleteMutualFundHolding: {
+
         parameters: {
             query?: never;
             header?: never;

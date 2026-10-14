@@ -1,12 +1,27 @@
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/Card";
 import { Button } from "@/shared/ui/Button";
+import { ConfirmDialog } from "@/shared/ui/ConfirmDialog";
 import { MoneyText } from "@/shared/ui/MoneyText";
 import { formatDateIST } from "@/shared/lib/dates";
 import { AddMutualFundDialog } from "./AddMutualFundDialog";
 import { ImportCasDialog } from "./ImportCasDialog";
-import { useDeleteMutualFundHolding, useMutualFundHoldings } from "../api/useMutualFunds";
-import { FileUp, Info, PieChart, Plus, Trash2, TrendingUp } from "lucide-react";
+import {
+  useClearAllMutualFundHoldings,
+  useDeleteMutualFundHolding,
+  useMutualFundHoldings,
+  type MutualFundHolding,
+} from "../api/useMutualFunds";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  FileUp,
+  Info,
+  PieChart,
+  Plus,
+  Trash2,
+  TrendingUp,
+} from "lucide-react";
 
 export interface HoldingsSnapshotCardProps {
   lastSyncedAt?: string | null;
@@ -18,12 +33,48 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
 }) => {
   const [isAddOpen, setIsAddOpen] = React.useState(false);
   const [isCasOpen, setIsCasOpen] = React.useState(false);
+  const [isClearAllOpen, setIsClearAllOpen] = React.useState(false);
+  const [holdingToDelete, setHoldingToDelete] = React.useState<MutualFundHolding | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+
   const { data: mfHoldings, isLoading: isLoadingMf } = useMutualFundHoldings();
-  const { mutate: deleteHolding, isPending: isDeleting } = useDeleteMutualFundHolding();
+  const { mutateAsync: deleteHolding, isPending: isDeleting } = useDeleteMutualFundHolding();
+  const { mutateAsync: clearAllHoldings, isPending: isClearing } = useClearAllMutualFundHoldings();
 
   const hasHoldings = Boolean(mfHoldings && mfHoldings.length > 0);
-
   const totalPaise = (mfHoldings || []).reduce((acc, h) => acc + (h.value_paise || 0), 0);
+
+  const handleConfirmDelete = async () => {
+    if (!holdingToDelete) return;
+    try {
+      setErrorMessage(null);
+      await deleteHolding(holdingToDelete.id);
+      setSuccessMessage(`Removed "${holdingToDelete.scheme_name}" from portfolio.`);
+      setHoldingToDelete(null);
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Failed to delete holding. Please try again.";
+      setErrorMessage(msg);
+    }
+  };
+
+  const handleConfirmClearAll = async () => {
+    try {
+      setErrorMessage(null);
+      await clearAllHoldings();
+      setSuccessMessage("All portfolio holdings snapshot data cleared successfully.");
+      setIsClearAllOpen(false);
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Failed to clear holdings snapshot. Please try again.";
+      setErrorMessage(msg);
+    }
+  };
 
   return (
     <>
@@ -46,6 +97,22 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
               <span className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
                 as of {formatDateIST(lastSyncedAt)}
               </span>
+            )}
+            {hasHoldings && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setErrorMessage(null);
+                  setIsClearAllOpen(true);
+                }}
+                disabled={isClearing || isDeleting}
+                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 text-xs h-8"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                Clear All
+              </Button>
             )}
             <Button
               type="button"
@@ -70,6 +137,40 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
         </CardHeader>
 
         <CardContent className="p-5 sm:p-6 space-y-4">
+          {successMessage && (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" aria-hidden="true" />
+                <span>{successMessage}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSuccessMessage(null)}
+                aria-label="Dismiss success message"
+                className="text-emerald-700 hover:text-emerald-900 font-bold ml-2"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-900 animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-red-600 shrink-0" aria-hidden="true" />
+                <span>{errorMessage}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setErrorMessage(null)}
+                aria-label="Dismiss error message"
+                className="text-red-700 hover:text-red-900 font-bold ml-2"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50/70 border border-blue-100 text-xs text-blue-900">
             <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" aria-hidden="true" />
             <p className="leading-relaxed">
@@ -148,10 +249,13 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
                         <td className="px-4 py-3 text-right">
                           <button
                             type="button"
-                            onClick={() => deleteHolding(item.id)}
-                            disabled={isDeleting}
+                            onClick={() => {
+                              setErrorMessage(null);
+                              setHoldingToDelete(item);
+                            }}
+                            disabled={isDeleting || isClearing}
                             aria-label={`Remove ${item.scheme_name}`}
-                            className="text-slate-400 hover:text-red-600 transition-colors p-1 rounded"
+                            className="text-slate-400 hover:text-red-600 transition-colors p-1.5 rounded hover:bg-red-50"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -216,6 +320,33 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
 
       <AddMutualFundDialog open={isAddOpen} onOpenChange={setIsAddOpen} />
       <ImportCasDialog open={isCasOpen} onOpenChange={setIsCasOpen} />
+
+      {/* Confirmation Dialog for Clearing All Snapshot Data */}
+      <ConfirmDialog
+        open={isClearAllOpen}
+        onOpenChange={setIsClearAllOpen}
+        title="Clear Portfolio Holdings Snapshot?"
+        description={`This will delete all ${mfHoldings?.length || 0} mutual fund holdings from your snapshot data. You can re-import them anytime by uploading your CAS statement.`}
+        confirmLabel="Clear All Data"
+        cancelLabel="Cancel"
+        variant="destructive"
+        isLoading={isClearing}
+        onConfirm={handleConfirmClearAll}
+      />
+
+      {/* Confirmation Dialog for Removing Individual Holding */}
+      <ConfirmDialog
+        open={Boolean(holdingToDelete)}
+        onOpenChange={(open) => !open && setHoldingToDelete(null)}
+        title="Remove Mutual Fund Holding?"
+        description={`Are you sure you want to remove "${holdingToDelete?.scheme_name}" from your portfolio holdings snapshot?`}
+        confirmLabel="Remove Holding"
+        cancelLabel="Cancel"
+        variant="destructive"
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+      />
     </>
   );
 };
+

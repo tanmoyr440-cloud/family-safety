@@ -510,6 +510,11 @@ class SqlAlchemyMutualFundHoldingRepository(MutualFundHoldingRepository):
         stmt = delete(MutualFundHoldingModel).where(MutualFundHoldingModel.id == holding_id)
         await self._session.execute(stmt)
 
+    async def delete_for_owner(self, owner_id: str) -> int:
+        stmt = delete(MutualFundHoldingModel).where(MutualFundHoldingModel.owner_id == owner_id)
+        result = await self._session.execute(stmt)
+        return int(result.rowcount) if result.rowcount is not None and result.rowcount > 0 else 0
+
 
 class SqlAlchemyBankAccountRepository(BankAccountRepository):
     """SQLAlchemy implementation of BankAccountRepository."""

@@ -439,9 +439,20 @@ export const handlers = [
     return HttpResponse.json(currentNomineeGuidance);
   }),
 
-  // Mutual funds & CAS import
   http.get(new RegExp("/api/v1/mutual-funds/holdings$"), () => {
     return HttpResponse.json([]);
+  }),
+
+  http.delete(new RegExp("/api/v1/mutual-funds/holdings/(?<id>[^/]+)$"), () => {
+    return HttpResponse.json({
+      message: "Mutual fund holding removed successfully.",
+    });
+  }),
+
+  http.delete(new RegExp("/api/v1/mutual-funds/holdings$"), () => {
+    return HttpResponse.json({
+      message: "Successfully removed all portfolio holdings.",
+    });
   }),
 
   http.post(new RegExp("/api/v1/mutual-funds/import-cas$"), () => {

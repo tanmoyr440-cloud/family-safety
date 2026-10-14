@@ -123,6 +123,10 @@ class MutualFundHoldingRepository(Protocol):
         """Delete holding by ID."""
         ...
 
+    async def delete_for_owner(self, owner_id: str) -> int:
+        """Delete all holdings for owner and return count deleted."""
+        ...
+
 
 class BankAccountRepository(Protocol):
     """Protocol for BankAccount persistence."""

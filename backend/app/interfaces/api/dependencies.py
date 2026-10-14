@@ -44,11 +44,14 @@ async def get_current_owner(
     uow: UnitOfWork = Depends(get_uow),
 ) -> Owner:
     """Dependency to extract, authenticate and return current Owner."""
-    token = request.cookies.get("access_token")
-    if not token:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            token = auth_header[7:]
+    auth_header = request.headers.get("Authorization")
+    has_bearer = bool(auth_header and auth_header.startswith("Bearer "))
+
+    token = None
+    if has_bearer and auth_header:
+        token = auth_header[7:].strip()
+    elif "access_token" in request.cookies:
+        token = request.cookies.get("access_token")
 
     if not token:
         raise UnauthorizedException("Authentication required.")
@@ -57,8 +60,10 @@ async def get_current_owner(
     owner_id: str = payload["sub"]
     csrf_token: str = payload.get("csrf", "")
 
-    # For authenticated mutating requests, enforce CSRF
-    verify_csrf(request, csrf_token)
+    # For authenticated mutating requests relying on ambient cookies, enforce CSRF.
+    # Authorization: Bearer tokens are explicitly attached by the client and immune to CSRF.
+    if not has_bearer:
+        verify_csrf(request, csrf_token)
 
     async with uow:
         owner = await uow.owners.get_by_id(owner_id)

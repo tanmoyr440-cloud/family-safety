@@ -81,3 +81,18 @@ export function useDeleteMutualFundHolding() {
     },
   });
 }
+
+export function useClearAllMutualFundHoldings() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const result = await api.DELETE("/api/v1/mutual-funds/holdings");
+      return unwrap(result);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: accountKeys.mutualFunds() });
+    },
+  });
+}
+

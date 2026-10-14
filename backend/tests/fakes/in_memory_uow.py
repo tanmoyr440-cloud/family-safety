@@ -147,6 +147,12 @@ class InMemoryMutualFundHoldingRepository(MutualFundHoldingRepository):
     async def delete(self, holding_id: str) -> None:
         self.holdings.pop(holding_id, None)
 
+    async def delete_for_owner(self, owner_id: str) -> int:
+        to_del = [hid for hid, h in self.holdings.items() if h.owner_id == owner_id]
+        for hid in to_del:
+            self.holdings.pop(hid, None)
+        return len(to_del)
+
 
 class InMemoryBankAccountRepository(BankAccountRepository):
     """In-memory storage for bank accounts."""

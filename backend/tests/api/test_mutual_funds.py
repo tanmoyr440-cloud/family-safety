@@ -76,6 +76,34 @@ async def test_mutual_fund_holdings_crud(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_clear_all_mutual_fund_holdings(client: AsyncClient) -> None:
+    """Verifies clearing all mutual fund holdings in snapshot at once."""
+    _, _, csrf = await _register_and_login(client)
+    headers = {"X-CSRF-Token": csrf}
+
+    # Add 2 holdings
+    for code in (122639, 130503):
+        await client.post(
+            "/api/v1/mutual-funds/holdings",
+            headers=headers,
+            json={"scheme_code": code, "units": 50.0},
+        )
+
+    list_resp = await client.get("/api/v1/mutual-funds/holdings")
+    assert len(list_resp.json()) >= 2
+
+    # Clear all holdings
+    clear_resp = await client.delete("/api/v1/mutual-funds/holdings", headers=headers)
+    assert clear_resp.status_code == 200
+    assert "Successfully removed" in clear_resp.json()["message"]
+
+    # Verify list is empty
+    list_after = await client.get("/api/v1/mutual-funds/holdings")
+    assert len(list_after.json()) == 0
+
+
+
+@pytest.mark.asyncio
 async def test_cas_import_endpoint(client: AsyncClient) -> None:
     """Verifies CAS statement upload validation and processing."""
     import io

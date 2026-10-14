@@ -128,3 +128,11 @@ class ManageMutualFunds:
             if holding and holding.owner_id == owner_id:
                 await self._uow.mutual_funds.delete(holding_id)
                 await self._uow.commit()
+
+    async def delete_all_holdings(self, owner_id: str) -> int:
+        """Delete all mutual fund holdings for an owner snapshot."""
+        async with self._uow:
+            count = await self._uow.mutual_funds.delete_for_owner(owner_id)
+            await self._uow.commit()
+            return count
+

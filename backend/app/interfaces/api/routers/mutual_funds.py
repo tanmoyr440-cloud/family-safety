@@ -156,6 +156,22 @@ async def add_mutual_fund_holding(
 
 
 @router.delete(
+    "/mutual-funds/holdings",
+    response_model=ActionResponse,
+    operation_id="clearAllMutualFundHoldings",
+    summary="Clear all mutual fund holdings snapshot data",
+)
+async def clear_all_mutual_fund_holdings(
+    current_owner: Owner = Depends(get_current_owner),
+    uow: UnitOfWork = Depends(get_uow),
+) -> ActionResponse:
+    """Delete all mutual fund holdings in owner's portfolio snapshot."""
+    use_case = ManageMutualFunds(uow=uow, source=mf_adapter, clock=clock)
+    count = await use_case.delete_all_holdings(owner_id=current_owner.id)
+    return ActionResponse(message=f"Successfully removed {count} portfolio holdings.")
+
+
+@router.delete(
     "/mutual-funds/holdings/{id}",
     response_model=ActionResponse,
     operation_id="deleteMutualFundHolding",
@@ -170,6 +186,7 @@ async def delete_mutual_fund_holding(
     use_case = ManageMutualFunds(uow=uow, source=mf_adapter, clock=clock)
     await use_case.delete_holding(owner_id=current_owner.id, holding_id=id)
     return ActionResponse(message="Mutual fund holding removed successfully.")
+
 
 
 @router.post(
