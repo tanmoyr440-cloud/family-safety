@@ -318,12 +318,26 @@ async def send_emergency_alert(
             await session.commit()
 
         err_str = str(exc)
-        if "timed out" in err_str.lower() or "timeout" in err_str.lower():
+        if "resend" in err_str.lower() and (
+            "domain" in err_str.lower()
+            or "403" in err_str
+            or "testing emails" in err_str.lower()
+            or "only send" in err_str.lower()
+        ):
+            detail = (
+                f"Failed to dispatch emergency alert email via Resend ({exc}). "
+                "Resend's free testing domain ('onboarding@resend.dev') only allows sending to the email address you signed up with at resend.com. "
+                "To send to any contact: (1) Verify your custom domain at https://resend.com/domains, "
+                "(2) Change your contact's email in the app to your Resend account email for testing, or "
+                "(3) Set DRY_RUN=true in your Render environment variables."
+            )
+        elif "timed out" in err_str.lower() or "timeout" in err_str.lower():
             detail = (
                 f"Failed to dispatch emergency alert email: SMTP connection timed out ({exc}). "
                 "Cloud platforms (including Render free/starter tiers) block outbound SMTP ports (25, 465, and 587) to prevent spam. "
-                "To send emails reliably from Render over HTTPS (port 443), create a free account at https://resend.com, "
-                "generate an API key, and add RESEND_API_KEY in your Render service Environment tab. "
+                "If you added RESEND_API_KEY, please verify: "
+                "(1) Render has completed redeploying the new build (check the 'Deploys' tab in your Render dashboard), and "
+                "(2) The key starts with 're_' without quotes or whitespace. "
                 "Alternatively, set DRY_RUN=true for testing without real email dispatch."
             )
         else:

@@ -55,8 +55,14 @@ class ResendEmailChannel(NotificationChannel):
         http_client: httpx.AsyncClient | None = None,
         renderer: TemplateRenderer | None = None,
     ) -> None:
-        self._api_key = api_key or settings.resend_api_key
-        self._from_email = from_email or settings.resend_from_email
+        raw_key = api_key or settings.resend_api_key
+        self._api_key = raw_key.strip().strip("'\"") if raw_key else ""
+        if from_email:
+            self._from_email = from_email.strip().strip("'\"")
+        elif settings.resend_from_email and settings.resend_from_email != "alerts@familysafetynet.app":
+            self._from_email = settings.resend_from_email.strip().strip("'\"")
+        else:
+            self._from_email = "Family Safety Net <onboarding@resend.dev>"
         self._allowlist = (
             set(allowlist) if allowlist is not None else set(settings.notifications_allowlist)
         )

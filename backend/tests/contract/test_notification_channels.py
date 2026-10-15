@@ -574,4 +574,15 @@ async def test_composite_fallback_email_channel() -> None:
     with pytest.raises(PermanentDeliveryError):
         await empty_composite.send(msg)
 
+    # 4. Multiple failing channels report all errors
+    class MockResendFailingChannel(ConsoleChannel):
+        async def send(self, message: OutboundMessage) -> DeliveryResult:
+            raise PermanentDeliveryError("Resend 403 Forbidden: domain not verified")
+
+    multi_failing = CompositeFallbackEmailChannel([MockResendFailingChannel(kind=ChannelKind.EMAIL), MockFailingChannel(kind=ChannelKind.EMAIL)])
+    with pytest.raises(TransientDeliveryError) as multi_exc_info:
+        await multi_failing.send(msg)
+    assert "MockResendFailingChannel" in str(multi_exc_info.value)
+    assert "MockFailingChannel" in str(multi_exc_info.value)
+
 

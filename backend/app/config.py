@@ -51,7 +51,7 @@ class Settings(BaseSettings):
 
     # Email Provider (Resend)
     resend_api_key: str = "re_mock_resend_api_key"
-    resend_from_email: str = "alerts@familysafetynet.app"
+    resend_from_email: str = "Family Safety Net <onboarding@resend.dev>"
 
     # SMTP Email Provider (e.g. Gmail)
     smtp_enabled: bool = False

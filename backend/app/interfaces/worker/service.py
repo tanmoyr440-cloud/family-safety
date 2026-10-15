@@ -60,12 +60,15 @@ class CompositeFallbackEmailChannel(NotificationChannel):
         if not self._channels:
             raise PermanentDeliveryError("No email delivery channels configured.")
 
+        channel_errors: list[str] = []
         last_exc: Exception | None = None
         for i, channel in enumerate(self._channels):
             try:
                 return await channel.send(message)
             except Exception as exc:
                 last_exc = exc
+                channel_name = channel.__class__.__name__
+                channel_errors.append(f"{channel_name}: {exc}")
                 next_channel = (
                     self._channels[i + 1].__class__.__name__
                     if i + 1 < len(self._channels)
@@ -73,13 +76,16 @@ class CompositeFallbackEmailChannel(NotificationChannel):
                 )
                 logger.warning(
                     "Email channel %s failed for %s: %s. %s",
-                    channel.__class__.__name__,
+                    channel_name,
                     message.recipient,
                     exc,
                     f"Retrying via {next_channel}..." if next_channel else "No more fallback channels.",
                 )
-        if last_exc:
+        if len(channel_errors) == 1 and last_exc:
             raise last_exc
+        if channel_errors:
+            error_details = " | ".join(channel_errors)
+            raise TransientDeliveryError(f"All email channels failed: {error_details}")
         raise TransientDeliveryError("All email channels failed to deliver.")
 
 
@@ -114,9 +120,11 @@ def create_default_channels(
     email_channels: list[NotificationChannel] = []
 
     # Priority 1: Resend Email (REST API over HTTPS 443 - never blocked by cloud firewalls like Render)
-    if settings.resend_api_key and not settings.resend_api_key.startswith("re_mock"):
+    resend_key = (settings.resend_api_key or "").strip().strip("'\"")
+    if resend_key and not resend_key.startswith("re_mock"):
         email_channels.append(
             ResendEmailChannel(
+                api_key=resend_key,
                 allowlist=resolved_allowlist,
                 dry_run=resolved_dry_run,
             )
