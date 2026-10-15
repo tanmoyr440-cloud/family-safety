@@ -45,7 +45,10 @@ async def get_uow() -> AsyncIterator[UnitOfWork]:
     """Dependency provider for UnitOfWork."""
     factory = get_session_factory()
     uow = SqlAlchemyUnitOfWork(factory)
-    yield uow
+    try:
+        yield uow
+    finally:
+        await uow.close()
 
 
 async def get_current_owner(

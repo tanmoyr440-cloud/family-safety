@@ -24,7 +24,11 @@ from app.interfaces.api.dependencies import (
     get_session_factory,
     get_uow,
 )
-from app.interfaces.api.errors import NotFoundException, ValidationException
+from app.interfaces.api.errors import (
+    BadRequestException,
+    NotFoundException,
+    ValidationException,
+)
 from app.interfaces.api.schemas import (
     NotificationLogItemResponse,
     SendEmergencyAlertRequest,
@@ -274,7 +278,49 @@ async def send_emergency_alert(
         attachments=attachments,
     )
 
-    result = await email_channel.send(outbound)
+    try:
+        result = await email_channel.send(outbound)
+    except Exception as exc:
+        logger.error(
+            "Emergency alert email dispatch to %s failed via %s: %s",
+            recipient_email,
+            email_channel.__class__.__name__,
+            exc,
+            exc_info=True,
+        )
+        async with session_factory() as session:
+            outbox_record = OutboxModel(
+                id=msg_id,
+                dedupe_key=f"manual_alert:{current_owner.id}:{target_contact.id}:{int(now_utc.timestamp())}",
+                channel="EMAIL",
+                recipient=recipient_email,
+                template_id="inactivity_notify_parents_email",
+                payload=payload,
+                status="FAILED",
+                attempts=1,
+                last_error=str(exc),
+                next_attempt_at=now_utc,
+                sent_at=None,
+            )
+            session.add(outbox_record)
+            await record_audit_event(
+                session=session,
+                actor_type="OWNER",
+                actor_id=current_owner.id,
+                action="EMERGENCY_ALERT_FAILED",
+                subject_type="CONTACT",
+                subject_id=target_contact.id,
+                metadata={
+                    "recipient": recipient_email,
+                    "error": str(exc),
+                },
+            )
+            await session.commit()
+
+        raise BadRequestException(
+            f"Failed to dispatch emergency alert email: {exc}. "
+            "Please check your SMTP credentials, host/port (try port 465 if port 587 is blocked by your hosting provider), or App Password."
+        )
 
     # 6. Record outbox entry and audit trail
     async with session_factory() as session:

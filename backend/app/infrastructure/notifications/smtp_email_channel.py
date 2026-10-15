@@ -116,25 +116,48 @@ class SmtpEmailChannel(NotificationChannel):
         if not self._username or not self._password:
             raise PermanentDeliveryError("SMTP username or password not configured.")
 
+        server: smtplib.SMTP | smtplib.SMTP_SSL | None = None
         try:
             if self._port == 465:
-                server = smtplib.SMTP_SSL(self._host, self._port, timeout=10)
+                server = smtplib.SMTP_SSL(self._host, self._port, timeout=15)
             else:
-                server = smtplib.SMTP(self._host, self._port, timeout=10)
-                if self._use_tls:
-                    server.starttls()
+                try:
+                    server = smtplib.SMTP(self._host, self._port, timeout=12)
+                    if self._use_tls:
+                        server.starttls()
+                except (TimeoutError, OSError, smtplib.SMTPConnectError) as conn_err:
+                    if self._host in ("smtp.gmail.com", "smtp.googlemail.com") or self._port == 587:
+                        logger.warning(
+                            "SMTP port %s connection timed out or failed (%s). Retrying with port 465 direct SSL...",
+                            self._port,
+                            conn_err,
+                        )
+                        server = smtplib.SMTP_SSL(self._host, 465, timeout=15)
+                    else:
+                        raise
 
             server.login(self._username, self._password)
             _, parsed_from = parseaddr(self._from_email or self._username)
             envelope_from = parsed_from if parsed_from else (self._from_email or self._username)
             server.sendmail(envelope_from, [recipient], msg.as_string())
-            server.quit()
+            try:
+                server.quit()
+            except Exception:
+                pass
         except smtplib.SMTPAuthenticationError as exc:
-            raise PermanentDeliveryError(f"SMTP authentication failed: {exc}") from exc
+            raise PermanentDeliveryError(
+                f"SMTP authentication failed: {exc}. If using Gmail, generate and use a 16-character Google App Password (not your personal login password)."
+            ) from exc
         except smtplib.SMTPRecipientsRefused as exc:
             raise PermanentDeliveryError(f"Recipient address refused: {exc}") from exc
-        except (smtplib.SMTPException, OSError) as exc:
+        except (smtplib.SMTPException, OSError, TimeoutError) as exc:
             raise TransientDeliveryError(f"SMTP delivery error: {exc}") from exc
+        finally:
+            if server is not None:
+                try:
+                    server.close()
+                except Exception:
+                    pass
 
     async def send(self, message: OutboundMessage) -> DeliveryResult:
         """Send an email notification via SMTP."""

@@ -37,6 +37,7 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
     ) -> None:
         self._session_factory = session_factory
         self._session: AsyncSession | None = None
+        self._depth: int = 0
         self._owners: SqlAlchemyOwnerRepository | None = None
         self._contacts: SqlAlchemyContactRepository | None = None
         self._monitors: SqlAlchemyInactivityMonitorRepository | None = None
@@ -87,15 +88,17 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
         return self._outbox
 
     async def __aenter__(self) -> Self:
-        self._session = self._session_factory()
-        self._owners = SqlAlchemyOwnerRepository(self._session)
-        self._contacts = SqlAlchemyContactRepository(self._session)
-        self._monitors = SqlAlchemyInactivityMonitorRepository(self._session)
-        self._loans = SqlAlchemyLoanRepository(self._session)
-        self._installments = SqlAlchemyInstallmentRepository(self._session)
-        self._mutual_funds = SqlAlchemyMutualFundHoldingRepository(self._session)
-        self._bank_accounts = SqlAlchemyBankAccountRepository(self._session)
-        self._outbox = SqlAlchemyOutboxRepository(self._session)
+        if self._depth == 0:
+            self._session = self._session_factory()
+            self._owners = SqlAlchemyOwnerRepository(self._session)
+            self._contacts = SqlAlchemyContactRepository(self._session)
+            self._monitors = SqlAlchemyInactivityMonitorRepository(self._session)
+            self._loans = SqlAlchemyLoanRepository(self._session)
+            self._installments = SqlAlchemyInstallmentRepository(self._session)
+            self._mutual_funds = SqlAlchemyMutualFundHoldingRepository(self._session)
+            self._bank_accounts = SqlAlchemyBankAccountRepository(self._session)
+            self._outbox = SqlAlchemyOutboxRepository(self._session)
+        self._depth += 1
         return self
 
     async def __aexit__(
@@ -104,10 +107,39 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
+        self._depth = max(0, self._depth - 1)
+        if self._depth == 0 and self._session is not None:
+            try:
+                if exc_type is not None:
+                    await self._session.rollback()
+            finally:
+                await self._session.close()
+                self._session = None
+                self._owners = None
+                self._contacts = None
+                self._monitors = None
+                self._loans = None
+                self._installments = None
+                self._mutual_funds = None
+                self._bank_accounts = None
+                self._outbox = None
+
+    async def close(self) -> None:
+        """Force close active session if left open."""
         if self._session is not None:
-            if exc_type is not None:
-                await self._session.rollback()
-            await self._session.close()
+            try:
+                await self._session.close()
+            finally:
+                self._session = None
+                self._depth = 0
+                self._owners = None
+                self._contacts = None
+                self._monitors = None
+                self._loans = None
+                self._installments = None
+                self._mutual_funds = None
+                self._bank_accounts = None
+                self._outbox = None
 
     async def commit(self) -> None:
         if self._session is not None:

@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import date, timedelta
+from typing import Any
 
 import pytest
 from httpx import AsyncClient
@@ -414,6 +415,63 @@ async def test_send_emergency_alert_endpoint(client: AsyncClient, monkeypatch: p
     assert notif_resp.status_code == 200
     items = notif_resp.json()
     assert any(item["recipient_label"] == "father@example.com" for item in items)
+
+
+@pytest.mark.asyncio
+async def test_send_emergency_alert_handles_delivery_failure(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verifies that SMTP or delivery failures return a clean 400 Problem Details instead of 500."""
+    from app.application.ports.notification_channel import (
+        NotificationChannel,
+        OutboundMessage,
+        TransientDeliveryError,
+    )
+    from app.domain.policies.escalation_policy import ChannelKind
+
+    class FailingChannel(NotificationChannel):
+        kind: ChannelKind = ChannelKind.EMAIL
+
+        async def send(self, message: OutboundMessage) -> Any:
+            raise TransientDeliveryError("SMTP delivery error: timed out")
+
+    monkeypatch.setattr(
+        "app.interfaces.api.routers.notifications.create_default_channels",
+        lambda: [FailingChannel()],
+    )
+
+    _, _, csrf = await _register_and_login(client)
+    headers = {"X-CSRF-Token": csrf}
+
+    c_resp = await client.post(
+        "/api/v1/contacts",
+        headers=headers,
+        json={
+            "name": "Mother",
+            "relation": "Mother",
+            "phone": "+919876543213",
+            "email": "mother@example.com",
+            "priority": 1,
+        },
+    )
+    assert c_resp.status_code == 201
+    contact_id = c_resp.json()["id"]
+
+    alert_resp = await client.post(
+        "/api/v1/notifications/send-emergency-alert",
+        headers=headers,
+        json={"contact_id": contact_id},
+    )
+    # Must NOT be 500! Clean 400 Problem Details
+    assert alert_resp.status_code == 400
+    err_data = alert_resp.json()
+    assert "SMTP delivery error: timed out" in err_data["detail"]
+
+    # Verify outbox records as FAILED
+    notif_resp = await client.get("/api/v1/notifications")
+    assert notif_resp.status_code == 200
+    items = notif_resp.json()
+    assert any(item["recipient_label"] == "mother@example.com" and item["status"] == "FAILED" for item in items)
 
 
 @pytest.mark.asyncio
