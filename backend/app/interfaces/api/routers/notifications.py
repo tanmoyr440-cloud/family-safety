@@ -108,7 +108,27 @@ async def send_emergency_alert(
             verified = [c for c in contacts if c.consent_verified_at is not None]
             target_contact = verified[0] if verified else contacts[0]
 
-        mf_holdings = await uow.mutual_funds.get_holdings_for_owner(current_owner.id)
+        try:
+            from app.application.ports.clock import Clock
+            from app.application.use_cases.manage_mutual_funds import ManageMutualFunds
+            from app.infrastructure.market_data.stock_quote_adapter import StockQuoteAdapter
+            from app.infrastructure.mutual_funds.sebi_amfi_adapter import SebiAmfiMutualFundAdapter
+
+            class _AlertClock(Clock):
+                def now(self) -> datetime:
+                    return datetime.now(UTC)
+
+            use_case = ManageMutualFunds(
+                uow=uow,
+                source=SebiAmfiMutualFundAdapter(),
+                clock=_AlertClock(),
+                stock_source=StockQuoteAdapter(),
+            )
+            mf_holdings = await use_case.get_holdings_with_valuations(current_owner.id)
+        except Exception as exc:
+            logger.warning("Could not calculate live valuations for alert, using stored holdings: %s", exc)
+            mf_holdings = await uow.mutual_funds.get_holdings_for_owner(current_owner.id)
+
         loans = await uow.loans.get_loans_for_owner(current_owner.id)
         bank_accounts = await uow.bank_accounts.get_accounts_for_owner(current_owner.id)
         monitor = await uow.monitors.get_for_owner(current_owner.id)
@@ -170,11 +190,15 @@ async def send_emergency_alert(
             "fund_house": h.fund_house,
             "units": h.units,
             "folio_masked": h.folio_masked,
-            "value_inr": f"{h.value_paise / 100:,.2f}" if h.value_paise else None,
+            "value_inr": (
+                f"{getattr(h, 'value_paise', None) / 100:,.2f}"
+                if getattr(h, "value_paise", None) is not None
+                else None
+            ),
         }
         for h in mf_holdings
     ]
-    total_mf_paise = sum(h.value_paise or 0 for h in mf_holdings)
+    total_mf_paise = sum(getattr(h, "value_paise", None) or 0 for h in mf_holdings)
     total_mf_val_str = f"{total_mf_paise / 100:,.2f}" if total_mf_paise > 0 else None
 
     loans_data = [

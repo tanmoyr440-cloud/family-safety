@@ -74,11 +74,15 @@ class EvaluateInactivity:
                         "fund_house": h.fund_house,
                         "units": h.units,
                         "folio_masked": h.folio_masked,
-                        "value_inr": f"{h.value_paise / 100:,.2f}" if h.value_paise else None,
+                        "value_inr": (
+                            f"{getattr(h, 'value_paise', None) / 100:,.2f}"
+                            if getattr(h, "value_paise", None) is not None
+                            else None
+                        ),
                     }
                     for h in mf_holdings
                 ]
-                total_mf_paise = sum(h.value_paise or 0 for h in mf_holdings)
+                total_mf_paise = sum(getattr(h, "value_paise", None) or 0 for h in mf_holdings)
                 total_mf_val_str = f"{total_mf_paise / 100:,.2f}" if total_mf_paise > 0 else None
 
                 loans_data = [

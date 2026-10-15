@@ -18,6 +18,7 @@ class MutualFundHolding:
     asset_type: str = "MUTUAL_FUND"
     isin: str | None = None
     created_at: datetime | None = None
+    value_paise: int | None = None
 
     def calculate_value_paise(self, nav: float | None) -> int:
         """Calculate current valuation in integer paise based on latest NAV or share price."""

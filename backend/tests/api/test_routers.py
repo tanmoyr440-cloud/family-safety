@@ -371,7 +371,19 @@ async def test_send_emergency_alert_endpoint(client: AsyncClient, monkeypatch: p
     )
     assert bank_resp.status_code == 201
 
-    # 3. Upload a document
+    # 3. Add a mutual fund holding
+    mf_resp = await client.post(
+        "/api/v1/mutual-funds/holdings",
+        headers=headers,
+        json={
+            "scheme_code": 122639,
+            "units": 150.5,
+            "folio_number": "12345678/90",
+        },
+    )
+    assert mf_resp.status_code == 201
+
+    # 4. Upload a document
     doc_files = {"file": ("aadhaar_card.pdf", b"%PDF-1.4 mock pdf content", "application/pdf")}
     doc_data = {"title": "Aadhaar Card", "category": "identity"}
     doc_resp = await client.post(
@@ -382,7 +394,7 @@ async def test_send_emergency_alert_endpoint(client: AsyncClient, monkeypatch: p
     )
     assert doc_resp.status_code == 201
 
-    # 4. Trigger send emergency alert
+    # 5. Trigger send emergency alert
     alert_resp = await client.post(
         "/api/v1/notifications/send-emergency-alert",
         headers=headers,
@@ -395,6 +407,7 @@ async def test_send_emergency_alert_endpoint(client: AsyncClient, monkeypatch: p
     assert alert_data["channel"] == "EMAIL"
     assert "aadhaar_card.pdf" in alert_data["attached_documents"]
     assert alert_data["total_bank_accounts"] >= 1
+    assert alert_data["total_holdings"] >= 1
 
     # 5. Check that notification log has the recorded message
     notif_resp = await client.get("/api/v1/notifications")
