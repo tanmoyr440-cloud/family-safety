@@ -14,8 +14,11 @@ import {
   usePortfolioSummary,
   type MutualFundHolding,
 } from "../api/useMutualFunds";
+import { useStockWebSocket } from "../api/useStockWebSocket";
 import {
   AlertTriangle,
+  ArrowDownRight,
+  ArrowUpRight,
   Building2,
   Calendar,
   CheckCircle2,
@@ -49,6 +52,13 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
   const { mutateAsync: deleteHolding, isPending: isDeleting } = useDeleteMutualFundHolding();
   const { mutateAsync: clearAllHoldings, isPending: isClearing } = useClearAllMutualFundHoldings();
 
+  // Real-time Live Market Price WebSocket
+  const {
+    isConnected: isWsConnected,
+    getTick,
+    getHoldingFlash,
+  } = useStockWebSocket(true);
+
   // Separate Mutual Funds from Stocks & Equities
   const isStockHolding = (h: MutualFundHolding) =>
     h.asset_type === "STOCK" ||
@@ -60,8 +70,20 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
   const stockHoldings = (allHoldings || []).filter((h) => isStockHolding(h));
 
   const hasHoldings = Boolean(allHoldings && allHoldings.length > 0);
+
+  const getStockLiveValuePaise = React.useCallback(
+    (h: MutualFundHolding) => {
+      const tick = getTick(h);
+      if (tick && tick.price > 0) {
+        return Math.round(tick.price * h.units * 100);
+      }
+      return h.value_paise || 0;
+    },
+    [getTick],
+  );
+
   const totalMfPaise = mfHoldings.reduce((acc, h) => acc + (h.value_paise || 0), 0);
-  const totalStockPaise = stockHoldings.reduce((acc, h) => acc + (h.value_paise || 0), 0);
+  const totalStockPaise = stockHoldings.reduce((acc, h) => acc + getStockLiveValuePaise(h), 0);
   const totalPortfolioPaise = totalMfPaise + totalStockPaise;
 
   // Monthly Refresh Freshness check
@@ -278,54 +300,81 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
 
           {/* Tab Navigation: Mutual Funds vs Stocks */}
           {hasHoldings && (
-            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-              <button
-                type="button"
-                onClick={() => setActiveTab("mutual_funds")}
-                className={cn(
-                  "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-                  activeTab === "mutual_funds"
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
-                )}
-              >
-                <PieChart className="h-3.5 w-3.5" />
-                Mutual Funds
-                <span
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("mutual_funds")}
                   className={cn(
-                    "px-1.5 py-0.2 rounded-full text-[10px] font-bold",
+                    "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
                     activeTab === "mutual_funds"
-                      ? "bg-blue-800 text-blue-100"
-                      : "bg-slate-200 text-slate-700",
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
                   )}
                 >
-                  {mfHoldings.length}
-                </span>
-              </button>
+                  <PieChart className="h-3.5 w-3.5" />
+                  Mutual Funds
+                  <span
+                    className={cn(
+                      "px-1.5 py-0.2 rounded-full text-[10px] font-bold",
+                      activeTab === "mutual_funds"
+                        ? "bg-blue-800 text-blue-100"
+                        : "bg-slate-200 text-slate-700",
+                    )}
+                  >
+                    {mfHoldings.length}
+                  </span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab("stocks")}
-                className={cn(
-                  "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-                  activeTab === "stocks"
-                    ? "bg-indigo-600 text-white shadow-xs"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
-                )}
-              >
-                <Building2 className="h-3.5 w-3.5" />
-                Stocks & Equities
-                <span
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("stocks")}
                   className={cn(
-                    "px-1.5 py-0.2 rounded-full text-[10px] font-bold",
+                    "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
                     activeTab === "stocks"
-                      ? "bg-indigo-800 text-indigo-100"
-                      : "bg-slate-200 text-slate-700",
+                      ? "bg-indigo-600 text-white shadow-xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
                   )}
                 >
-                  {stockHoldings.length}
-                </span>
-              </button>
+                  <Building2 className="h-3.5 w-3.5" />
+                  Stocks & Equities
+                  <span
+                    className={cn(
+                      "px-1.5 py-0.2 rounded-full text-[10px] font-bold",
+                      activeTab === "stocks"
+                        ? "bg-indigo-800 text-indigo-100"
+                        : "bg-slate-200 text-slate-700",
+                    )}
+                  >
+                    {stockHoldings.length}
+                  </span>
+                </button>
+              </div>
+
+              {activeTab === "stocks" && (
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all",
+                      isWsConnected
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-amber-50 text-amber-700 border-amber-200",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "h-2 w-2 rounded-full",
+                        isWsConnected
+                          ? "bg-emerald-500 animate-pulse"
+                          : "bg-amber-400 animate-ping",
+                      )}
+                    />
+                    {isWsConnected
+                      ? "LIVE MARKET FEED (NSE/BSE)"
+                      : "CONNECTING FEED..."}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
@@ -468,71 +517,156 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
-                      {stockHoldings.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-4 py-3">
-                            <div className="font-semibold text-slate-900">{item.scheme_name}</div>
-                            <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
-                              <span className="font-medium text-indigo-700">{item.fund_house}</span>
-                              {item.isin && (
-                                <span className="font-mono text-[10px] text-slate-500">
-                                  ISIN: {item.isin}
+                      {stockHoldings.map((item) => {
+                        const tick = getTick(item);
+                        const flash = getHoldingFlash(item);
+                        const currentPrice = tick ? tick.price : item.latest_nav;
+                        const liveValuePaise = getStockLiveValuePaise(item);
+
+                        return (
+                          <tr
+                            key={item.id}
+                            className={cn(
+                              "transition-colors duration-500",
+                              flash === "up" && "bg-emerald-500/10",
+                              flash === "down" && "bg-rose-500/10",
+                              !flash && "hover:bg-slate-50/50",
+                            )}
+                          >
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-slate-900">
+                                  {item.scheme_name}
                                 </span>
-                              )}
-                              {item.folio_masked && (
-                                <span className="font-mono text-slate-500">
-                                  Demat: {item.folio_masked}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 font-mono font-medium text-slate-800">
-                            {item.units}
-                          </td>
-                          <td className="px-4 py-3">
-                            {item.latest_nav ? (
-                              <div className="space-y-0.5">
-                                <span className="font-mono font-medium text-slate-800">
-                                  ₹{item.latest_nav.toFixed(2)}
-                                </span>
-                                {item.nav_date && (
-                                  <div className="text-[10px] text-slate-500">
-                                    {item.nav_date}
-                                  </div>
+                                {tick && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                    NSE: {tick.symbol}
+                                  </span>
                                 )}
                               </div>
-                            ) : (
-                              <span className="text-slate-400">Syncing live quote...</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-right font-medium">
-                            <MoneyText
-                              paise={item.value_paise}
-                              className="font-semibold text-slate-900"
-                            />
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setErrorMessage(null);
-                                setHoldingToDelete(item);
-                              }}
-                              disabled={isDeleting || isClearing}
-                              aria-label={`Remove ${item.scheme_name}`}
-                              className="text-slate-400 hover:text-red-600 transition-colors p-1.5 rounded hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                              <div className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-2 mt-0.5">
+                                <span className="font-medium text-indigo-700">
+                                  {item.fund_house}
+                                </span>
+                                {item.isin && (
+                                  <span className="font-mono text-[10px] text-slate-500">
+                                    ISIN: {item.isin}
+                                  </span>
+                                )}
+                                {item.folio_masked && (
+                                  <span className="font-mono text-slate-500">
+                                    Demat: {item.folio_masked}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 font-mono font-medium text-slate-800">
+                              {item.units}
+                            </td>
+                            <td className="px-4 py-3">
+                              {currentPrice ? (
+                                <div className="space-y-0.5">
+                                  <div
+                                    className={cn(
+                                      "inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-mono font-bold text-xs transition-all duration-300",
+                                      flash === "up" &&
+                                        "bg-emerald-500/20 text-emerald-800 ring-1 ring-emerald-500/30 scale-105",
+                                      flash === "down" &&
+                                        "bg-rose-500/20 text-rose-800 ring-1 ring-rose-500/30 scale-105",
+                                      !flash && "text-slate-900",
+                                    )}
+                                  >
+                                    <span>₹{currentPrice.toFixed(2)}</span>
+                                    {tick && tick.change !== 0 && (
+                                      tick.change > 0 ? (
+                                        <ArrowUpRight className="h-3 w-3 text-emerald-600 shrink-0" />
+                                      ) : (
+                                        <ArrowDownRight className="h-3 w-3 text-rose-600 shrink-0" />
+                                      )
+                                    )}
+                                  </div>
+
+                                  {tick ? (
+                                    <div className="flex items-center gap-2 text-[10px]">
+                                      <span
+                                        className={cn(
+                                          "font-medium",
+                                          tick.change >= 0
+                                            ? "text-emerald-600"
+                                            : "text-rose-600",
+                                        )}
+                                      >
+                                        {tick.change >= 0 ? "+" : ""}₹{tick.change.toFixed(2)} ({tick.change >= 0 ? "+" : ""}{tick.change_pct.toFixed(2)}%)
+                                      </span>
+                                      {tick.day_high > 0 && tick.day_low > 0 && (
+                                        <span className="text-slate-400 font-mono hidden md:inline">
+                                          H: ₹{tick.day_high.toFixed(1)} L: ₹{tick.day_low.toFixed(1)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : item.nav_date ? (
+                                    <div className="text-[10px] text-slate-500">
+                                      {item.nav_date}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              ) : (
+                                <span className="text-slate-400">
+                                  Syncing live quote...
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-right font-medium">
+                              <div
+                                className={cn(
+                                  "font-semibold transition-all duration-300",
+                                  flash === "up" && "text-emerald-700",
+                                  flash === "down" && "text-rose-700",
+                                  !flash && "text-slate-900",
+                                )}
+                              >
+                                <MoneyText
+                                  paise={liveValuePaise}
+                                  className="font-semibold text-slate-900"
+                                />
+                              </div>
+                              {currentPrice ? (
+                                <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                                  {item.units} × ₹{currentPrice.toFixed(2)}
+                                </div>
+                              ) : null}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setErrorMessage(null);
+                                  setHoldingToDelete(item);
+                                }}
+                                disabled={isDeleting || isClearing}
+                                aria-label={`Remove ${item.scheme_name}`}
+                                className="text-slate-400 hover:text-red-600 transition-colors p-1.5 rounded hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                     {totalStockPaise > 0 && (
                       <tfoot className="bg-slate-50/80 border-t border-slate-200">
                         <tr>
                           <td colSpan={3} className="px-4 py-2.5 font-semibold text-slate-800 text-xs">
-                            Total Stocks & Equities Valuation ({stockHoldings.length} holdings)
+                            <div className="flex items-center gap-2">
+                              <span>Total Stocks & Equities Valuation ({stockHoldings.length} holdings)</span>
+                              {isWsConnected && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  Live Ticks Streaming
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-2.5 text-right font-bold text-slate-900 text-sm">
                             <MoneyText paise={totalStockPaise} />

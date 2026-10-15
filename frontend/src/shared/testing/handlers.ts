@@ -514,6 +514,38 @@ export const handlers = [
     });
   }),
 
+  // Live stock market quotes
+  http.get(new RegExp("/api/v1/stocks/live$"), () => {
+    return HttpResponse.json([
+      {
+        symbol: "TMCV",
+        isin: "INE1TAE01010",
+        name: "Tata Motors Limited EQ",
+        price: 415.25,
+        prev_price: 415.25,
+        change: 0.0,
+        change_pct: 0.0,
+        direction: "same",
+        day_high: 420.0,
+        day_low: 410.0,
+        timestamp: "2026-10-15 10:00:00 UTC",
+      },
+      {
+        symbol: "TCS",
+        isin: "INE467B01029",
+        name: "Tata Consultancy Services Limited",
+        price: 2304.9,
+        prev_price: 2304.9,
+        change: 0.0,
+        change_pct: 0.0,
+        direction: "same",
+        day_high: 2340.0,
+        day_low: 2290.0,
+        timestamp: "2026-10-15 10:00:00 UTC",
+      },
+    ]);
+  }),
+
   // Bank accounts
   http.get(new RegExp("/api/v1/bank-accounts$"), () => {
     return HttpResponse.json([makeBankAccount()]);

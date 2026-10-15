@@ -11,6 +11,7 @@ from app.interfaces.api.routers.monitor import router as monitor_router
 from app.interfaces.api.routers.mutual_funds import router as mutual_funds_router
 from app.interfaces.api.routers.notifications import router as notifications_router
 from app.interfaces.api.routers.packet import router as packet_router
+from app.interfaces.api.routers.stock_websocket import router as stock_ws_router
 
 __all__ = [
     "accounts_router",
@@ -24,4 +25,5 @@ __all__ = [
     "mutual_funds_router",
     "notifications_router",
     "packet_router",
+    "stock_ws_router",
 ]

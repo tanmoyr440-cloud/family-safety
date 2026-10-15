@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 import structlog
-from fastapi import FastAPI, Request, Response, status
+from fastapi import FastAPI, Request, Response, WebSocket, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -26,6 +26,7 @@ from app.interfaces.api.routers import (
     mutual_funds_router,
     notifications_router,
     packet_router,
+    stock_ws_router,
 )
 from app.interfaces.api.routers.health import HealthResponse
 from app.interfaces.api.security import general_rate_limiter
@@ -176,7 +177,17 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
             )
         except Exception as ex:
             logger.warning("Could not auto-migrate CDSL Demat equity holdings: %s", ex)
-    yield
+
+    from app.infrastructure.market_data.stock_ticker_broadcaster import (
+        get_stock_ticker_broadcaster,
+    )
+
+    broadcaster = get_stock_ticker_broadcaster()
+    await broadcaster.start()
+    try:
+        yield
+    finally:
+        await broadcaster.stop()
 
 
 app = FastAPI(
@@ -293,6 +304,16 @@ app.include_router(documents_router, prefix=settings.api_v1_prefix)
 app.include_router(packet_router, prefix=settings.api_v1_prefix)
 app.include_router(notifications_router, prefix=settings.api_v1_prefix)
 app.include_router(health_router, prefix=settings.api_v1_prefix)
+app.include_router(stock_ws_router, prefix=settings.api_v1_prefix)
+
+
+# Top-level WebSocket alias for /ws/stocks
+@app.websocket("/ws/stocks")
+async def top_level_ws_stocks(websocket: WebSocket) -> None:
+    """Convenience top-level WebSocket endpoint for live stock market feed."""
+    from app.interfaces.api.routers.stock_websocket import stock_ticks_websocket
+
+    await stock_ticks_websocket(websocket)
 
 
 # Root health check endpoint for load balancers and orchestrators
