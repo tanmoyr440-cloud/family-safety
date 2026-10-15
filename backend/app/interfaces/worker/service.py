@@ -8,7 +8,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.application.ports.clock import Clock
-from app.application.ports.notification_channel import NotificationChannel
+from app.application.ports.notification_channel import (
+    DeliveryResult,
+    NotificationChannel,
+    OutboundMessage,
+    PermanentDeliveryError,
+    TransientDeliveryError,
+)
 from app.application.use_cases.dispatch_outbox import DispatchOutbox
 from app.application.use_cases.evaluate_inactivity import EvaluateInactivity
 from app.application.use_cases.evaluate_loan_obligations import EvaluateLoanObligations
@@ -42,6 +48,41 @@ class SystemClock(Clock):
         return datetime.now(UTC)
 
 
+class CompositeFallbackEmailChannel(NotificationChannel):
+    """Composite email channel that tries primary channel and falls back to secondary channels on failure."""
+
+    kind: ChannelKind = ChannelKind.EMAIL
+
+    def __init__(self, channels: list[NotificationChannel]) -> None:
+        self._channels = [c for c in channels if c.kind == ChannelKind.EMAIL]
+
+    async def send(self, message: OutboundMessage) -> DeliveryResult:
+        if not self._channels:
+            raise PermanentDeliveryError("No email delivery channels configured.")
+
+        last_exc: Exception | None = None
+        for i, channel in enumerate(self._channels):
+            try:
+                return await channel.send(message)
+            except Exception as exc:
+                last_exc = exc
+                next_channel = (
+                    self._channels[i + 1].__class__.__name__
+                    if i + 1 < len(self._channels)
+                    else None
+                )
+                logger.warning(
+                    "Email channel %s failed for %s: %s. %s",
+                    channel.__class__.__name__,
+                    message.recipient,
+                    exc,
+                    f"Retrying via {next_channel}..." if next_channel else "No more fallback channels.",
+                )
+        if last_exc:
+            raise last_exc
+        raise TransientDeliveryError("All email channels failed to deliver.")
+
+
 def create_default_channels(
     dry_run: bool = False,
     allowlist: list[str] | None = None,
@@ -69,29 +110,40 @@ def create_default_channels(
             )
         )
 
-    # Email channel: SMTP (e.g. Gmail) if configured, else Resend, else Console
-    if settings.smtp_enabled or bool(settings.smtp_username and settings.smtp_password):
-        channels.append(
-            SmtpEmailChannel(
-                allowlist=resolved_allowlist,
-                dry_run=resolved_dry_run,
-            )
-        )
-    elif settings.resend_api_key and not settings.resend_api_key.startswith("re_mock"):
-        channels.append(
+    # Collect available email channels
+    email_channels: list[NotificationChannel] = []
+
+    # Priority 1: Resend Email (REST API over HTTPS 443 - never blocked by cloud firewalls like Render)
+    if settings.resend_api_key and not settings.resend_api_key.startswith("re_mock"):
+        email_channels.append(
             ResendEmailChannel(
                 allowlist=resolved_allowlist,
                 dry_run=resolved_dry_run,
             )
         )
-    else:
-        channels.append(
+
+    # Priority 2: SMTP Email (e.g. Gmail - note that Render free tier blocks outbound SMTP ports 25, 465, 587)
+    if settings.smtp_enabled or bool(settings.smtp_username and settings.smtp_password):
+        email_channels.append(
+            SmtpEmailChannel(
+                allowlist=resolved_allowlist,
+                dry_run=resolved_dry_run,
+            )
+        )
+
+    if not email_channels:
+        email_channels.append(
             ConsoleChannel(
                 kind=ChannelKind.EMAIL,
                 allowlist=resolved_allowlist,
                 dry_run=resolved_dry_run,
             )
         )
+
+    if len(email_channels) == 1:
+        channels.append(email_channels[0])
+    else:
+        channels.append(CompositeFallbackEmailChannel(email_channels))
 
     return channels
 

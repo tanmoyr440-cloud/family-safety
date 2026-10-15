@@ -531,3 +531,47 @@ async def test_template_renderer_attached_documents_and_bank_accounts() -> None:
     assert "Will and Testament" in html
     assert "will.pdf" in html
 
+
+@pytest.mark.asyncio
+async def test_composite_fallback_email_channel() -> None:
+    """Verifies CompositeFallbackEmailChannel tries primary and falls back on failure."""
+    from datetime import datetime, UTC
+    from app.application.ports.notification_channel import DeliveryResult
+    from app.interfaces.worker.service import CompositeFallbackEmailChannel
+
+    class MockFailingChannel(ConsoleChannel):
+        async def send(self, message: OutboundMessage) -> DeliveryResult:
+            raise TransientDeliveryError("SMTP timed out (blocked by firewall)")
+
+    class MockWorkingChannel(ConsoleChannel):
+        async def send(self, message: OutboundMessage) -> DeliveryResult:
+            return DeliveryResult(
+                provider_message_id="resend-success-123",
+                delivered_at=datetime.now(UTC),
+            )
+
+    msg = OutboundMessage(
+        id="msg-composite",
+        channel=ChannelKind.EMAIL,
+        recipient="parent@example.com",
+        template_id="inactivity_notify_parents_email",
+        payload={},
+    )
+
+    # 1. Fallback succeeds when primary fails
+    composite = CompositeFallbackEmailChannel([MockFailingChannel(kind=ChannelKind.EMAIL), MockWorkingChannel(kind=ChannelKind.EMAIL)])
+    result = await composite.send(msg)
+    assert result.provider_message_id == "resend-success-123"
+
+    # 2. Raises error if all fail
+    failing_only = CompositeFallbackEmailChannel([MockFailingChannel(kind=ChannelKind.EMAIL)])
+    with pytest.raises(TransientDeliveryError) as exc_info:
+        await failing_only.send(msg)
+    assert "timed out" in str(exc_info.value)
+
+    # 3. Empty channels raise PermanentDeliveryError
+    empty_composite = CompositeFallbackEmailChannel([])
+    with pytest.raises(PermanentDeliveryError):
+        await empty_composite.send(msg)
+
+

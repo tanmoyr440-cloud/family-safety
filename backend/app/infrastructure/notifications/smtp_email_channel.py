@@ -119,10 +119,10 @@ class SmtpEmailChannel(NotificationChannel):
         server: smtplib.SMTP | smtplib.SMTP_SSL | None = None
         try:
             if self._port == 465:
-                server = smtplib.SMTP_SSL(self._host, self._port, timeout=15)
+                server = smtplib.SMTP_SSL(self._host, self._port, timeout=6)
             else:
                 try:
-                    server = smtplib.SMTP(self._host, self._port, timeout=12)
+                    server = smtplib.SMTP(self._host, self._port, timeout=6)
                     if self._use_tls:
                         server.starttls()
                 except (TimeoutError, OSError, smtplib.SMTPConnectError) as conn_err:
@@ -132,7 +132,7 @@ class SmtpEmailChannel(NotificationChannel):
                             self._port,
                             conn_err,
                         )
-                        server = smtplib.SMTP_SSL(self._host, 465, timeout=15)
+                        server = smtplib.SMTP_SSL(self._host, 465, timeout=6)
                     else:
                         raise
 

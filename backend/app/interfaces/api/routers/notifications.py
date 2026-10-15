@@ -317,10 +317,21 @@ async def send_emergency_alert(
             )
             await session.commit()
 
-        raise BadRequestException(
-            f"Failed to dispatch emergency alert email: {exc}. "
-            "Please check your SMTP credentials, host/port (try port 465 if port 587 is blocked by your hosting provider), or App Password."
-        )
+        err_str = str(exc)
+        if "timed out" in err_str.lower() or "timeout" in err_str.lower():
+            detail = (
+                f"Failed to dispatch emergency alert email: SMTP connection timed out ({exc}). "
+                "Cloud platforms (including Render free/starter tiers) block outbound SMTP ports (25, 465, and 587) to prevent spam. "
+                "To send emails reliably from Render over HTTPS (port 443), create a free account at https://resend.com, "
+                "generate an API key, and add RESEND_API_KEY in your Render service Environment tab. "
+                "Alternatively, set DRY_RUN=true for testing without real email dispatch."
+            )
+        else:
+            detail = (
+                f"Failed to dispatch emergency alert email: {exc}. "
+                "Please verify your email credentials or set RESEND_API_KEY in your environment variables for reliable HTTPS-based delivery without SMTP firewall blocks."
+            )
+        raise BadRequestException(detail)
 
     # 6. Record outbox entry and audit trail
     async with session_factory() as session:
