@@ -9,8 +9,12 @@ import { Button } from "@/shared/ui/Button";
 import { cn } from "@/shared/lib/utils";
 import {
   AlertCircle,
+  Check,
   CheckCircle2,
+  Copy,
+  ExternalLink,
   FileText,
+  Link as LinkIcon,
   Mail,
   Paperclip,
   Send,
@@ -34,6 +38,7 @@ export const SendEmergencyAlertDialog: React.FC<SendEmergencyAlertDialogProps> =
   const [customSubject, setCustomSubject] = React.useState<string>("");
   const [lastResult, setLastResult] = React.useState<SendEmergencyAlertResponse | null>(null);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = React.useState<boolean>(false);
 
   // Initialize selected contact when contacts load
   React.useEffect(() => {
@@ -158,6 +163,63 @@ export const SendEmergencyAlertDialog: React.FC<SendEmergencyAlertDialogProps> =
                     </p>
                   )}
                 </div>
+
+                {lastResult.packet_url && (
+                  <div className="pt-2 border-t border-slate-200 space-y-1.5">
+                    <span className="text-slate-700 font-semibold flex items-center gap-1.5">
+                      <LinkIcon className="h-3.5 w-3.5 text-blue-600" aria-hidden="true" />
+                      Generated Emergency Packet Access Link:
+                    </span>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={lastResult.packet_url}
+                        className="text-xs font-mono bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 flex-1 truncate select-all focus:outline-none"
+                      />
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="text-xs border-slate-300 text-slate-700 hover:bg-slate-100"
+                          onClick={async () => {
+                            if (lastResult.packet_url) {
+                              await navigator.clipboard.writeText(lastResult.packet_url);
+                              setCopiedLink(true);
+                              setTimeout(() => setCopiedLink(false), 2500);
+                            }
+                          }}
+                        >
+                          {copiedLink ? (
+                            <>
+                              <Check className="h-3 w-3 mr-1 text-emerald-600" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3 w-3 mr-1" />
+                              Copy
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                          onClick={() => {
+                            if (lastResult.packet_url) {
+                              window.open(lastResult.packet_url, "_blank", "noopener,noreferrer");
+                            }
+                          }}
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Open
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end pt-2">

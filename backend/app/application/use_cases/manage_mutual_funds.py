@@ -134,9 +134,9 @@ class ManageMutualFunds:
         scheme_name = nav_info.scheme_name if nav_info else f"Scheme {scheme_code}"
         fund_house = nav_info.fund_house if nav_info else "Mutual Fund AMC"
 
+        clean_folio = folio_number.strip() if folio_number and folio_number.strip() else None
         folio_masked = None
-        if folio_number:
-            clean_folio = folio_number.strip()
+        if clean_folio:
             if len(clean_folio) > 4:
                 folio_masked = f"XXXX{clean_folio[-4:]}"
             else:
@@ -149,6 +149,7 @@ class ManageMutualFunds:
             scheme_name=scheme_name,
             fund_house=fund_house,
             units=units,
+            folio=clean_folio,
             folio_masked=folio_masked,
             created_at=self._clock.now(),
         )

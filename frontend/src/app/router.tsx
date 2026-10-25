@@ -112,6 +112,31 @@ export const router = createBrowserRouter([
     element: withSuspense(<PublicPacketPage />),
     errorElement: <RouteErrorBoundary />,
   },
+  {
+    path: "/p",
+    element: withSuspense(<PublicPacketPage />),
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/packet/:token",
+    element: withSuspense(<PublicPacketPage />),
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/packet",
+    element: withSuspense(<PublicPacketPage />),
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/public/packet/:token",
+    element: withSuspense(<PublicPacketPage />),
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/public/packet",
+    element: withSuspense(<PublicPacketPage />),
+    errorElement: <RouteErrorBoundary />,
+  },
 
   // Protected Owner App Routes
   {

@@ -53,6 +53,7 @@ class ManageBankAccounts:
             id=str(uuid.uuid4()),
             owner_id=owner_id,
             bank_name=clean_bank_name,
+            account_number=clean_acc_num,
             account_number_masked=mask_bank_account_number(clean_acc_num),
             ifsc_code=clean_ifsc,
             branch_name=branch_name.strip() if branch_name and branch_name.strip() else None,

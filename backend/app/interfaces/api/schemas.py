@@ -165,6 +165,7 @@ class NextDueSchema(BaseModel):
 class LoanResponse(BaseModel):
     id: str
     lender: str
+    account_number: str | None = None
     account_masked: str
     emi_paise: int
     due_day: int
@@ -263,6 +264,7 @@ class AddBankAccountRequest(BaseModel):
 class BankAccountResponse(BaseModel):
     id: str
     bank_name: str
+    account_number: str | None = None
     account_number_masked: str
     ifsc_code: str
     branch_name: str | None = None
@@ -327,6 +329,7 @@ class SendEmergencyAlertResponse(BaseModel):
     total_holdings: int = 0
     total_loans: int = 0
     total_bank_accounts: int = 0
+    packet_url: str | None = None
     sent_at: datetime
 
 
@@ -371,6 +374,7 @@ class MutualFundHoldingResponse(BaseModel):
     scheme_name: str
     fund_house: str
     units: float
+    folio: str | None = None
     folio_masked: str | None = None
     asset_type: str = "MUTUAL_FUND"
     isin: str | None = None

@@ -35,6 +35,7 @@ class BankAccount:
     bank_name: str
     account_number_masked: str
     ifsc_code: str
+    account_number: str | None = None
     branch_name: str | None = None
     account_type: str = "SAVINGS"
     holder_name: str | None = None

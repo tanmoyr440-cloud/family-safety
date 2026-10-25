@@ -66,13 +66,13 @@ class ImportCas:
                 official_name = item.scheme_name
 
                 # Folio / Demat masking
+                raw_folio = item.folio.strip() if item.folio else None
                 folio_masked = None
-                if item.folio:
-                    cleaned_folio = item.folio.strip()
-                    if len(cleaned_folio) > 4:
-                        folio_masked = f"XXXX{cleaned_folio[-4:]}"
+                if raw_folio:
+                    if len(raw_folio) > 4:
+                        folio_masked = f"XXXX{raw_folio[-4:]}"
                     else:
-                        folio_masked = cleaned_folio
+                        folio_masked = raw_folio
 
                 is_stock = item.asset_type == "STOCK" or (
                     item.isin is not None and item.isin.startswith(("INE", "IN9", "IN0"))
@@ -208,6 +208,8 @@ class ImportCas:
                 if match:
                     # Update units, folio, and refresh timestamp for monthly refresh
                     match.units = item.units
+                    if raw_folio:
+                        match.folio = raw_folio
                     match.folio_masked = folio_masked or match.folio_masked
                     match.asset_type = asset_type
                     match.isin = item.isin or match.isin
@@ -222,6 +224,7 @@ class ImportCas:
                         scheme_name=official_name,
                         fund_house=fund_house,
                         units=item.units,
+                        folio=raw_folio,
                         folio_masked=folio_masked,
                         asset_type=asset_type,
                         isin=item.isin,

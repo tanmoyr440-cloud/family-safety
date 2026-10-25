@@ -48,7 +48,7 @@ _DEFAULT_TEMPLATES = {
         "{% for h in holdings %}\n"
         "* Scheme: {{ h.scheme_name }}\n"
         "  Fund House: {{ h.fund_house }}\n"
-        "  Folio Number: {{ h.folio_masked|default('Recorded with AMC') }}\n"
+        "  Folio Number: {{ h.folio|default(h.folio_masked)|default('Recorded with AMC') }}\n"
         "  Units: {{ h.units }}\n"
         "  {% if h.value_inr %}Estimated Valuation: Rs {{ h.value_inr }}{% endif %}\n\n"
         "{% endfor %}\n"
@@ -66,7 +66,7 @@ _DEFAULT_TEMPLATES = {
         "{% if loans and loans|length > 0 %}\n"
         "{% for l in loans %}\n"
         "* Lender: {{ l.lender }}\n"
-        "  Account: {{ l.account_masked }}\n"
+        "  Account: {{ l.account_number|default(l.account_masked) }}\n"
         "  Monthly EMI: Rs {{ l.emi_inr|default('16,166') }}\n"
         "  Due Day: {{ l.due_day|default('24th') }} of every month (Grace: {{ l.grace_days|default(1) }} day)\n\n"
         "{% endfor %}\n"
@@ -80,7 +80,7 @@ _DEFAULT_TEMPLATES = {
         "{% if bank_accounts and bank_accounts|length > 0 %}\n"
         "{% for b in bank_accounts %}\n"
         "* Bank: {{ b.bank_name }}\n"
-        "  Account: {{ b.account_number_masked }}\n"
+        "  Account: {{ b.account_number|default(b.account_number_masked) }}\n"
         "  IFSC Code: {{ b.ifsc_code }}\n"
         "  Branch: {{ b.branch_name|default('Main Branch') }}\n"
         "  Type: {{ b.account_type|default('SAVINGS') }}\n\n"
@@ -168,7 +168,7 @@ _DEFAULT_TEMPLATES = {
             {% for h in holdings %}
             <tr>
               <td><strong>{{ h.scheme_name }}</strong><br><small style="color: #64748b;">{{ h.fund_house }}</small></td>
-              <td class="mono">{{ h.folio_masked|default('Recorded') }}</td>
+              <td class="mono">{{ h.folio|default(h.folio_masked)|default('Recorded') }}</td>
               <td class="mono">{{ h.units }}</td>
               <td><strong>{% if h.value_inr %}₹{{ h.value_inr }}{% else %}-{% endif %}</strong></td>
             </tr>
@@ -206,7 +206,7 @@ _DEFAULT_TEMPLATES = {
             {% for l in loans %}
             <tr>
               <td><strong>{{ l.lender }}</strong></td>
-              <td class="mono">{{ l.account_masked }}</td>
+              <td class="mono">{{ l.account_number|default(l.account_masked) }}</td>
               <td><strong style="color: #b91c1c;">₹{{ l.emi_inr|default('16,166') }}</strong></td>
               <td>{{ l.due_day|default('24th') }} of month</td>
             </tr>
@@ -236,7 +236,7 @@ _DEFAULT_TEMPLATES = {
             {% for b in bank_accounts %}
             <tr>
               <td><strong>{{ b.bank_name }}</strong>{% if b.branch_name %}<br><small style="color: #64748b;">{{ b.branch_name }}</small>{% endif %}</td>
-              <td class="mono">{{ b.account_number_masked }}</td>
+              <td class="mono">{{ b.account_number|default(b.account_number_masked) }}</td>
               <td class="mono">{{ b.ifsc_code }}</td>
               <td>{{ b.account_type|default('SAVINGS') }}</td>
             </tr>
@@ -330,7 +330,7 @@ _DEFAULT_TEMPLATES = {
         "This is an urgent financial notification regarding {{ owner_name|default('your family member') }}.\n\n"
         "Their monthly car loan EMI has not been confirmed paid:\n"
         "* Lender: {{ lender|default('HDFC Bank') }}\n"
-        "* Account Number: {{ account_masked|default('XXXX1234') }}\n"
+        "* Account Number: {{ account_number|default(account_masked)|default('Recorded with Lender') }}\n"
         "* Monthly EMI: Rs {{ amount_inr|default('16,166') }}\n"
         "* Due Date: {{ due_date|default('the 24th') }}\n\n"
         "To prevent penalties, compounding interest, or vehicle repossession, please review the payment guidance "
@@ -371,7 +371,7 @@ _DEFAULT_TEMPLATES = {
       <div class="box">
         <table>
           <tr><td><strong>Lender:</strong></td><td>{{ lender|default('HDFC Bank') }}</td></tr>
-          <tr><td><strong>Loan Account:</strong></td><td>{{ account_masked|default('XXXX1234') }}</td></tr>
+          <tr><td><strong>Loan Account:</strong></td><td>{{ account_number|default(account_masked)|default('Recorded with Lender') }}</td></tr>
           <tr><td><strong>Overdue EMI:</strong></td><td><strong style="color: #b91c1c;">₹{{ amount_inr|default('16,166') }}</strong></td></tr>
           <tr><td><strong>Due Date:</strong></td><td>{{ due_date|default('24th of this month') }}</td></tr>
         </table>

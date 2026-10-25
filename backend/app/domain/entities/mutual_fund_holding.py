@@ -14,6 +14,7 @@ class MutualFundHolding:
     scheme_name: str
     fund_house: str
     units: float
+    folio: str | None = None
     folio_masked: str | None = None
     asset_type: str = "MUTUAL_FUND"
     isin: str | None = None

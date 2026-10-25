@@ -239,6 +239,7 @@ class SqlAlchemyLoanRepository(LoanRepository):
                 account_masked=m.account_masked,
                 emi=Money(m.emi_paise),
                 due_day=DueDay(m.due_day),
+                account_number=getattr(m, "account_number", None),
                 grace_days=m.grace_days,
                 first_installment_month=m.first_installment_month,
                 last_installment_month=m.last_installment_month,
@@ -259,6 +260,7 @@ class SqlAlchemyLoanRepository(LoanRepository):
             account_masked=model.account_masked,
             emi=Money(model.emi_paise),
             due_day=DueDay(model.due_day),
+            account_number=getattr(model, "account_number", None),
             grace_days=model.grace_days,
             first_installment_month=model.first_installment_month,
             last_installment_month=model.last_installment_month,
@@ -273,6 +275,7 @@ class SqlAlchemyLoanRepository(LoanRepository):
                 id=loan.id,
                 owner_id=loan.owner_id,
                 lender=loan.lender,
+                account_number=loan.account_number,
                 account_masked=loan.account_masked,
                 emi_paise=loan.emi.paise,
                 due_day=loan.due_day.value,
@@ -285,6 +288,8 @@ class SqlAlchemyLoanRepository(LoanRepository):
             self._session.add(model)
         else:
             model.lender = loan.lender
+            if loan.account_number is not None:
+                model.account_number = loan.account_number
             model.account_masked = loan.account_masked
             model.emi_paise = loan.emi.paise
             model.due_day = loan.due_day.value
@@ -464,6 +469,7 @@ class SqlAlchemyMutualFundHoldingRepository(MutualFundHoldingRepository):
                 scheme_name=m.scheme_name,
                 fund_house=m.fund_house,
                 units=m.units,
+                folio=getattr(m, "folio", None),
                 folio_masked=m.folio_masked,
                 asset_type=getattr(m, "asset_type", "MUTUAL_FUND") or "MUTUAL_FUND",
                 isin=getattr(m, "isin", None),
@@ -483,6 +489,7 @@ class SqlAlchemyMutualFundHoldingRepository(MutualFundHoldingRepository):
             scheme_name=model.scheme_name,
             fund_house=model.fund_house,
             units=model.units,
+            folio=getattr(model, "folio", None),
             folio_masked=model.folio_masked,
             asset_type=getattr(model, "asset_type", "MUTUAL_FUND") or "MUTUAL_FUND",
             isin=getattr(model, "isin", None),
@@ -499,6 +506,7 @@ class SqlAlchemyMutualFundHoldingRepository(MutualFundHoldingRepository):
                 scheme_name=holding.scheme_name,
                 fund_house=holding.fund_house,
                 units=holding.units,
+                folio=holding.folio,
                 folio_masked=holding.folio_masked,
                 asset_type=holding.asset_type,
                 isin=holding.isin,
@@ -510,6 +518,8 @@ class SqlAlchemyMutualFundHoldingRepository(MutualFundHoldingRepository):
             model.scheme_name = holding.scheme_name
             model.fund_house = holding.fund_house
             model.units = holding.units
+            if holding.folio is not None:
+                model.folio = holding.folio
             model.folio_masked = holding.folio_masked
             model.asset_type = holding.asset_type
             model.isin = holding.isin
@@ -546,6 +556,7 @@ class SqlAlchemyBankAccountRepository(BankAccountRepository):
                 bank_name=m.bank_name,
                 account_number_masked=m.account_number_masked,
                 ifsc_code=m.ifsc_code,
+                account_number=getattr(m, "account_number", None),
                 branch_name=m.branch_name,
                 account_type=m.account_type,
                 holder_name=m.holder_name,
@@ -564,6 +575,7 @@ class SqlAlchemyBankAccountRepository(BankAccountRepository):
             bank_name=model.bank_name,
             account_number_masked=model.account_number_masked,
             ifsc_code=model.ifsc_code,
+            account_number=getattr(model, "account_number", None),
             branch_name=model.branch_name,
             account_type=model.account_type,
             holder_name=model.holder_name,
@@ -577,6 +589,7 @@ class SqlAlchemyBankAccountRepository(BankAccountRepository):
                 id=account.id,
                 owner_id=account.owner_id,
                 bank_name=account.bank_name,
+                account_number=account.account_number,
                 account_number_masked=account.account_number_masked,
                 ifsc_code=account.ifsc_code,
                 branch_name=account.branch_name,
@@ -587,6 +600,8 @@ class SqlAlchemyBankAccountRepository(BankAccountRepository):
             self._session.add(model)
         else:
             model.bank_name = account.bank_name
+            if account.account_number is not None:
+                model.account_number = account.account_number
             model.account_number_masked = account.account_number_masked
             model.ifsc_code = account.ifsc_code
             model.branch_name = account.branch_name

@@ -155,6 +155,7 @@ class LoanModel(Base):
         String(64), ForeignKey("owners.id", ondelete="CASCADE"), nullable=False
     )
     lender: Mapped[str] = mapped_column(String(255), nullable=False)
+    account_number: Mapped[str | None] = mapped_column(String(64), nullable=True)
     account_masked: Mapped[str] = mapped_column(String(64), nullable=False)
     emi_paise: Mapped[int] = mapped_column(Integer, nullable=False)
     due_day: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -326,6 +327,7 @@ class MutualFundHoldingModel(Base):
     scheme_name: Mapped[str] = mapped_column(String(255), nullable=False)
     fund_house: Mapped[str] = mapped_column(String(255), nullable=False)
     units: Mapped[float] = mapped_column(Float, nullable=False)
+    folio: Mapped[str | None] = mapped_column(String(64), nullable=True)
     folio_masked: Mapped[str | None] = mapped_column(String(64), nullable=True)
     asset_type: Mapped[str] = mapped_column(String(32), default="MUTUAL_FUND", nullable=False)
     isin: Mapped[str | None] = mapped_column(String(32), nullable=True)
@@ -344,6 +346,7 @@ class BankAccountModel(Base):
         String(64), ForeignKey("owners.id", ondelete="CASCADE"), nullable=False, index=True
     )
     bank_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    account_number: Mapped[str | None] = mapped_column(String(64), nullable=True)
     account_number_masked: Mapped[str] = mapped_column(String(64), nullable=False)
     ifsc_code: Mapped[str] = mapped_column(String(16), nullable=False)
     branch_name: Mapped[str | None] = mapped_column(String(255), nullable=True)

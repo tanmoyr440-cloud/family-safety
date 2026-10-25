@@ -144,6 +144,7 @@ async def preview_packet(
         LoanResponse(
             id=loan.id,
             lender=loan.lender,
+            account_number=getattr(loan, "account_number", None) or loan.account_masked,
             account_masked=loan.account_masked,
             emi_paise=loan.emi.paise,
             due_day=loan.due_day.value,
@@ -162,6 +163,7 @@ async def preview_packet(
         BankAccountResponse(
             id=b.id,
             bank_name=b.bank_name,
+            account_number=getattr(b, "account_number", None) or b.account_number_masked,
             account_number_masked=b.account_number_masked,
             ifsc_code=b.ifsc_code,
             branch_name=b.branch_name,
@@ -232,6 +234,17 @@ async def preview_packet(
             "as_of": clock.now().isoformat(),
             "mutual_funds_count": len(mf_holdings),
             "bank_accounts_count": len(bank_accounts),
+            "holdings": [
+                {
+                    "scheme_name": h.scheme_name,
+                    "fund_house": h.fund_house,
+                    "units": h.units,
+                    "folio": getattr(h, "folio", None) or getattr(h, "folio_masked", None) or "Recorded",
+                    "folio_masked": h.folio_masked,
+                    "asset_type": getattr(h, "asset_type", "MUTUAL_FUND"),
+                }
+                for h in mf_holdings
+            ],
         },
         loans=loan_dtos,
         bank_accounts=bank_account_dtos,
@@ -445,6 +458,7 @@ async def get_public_packet_session(
         LoanResponse(
             id=loan.id,
             lender=loan.lender,
+            account_number=getattr(loan, "account_number", None) or loan.account_masked,
             account_masked=loan.account_masked,
             emi_paise=loan.emi.paise,
             due_day=loan.due_day.value,
@@ -463,6 +477,7 @@ async def get_public_packet_session(
         BankAccountResponse(
             id=b.id,
             bank_name=b.bank_name,
+            account_number=getattr(b, "account_number", None) or b.account_number_masked,
             account_number_masked=b.account_number_masked,
             ifsc_code=b.ifsc_code,
             branch_name=b.branch_name,
@@ -533,6 +548,17 @@ async def get_public_packet_session(
             ),
             "mutual_funds_count": len(mf_holdings),
             "bank_accounts_count": len(bank_accounts),
+            "holdings": [
+                {
+                    "scheme_name": h.scheme_name,
+                    "fund_house": h.fund_house,
+                    "units": h.units,
+                    "folio": getattr(h, "folio", None) or getattr(h, "folio_masked", None) or "Recorded",
+                    "folio_masked": h.folio_masked,
+                    "asset_type": getattr(h, "asset_type", "MUTUAL_FUND"),
+                }
+                for h in mf_holdings
+            ],
         },
         loans=loan_dtos,
         bank_accounts=bank_account_dtos,

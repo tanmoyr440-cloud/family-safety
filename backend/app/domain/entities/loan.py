@@ -52,6 +52,7 @@ class Loan:
     account_masked: str
     emi: Money
     due_day: DueDay
+    account_number: str | None = None
     grace_days: int = 1
     first_installment_month: str = "2026-01"
     last_installment_month: str = "2026-12"

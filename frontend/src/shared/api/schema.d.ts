@@ -1087,6 +1087,8 @@ export interface components {
             holder_name?: string | null;
             /** Created At */
             created_at?: string | null;
+            /** Account Number */
+            account_number?: string | null;
         };
         /** Body_importCasStatement */
         Body_importCasStatement: {
@@ -1308,6 +1310,8 @@ export interface components {
             grace_days: number;
             payment_instructions: components["schemas"]["PaymentInstructionsSchema"];
             next_due?: components["schemas"]["NextDueSchema"] | null;
+            /** Account Number */
+            account_number?: string | null;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -1412,6 +1416,8 @@ export interface components {
             value_paise: number;
             /** Created At */
             created_at?: string | null;
+            /** Folio */
+            folio?: string | null;
         };
         /** MutualFundNavResponse */
         MutualFundNavResponse: {
@@ -1790,6 +1796,8 @@ export interface components {
              * Format: date-time
              */
             sent_at: string;
+            /** Packet Url */
+            packet_url?: string | null;
         };
         /** UpdateContactRequest */
         UpdateContactRequest: {

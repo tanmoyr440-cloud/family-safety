@@ -3,7 +3,6 @@ import type { PublicPacketSessionData } from "../api/usePublicPacketSession";
 import { downloadPublicPacketDocument } from "../api/downloadDocument";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/Card";
 import { MoneyText } from "@/shared/ui/MoneyText";
-import { maskAccount } from "@/shared/lib/masks";
 import { Button } from "@/shared/ui/Button";
 import {
   Building2,
@@ -175,6 +174,44 @@ export const PublicPacketContent: React.FC<PublicPacketContentProps> = ({
             </div>
           </div>
 
+          {/* Detailed holdings with unmasked folios for RTAs/AMCs */}
+          {Array.isArray(packet.holdings_summary?.holdings) &&
+            packet.holdings_summary.holdings.length > 0 && (
+              <div className="space-y-2">
+                <span className="text-[11px] font-semibold text-slate-800 uppercase tracking-wide block">
+                  Asset & Folio Details for Nominee Verification
+                </span>
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {packet.holdings_summary.holdings.map((h: any, idx: number) => (
+                    <div
+                      key={h.id || idx}
+                      className="p-3 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+                    >
+                      <div className="space-y-0.5">
+                        <span className="font-semibold text-slate-900 block">
+                          {h.scheme_name}
+                        </span>
+                        <div className="flex items-center gap-2 font-mono text-[11px] text-slate-700">
+                          <span className="text-muted-foreground font-sans">Folio:</span>
+                          <span className="font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
+                            {h.folio || h.folio_masked || "On Record"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-left sm:text-right shrink-0">
+                        <span className="font-mono font-medium text-slate-800 block">
+                          {h.units} units
+                        </span>
+                        <span className="text-[10px] uppercase font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                          {h.asset_type || "Mutual Fund"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
           {/* Institutional disclaimer: NEVER PROMISE ACCESS TO FUNDS */}
           <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950 flex items-start gap-3">
             <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
@@ -218,8 +255,8 @@ export const PublicPacketContent: React.FC<PublicPacketContentProps> = ({
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="font-bold text-slate-900 text-sm">{loan.lender}</span>
-                      <span className="text-[11px] text-muted-foreground block font-mono">
-                        Account: {maskAccount(loan.account_masked)}
+                      <span className="text-[11px] text-slate-700 block font-mono">
+                        Account: <strong className="text-slate-900">{loan.account_number || loan.account_masked}</strong>
                       </span>
                     </div>
                     <div className="text-right">
@@ -303,8 +340,8 @@ export const PublicPacketContent: React.FC<PublicPacketContentProps> = ({
                   <div className="pt-2 border-t border-slate-200/80 space-y-1 text-[11px]">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Account Number:</span>
-                      <span className="font-mono font-medium text-slate-900">
-                        {account.account_number_masked}
+                      <span className="font-mono font-bold text-slate-900">
+                        {account.account_number || account.account_number_masked}
                       </span>
                     </div>
                     <div className="flex justify-between">

@@ -1,24 +1,28 @@
 """Delivery notifications log and dispatch router conforming to api-contract.md."""
 
+import hashlib
 import logging
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy import select
 
 from app.application.ports.notification_channel import EmailAttachment, OutboundMessage
 from app.application.ports.unit_of_work import UnitOfWork
+from app.config import settings
 from app.domain.entities.owner import Owner
 from app.domain.policies.escalation_policy import ChannelKind
 from app.infrastructure.persistence.models import (
     DocumentModel,
     NomineeGuidanceModel,
     OutboxModel,
+    PacketShareModel,
 )
 from app.infrastructure.security.audit_logger import record_audit_event
 from app.infrastructure.storage.encrypted_document_store import EncryptedDocumentStore
+from app.interfaces.api.security import create_packet_share_token
 from app.interfaces.api.dependencies import (
     get_current_owner,
     get_session_factory,
@@ -89,6 +93,7 @@ async def list_notifications(
     summary="Send emergency alert email to trusted contact with attachments",
 )
 async def send_emergency_alert(
+    request: Request,
     body: SendEmergencyAlertRequest = SendEmergencyAlertRequest(),
     current_owner: Owner = Depends(get_current_owner),
     uow: UnitOfWork = Depends(get_uow),
@@ -187,12 +192,13 @@ async def send_emergency_alert(
         except Exception as exc:
             logger.warning("Could not decrypt document %s: %s", d.id, exc)
 
-    # 4. Format all asset details for templating
+    # 4. Format all asset details for templating (UNMASKED for emergency contacts)
     holdings_data = [
         {
             "scheme_name": h.scheme_name,
             "fund_house": h.fund_house,
             "units": h.units,
+            "folio": getattr(h, "folio", None) or getattr(h, "folio_masked", None) or "Recorded with AMC",
             "folio_masked": h.folio_masked,
             "value_inr": (
                 f"{getattr(h, 'value_paise', None) / 100:,.2f}"
@@ -208,6 +214,7 @@ async def send_emergency_alert(
     loans_data = [
         {
             "lender": loan.lender,
+            "account_number": getattr(loan, "account_number", None) or getattr(loan, "account_masked", None) or "Recorded with Lender",
             "account_masked": loan.account_masked,
             "emi_inr": f"{loan.emi.paise / 100:,.2f}",
             "due_day": loan.due_day.value,
@@ -219,6 +226,7 @@ async def send_emergency_alert(
     bank_accounts_data = [
         {
             "bank_name": b.bank_name,
+            "account_number": getattr(b, "account_number", None) or getattr(b, "account_number_masked", None) or "Recorded with Bank",
             "account_number_masked": b.account_number_masked,
             "ifsc_code": b.ifsc_code,
             "branch_name": b.branch_name,
@@ -234,10 +242,40 @@ async def send_emergency_alert(
     )
     subject = body.subject or f"Emergency Alert & Verified Financial Dossier: {current_owner.name}"
 
+    # Determine real base URL from request origin/referer or config
+    base_url = settings.portal_base_url.rstrip("/")
+    if request:
+        origin = request.headers.get("origin") or request.headers.get("referer")
+        if origin:
+            from urllib.parse import urlparse
+            parsed = urlparse(origin)
+            if parsed.scheme and parsed.netloc and not ("localhost:8000" in parsed.netloc or "127.0.0.1:8000" in parsed.netloc):
+                base_url = f"{parsed.scheme}://{parsed.netloc}"
+
+    # Generate genuine signed emergency packet share link for target contact
+    share_id = str(uuid.uuid4())
+    share_expires_at = now_utc + timedelta(days=7)
+    share_token = create_packet_share_token(share_id, share_expires_at)
+    share_token_hash = hashlib.sha256(share_token.encode("utf-8")).hexdigest()
+
+    share_model = PacketShareModel(
+        id=share_id,
+        owner_id=current_owner.id,
+        contact_id=target_contact.id,
+        token_hash=share_token_hash,
+        expires_at=share_expires_at,
+        created_at=now_utc,
+    )
+    async with session_factory() as session:
+        session.add(share_model)
+        await session.commit()
+
+    packet_url = f"{base_url}/p/{share_token}"
+
     payload = {
         "owner_name": current_owner.name,
         "recipient_name": target_contact.name,
-        "packet_url": "http://localhost:5173/public/packet",
+        "packet_url": packet_url,
         "holdings": holdings_data,
         "total_mf_value_inr": total_mf_val_str,
         "loans": loans_data,
@@ -388,5 +426,6 @@ async def send_emergency_alert(
         total_holdings=len(mf_holdings),
         total_loans=len(loans),
         total_bank_accounts=len(bank_accounts),
+        packet_url=packet_url,
         sent_at=result.delivered_at,
     )

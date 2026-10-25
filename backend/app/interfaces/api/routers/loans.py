@@ -129,6 +129,7 @@ async def create_loan(
         id=loan_id,
         owner_id=current_owner.id,
         lender=body.lender,
+        account_number=body.account_number,
         account_masked=masked,
         emi=Money(body.emi_paise),
         due_day=DueDay(body.due_day),
