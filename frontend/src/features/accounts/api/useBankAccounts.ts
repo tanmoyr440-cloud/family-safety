@@ -14,7 +14,8 @@ export function useBankAccounts() {
       const result = await api.GET("/api/v1/bank-accounts");
       return unwrap<BankAccount[]>(result);
     },
-    staleTime: 60_000,
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
   });
 }
 

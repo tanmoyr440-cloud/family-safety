@@ -17,7 +17,8 @@ export function useMutualFundHoldings() {
       const result = await api.GET("/api/v1/mutual-funds/holdings");
       return unwrap<MutualFundHolding[]>(result);
     },
-    staleTime: 60_000,
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -28,7 +29,8 @@ export function usePortfolioSummary() {
       const result = await api.GET("/api/v1/mutual-funds/summary");
       return unwrap<PortfolioSummary>(result);
     },
-    staleTime: 60_000,
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
   });
 }
 

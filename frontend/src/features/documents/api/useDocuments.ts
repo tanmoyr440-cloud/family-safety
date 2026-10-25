@@ -13,6 +13,7 @@ export function useDocuments() {
       const result = await api.GET("/api/v1/documents");
       return unwrap<Document[]>(result);
     },
-    staleTime: 60_000,
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
   });
 }

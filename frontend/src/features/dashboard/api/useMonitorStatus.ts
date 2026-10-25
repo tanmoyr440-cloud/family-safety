@@ -14,6 +14,7 @@ export function useMonitorStatus() {
       return unwrap<MonitorStatus>(result);
     },
     staleTime: 10_000,
+    refetchInterval: 15_000,
     refetchOnWindowFocus: true,
   });
 }

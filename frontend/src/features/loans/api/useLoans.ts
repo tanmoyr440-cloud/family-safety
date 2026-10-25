@@ -13,6 +13,7 @@ export function useLoans() {
       const result = await api.GET("/api/v1/loans");
       return unwrap<Loan[]>(result);
     },
-    staleTime: 60_000,
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
   });
 }
