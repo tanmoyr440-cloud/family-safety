@@ -15,7 +15,6 @@ import { AttentionList } from "../components/AttentionList";
 import { PausedBanner } from "../components/PausedBanner";
 import { PortfolioOverviewCard } from "../components/PortfolioOverviewCard";
 import { ProtectionCoverageCard } from "../components/ProtectionCoverageCard";
-import { LiveMarketTicker } from "../components/LiveMarketTicker";
 import { SendEmergencyAlertDialog } from "@/features/notifications/components/SendEmergencyAlertDialog";
 import { Skeleton } from "@/shared/ui/Skeleton";
 import { Button } from "@/shared/ui/Button";
@@ -144,9 +143,6 @@ export const DashboardPage: React.FC = () => {
       <section aria-label="Quick Check-in">
         <CheckInButton />
       </section>
-
-      {/* Live Market Price Watch Ticker */}
-      <LiveMarketTicker />
 
       {/* Attention items & System Warnings */}
       <AttentionList status={monitor} contacts={contacts} mfaEnabled={user?.mfa_enabled} />

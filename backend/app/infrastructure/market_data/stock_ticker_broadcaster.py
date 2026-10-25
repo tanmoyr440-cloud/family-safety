@@ -9,10 +9,16 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, time
 import json
+import os
 import random
 from typing import Any
+from zoneinfo import ZoneInfo
+
+IST = ZoneInfo("Asia/Kolkata")
+MARKET_OPEN_TIME = time(9, 15)
+MARKET_CLOSE_TIME = time(15, 30)
 
 from fastapi import WebSocket, WebSocketDisconnect
 import structlog
@@ -214,8 +220,38 @@ class StockTickerBroadcaster:
                     }
                 )
 
-    def _generate_tick(self, tick: LiveStockTick) -> LiveStockTick:
-        """Simulate realistic price movement step around prevailing market quote."""
+    def is_market_open(self, now: datetime | None = None) -> bool:
+        """Check if Indian stock exchanges (NSE/BSE) are open for active trading.
+
+        Trading hours: Monday through Friday, 09:15 to 15:30 IST.
+        Weekends (Saturday, Sunday) and off-hours are closed.
+        Can be overridden via FORCE_MARKET_OPEN=true environment variable.
+        """
+        if os.getenv("FORCE_MARKET_OPEN", "false").lower() in ("true", "1", "yes"):
+            return True
+
+        if now is None:
+            now = datetime.now(IST)
+        elif now.tzinfo is None:
+            now = now.replace(tzinfo=IST)
+        else:
+            now = now.astimezone(IST)
+
+        # Saturday = 5, Sunday = 6
+        if now.weekday() >= 5:
+            return False
+
+        current_time = now.time()
+        return MARKET_OPEN_TIME <= current_time <= MARKET_CLOSE_TIME
+
+    def _generate_tick(self, tick: LiveStockTick, force: bool = False) -> LiveStockTick:
+        """Simulate realistic price movement step around prevailing market quote.
+
+        If market is closed and force is False, price remains strictly frozen at last close.
+        """
+        if not force and not self.is_market_open():
+            return tick
+
         old_price = tick.price
         prev_close = self._prev_closes.get(tick.symbol, old_price)
 
@@ -259,12 +295,17 @@ class StockTickerBroadcaster:
         return updated_tick
 
     async def _broadcast_loop(self) -> None:
-        """Continually broadcast live market price ticks to active WebSocket clients."""
+        """Continually broadcast live market price ticks to active WebSocket clients during market hours."""
         logger.info("StockTickerBroadcaster loop started")
         while self._running:
             try:
                 await asyncio.sleep(random.uniform(1.8, 2.6))
                 if not self._active_connections or not self._ticks:
+                    continue
+
+                # If market is closed, do NOT tick or fluctuate stock prices!
+                if not self.is_market_open():
+                    await asyncio.sleep(5.0)
                     continue
 
                 # Select a random subset of 1 to 4 stocks to tick per interval
