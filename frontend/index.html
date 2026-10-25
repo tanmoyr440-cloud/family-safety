@@ -15,9 +15,48 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="SafetyNet" />
     <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+    <!-- Preconnect & Early Backend Wake-Up -->
+    <link rel="preconnect" href="https://family-safety.onrender.com" crossorigin />
+    <link rel="dns-prefetch" href="https://family-safety.onrender.com" />
+    <script>
+      (function() {
+        try {
+          var origin = window.location.origin;
+          var isLocal = origin.indexOf("localhost") !== -1 || origin.indexOf("127.0.0.1") !== -1;
+          var target = isLocal ? "http://127.0.0.1:8000/api/v1/health" : "/api/v1/health";
+          fetch(target, { method: "GET", credentials: "omit", mode: "no-cors" }).catch(function(){});
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body class="min-h-screen bg-background font-sans antialiased text-foreground">
-    <div id="root"></div>
+    <div id="root">
+      <div id="app-splash" style="display:flex;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#0f172a;">
+        <div style="display:flex;flex-direction:column;align-items:center;max-width:320px;text-align:center;padding:24px;">
+          <div style="width:56px;height:56px;border-radius:16px;background-color:#eff6ff;display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);animation:pulse-shield 2s infinite ease-in-out;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <h1 style="font-size:1.25rem;font-weight:700;letter-spacing:-0.025em;margin:0 0 4px 0;color:#0f172a;">Family Safety Net</h1>
+          <p style="font-size:0.8125rem;color:#64748b;margin:0 0 20px 0;line-height:1.4;">Securing investments & family commitments</p>
+          <div style="width:140px;height:3px;background-color:#e2e8f0;border-radius:9999px;overflow:hidden;position:relative;">
+            <div style="width:40%;height:100%;background-color:#2563eb;border-radius:9999px;position:absolute;animation:indeterminate-bar 1.4s infinite ease-in-out;"></div>
+          </div>
+        </div>
+        <style>
+          @keyframes pulse-shield {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.9; }
+          }
+          @keyframes indeterminate-bar {
+            0% { left: -40%; width: 30%; }
+            50% { left: 40%; width: 50%; }
+            100% { left: 100%; width: 30%; }
+          }
+        </style>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

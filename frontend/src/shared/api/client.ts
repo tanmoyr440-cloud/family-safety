@@ -1,39 +1,77 @@
 import createClient from "openapi-fetch";
-import type { paths } from "./schema";
+import type { paths, components } from "./schema";
+
+export type StoredOwner = components["schemas"]["OwnerResponse"];
 
 let memoryAccessToken: string | null = null;
 let memoryRefreshToken: string | null = null;
 let memoryCsrfToken: string | null = null;
+let memoryUser: StoredOwner | null = null;
 
-const ACCESS_TOKEN_KEY = "fsn_s_access";
-const REFRESH_TOKEN_KEY = "fsn_s_refresh";
-const CSRF_TOKEN_KEY = "fsn_s_csrf";
+const ACCESS_TOKEN_KEY = "fsn_auth_access";
+const REFRESH_TOKEN_KEY = "fsn_auth_refresh";
+const CSRF_TOKEN_KEY = "fsn_auth_csrf";
+const CACHED_USER_KEY = "fsn_auth_user";
 
-function getSessionItem(key: string): string | null {
+// Legacy keys for smooth session migration
+const LEGACY_ACCESS_KEY = "fsn_s_access";
+const LEGACY_REFRESH_KEY = "fsn_s_refresh";
+const LEGACY_CSRF_KEY = "fsn_s_csrf";
+
+function getStorageItem(key: string, legacyKey?: string): string | null {
   try {
-    if (typeof window !== "undefined" && window.sessionStorage) {
-      return sessionStorage.getItem(key);
+    if (typeof window !== "undefined") {
+      if (window.localStorage) {
+        const val = localStorage.getItem(key);
+        if (val) return val;
+      }
+      if (window.sessionStorage) {
+        const sVal = sessionStorage.getItem(key);
+        if (sVal) return sVal;
+        if (legacyKey) {
+          const lVal = sessionStorage.getItem(legacyKey);
+          if (lVal) {
+            try {
+              if (window.localStorage) localStorage.setItem(key, lVal);
+            } catch {
+              // ignore
+            }
+            return lVal;
+          }
+        }
+      }
     }
   } catch {
-    // sessionStorage might be restricted in some sandboxes
+    // Storage might be restricted in sandboxes
   }
   return null;
 }
 
-function setSessionItem(key: string, value: string): void {
+function setStorageItem(key: string, value: string): void {
   try {
-    if (typeof window !== "undefined" && window.sessionStorage) {
-      sessionStorage.setItem(key, value);
+    if (typeof window !== "undefined") {
+      if (window.localStorage) {
+        localStorage.setItem(key, value);
+      }
+      if (window.sessionStorage) {
+        sessionStorage.setItem(key, value);
+      }
     }
   } catch {
     // ignore
   }
 }
 
-function removeSessionItem(key: string): void {
+function removeStorageItem(key: string, legacyKey?: string): void {
   try {
-    if (typeof window !== "undefined" && window.sessionStorage) {
-      sessionStorage.removeItem(key);
+    if (typeof window !== "undefined") {
+      if (window.localStorage) {
+        localStorage.removeItem(key);
+      }
+      if (window.sessionStorage) {
+        sessionStorage.removeItem(key);
+        if (legacyKey) sessionStorage.removeItem(legacyKey);
+      }
     }
   } catch {
     // ignore
@@ -41,15 +79,43 @@ function removeSessionItem(key: string): void {
 }
 
 export function getStoredAccessToken(): string | null {
-  return memoryAccessToken || getSessionItem(ACCESS_TOKEN_KEY);
+  return memoryAccessToken || getStorageItem(ACCESS_TOKEN_KEY, LEGACY_ACCESS_KEY);
 }
 
 export function getStoredRefreshToken(): string | null {
-  return memoryRefreshToken || getSessionItem(REFRESH_TOKEN_KEY);
+  return memoryRefreshToken || getStorageItem(REFRESH_TOKEN_KEY, LEGACY_REFRESH_KEY);
 }
 
 export function getStoredCsrfToken(): string | null {
-  return memoryCsrfToken || getSessionItem(CSRF_TOKEN_KEY);
+  return memoryCsrfToken || getStorageItem(CSRF_TOKEN_KEY, LEGACY_CSRF_KEY);
+}
+
+export function getStoredUser(): StoredOwner | null {
+  if (memoryUser) return memoryUser;
+  try {
+    const raw = getStorageItem(CACHED_USER_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      memoryUser = parsed;
+      return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+export function setStoredUser(user: StoredOwner | null): void {
+  memoryUser = user;
+  if (user) {
+    try {
+      setStorageItem(CACHED_USER_KEY, JSON.stringify(user));
+    } catch {
+      // ignore
+    }
+  } else {
+    removeStorageItem(CACHED_USER_KEY);
+  }
 }
 
 export function setStoredAuthTokens(tokens: {
@@ -59,18 +125,18 @@ export function setStoredAuthTokens(tokens: {
 }) {
   if (tokens.accessToken !== undefined) {
     memoryAccessToken = tokens.accessToken;
-    if (tokens.accessToken) setSessionItem(ACCESS_TOKEN_KEY, tokens.accessToken);
-    else removeSessionItem(ACCESS_TOKEN_KEY);
+    if (tokens.accessToken) setStorageItem(ACCESS_TOKEN_KEY, tokens.accessToken);
+    else removeStorageItem(ACCESS_TOKEN_KEY, LEGACY_ACCESS_KEY);
   }
   if (tokens.refreshToken !== undefined) {
     memoryRefreshToken = tokens.refreshToken;
-    if (tokens.refreshToken) setSessionItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
-    else removeSessionItem(REFRESH_TOKEN_KEY);
+    if (tokens.refreshToken) setStorageItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
+    else removeStorageItem(REFRESH_TOKEN_KEY, LEGACY_REFRESH_KEY);
   }
   if (tokens.csrfToken !== undefined) {
     memoryCsrfToken = tokens.csrfToken;
-    if (tokens.csrfToken) setSessionItem(CSRF_TOKEN_KEY, tokens.csrfToken);
-    else removeSessionItem(CSRF_TOKEN_KEY);
+    if (tokens.csrfToken) setStorageItem(CSRF_TOKEN_KEY, tokens.csrfToken);
+    else removeStorageItem(CSRF_TOKEN_KEY, LEGACY_CSRF_KEY);
   }
 }
 
@@ -78,9 +144,11 @@ export function clearStoredAuthTokens() {
   memoryAccessToken = null;
   memoryRefreshToken = null;
   memoryCsrfToken = null;
-  removeSessionItem(ACCESS_TOKEN_KEY);
-  removeSessionItem(REFRESH_TOKEN_KEY);
-  removeSessionItem(CSRF_TOKEN_KEY);
+  memoryUser = null;
+  removeStorageItem(ACCESS_TOKEN_KEY, LEGACY_ACCESS_KEY);
+  removeStorageItem(REFRESH_TOKEN_KEY, LEGACY_REFRESH_KEY);
+  removeStorageItem(CSRF_TOKEN_KEY, LEGACY_CSRF_KEY);
+  removeStorageItem(CACHED_USER_KEY);
 }
 
 export function readCsrfToken(): string | null {

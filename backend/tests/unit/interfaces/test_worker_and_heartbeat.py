@@ -82,9 +82,14 @@ async def test_scheduler_health_endpoint_stale_detection(
         await session.execute(stmt)
         await session.commit()
 
-    resp_stale = await client.get("/api/v1/health/scheduler")
-    assert resp_stale.status_code == 503
-    assert resp_stale.json()["status"] == "unhealthy"
+    try:
+        resp_stale = await client.get("/api/v1/health/scheduler")
+        assert resp_stale.status_code == 503
+        assert resp_stale.json()["status"] == "unhealthy"
+    finally:
+        async with db_session_factory() as session:
+            await session.execute(delete(SchedulerHeartbeatModel))
+            await session.commit()
 
 
 @pytest.mark.asyncio

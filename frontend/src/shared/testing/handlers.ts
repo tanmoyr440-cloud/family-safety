@@ -81,11 +81,22 @@ export const handlers = [
         { status: 401 },
       );
     }
-    return HttpResponse.json({
-      owner: makeOwner({ email: body.email || "tanmoy@example.com" }),
-      csrf_token: "csrf_mock_token_123",
-      mfa_required: false,
-    });
+    return HttpResponse.json(
+      {
+        owner: makeOwner({ email: body.email || "tanmoy@example.com" }),
+        csrf_token: "csrf_mock_token_123",
+        access_token: "mock_access_token_123",
+        refresh_token: "mock_refresh_token_123",
+        mfa_required: false,
+      },
+      {
+        headers: {
+          "x-access-token": "mock_access_token_123",
+          "x-refresh-token": "mock_refresh_token_123",
+          "x-csrf-token": "csrf_mock_token_123",
+        },
+      },
+    );
   }),
 
   // Auth register

@@ -192,7 +192,7 @@ describe("Auth Feature", () => {
     });
   });
 
-  it("never stores authentication tokens in localStorage", async () => {
+  it("persists session in localStorage to keep user logged in across app restarts until token expires", async () => {
     const user = userEvent.setup();
     localStorage.clear();
     server.use(
@@ -220,12 +220,8 @@ describe("Auth Feature", () => {
       expect(screen.getByText("Dashboard")).toBeInTheDocument();
     });
 
-    // Check localStorage keys
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i) || "";
-      expect(key.toLowerCase()).not.toContain("token");
-      expect(key.toLowerCase()).not.toContain("auth");
-      expect(key.toLowerCase()).not.toContain("jwt");
-    }
+    // Check localStorage retains session tokens and user profile
+    expect(localStorage.getItem("fsn_auth_access")).toBeTruthy();
+    expect(localStorage.getItem("fsn_auth_user")).toBeTruthy();
   });
 });

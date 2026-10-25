@@ -1,4 +1,4 @@
-"""Tests for health check endpoints."""
+from typing import Any
 
 import pytest
 from httpx import AsyncClient
@@ -27,8 +27,14 @@ async def test_api_v1_health_endpoint(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_api_v1_scheduler_health_endpoint(client: AsyncClient) -> None:
+async def test_api_v1_scheduler_health_endpoint(
+    client: AsyncClient,
+    db_session_factory: Any,
+) -> None:
     """Test /api/v1/health/scheduler returns ok status."""
+    from app.interfaces.worker.heartbeat import record_heartbeat
+
+    await record_heartbeat(db_session_factory, job_name="test_health_endpoint", success=True)
     response = await client.get("/api/v1/health/scheduler")
     assert response.status_code == 200
     data = response.json()

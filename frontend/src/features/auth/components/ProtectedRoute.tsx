@@ -1,6 +1,11 @@
 import * as React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useCurrentUser } from "../api/useCurrentUser";
+import {
+  getStoredAccessToken,
+  getStoredRefreshToken,
+  readCsrfToken,
+} from "@/shared/api/client";
 import { Skeleton } from "@/shared/ui/Skeleton";
 
 export interface ProtectedRouteProps {
@@ -8,10 +13,17 @@ export interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const hasToken = Boolean(getStoredAccessToken() || getStoredRefreshToken() || readCsrfToken());
   const { data: user, isLoading, isError } = useCurrentUser();
   const location = useLocation();
 
-  if (isLoading) {
+  // If no auth tokens exist in storage, fast-redirect to login without waiting on network
+  if (!hasToken) {
+    const returnTo = encodeURIComponent(`${location.pathname}${location.search}`);
+    return <Navigate to={`/login?return_to=${returnTo}`} replace />;
+  }
+
+  if (isLoading && !user) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col p-6 items-center justify-center">
         <div

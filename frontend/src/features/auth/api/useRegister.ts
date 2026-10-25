@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/shared/api/client";
+import { api, setStoredUser } from "@/shared/api/client";
 import { unwrap } from "@/shared/api/errors";
 import { authKeys } from "./keys";
 import type { components } from "@/shared/api/schema";
@@ -18,6 +18,7 @@ export function useRegister() {
       return unwrap<OwnerResponse>(result);
     },
     onSuccess: (data) => {
+      setStoredUser(data);
       queryClient.setQueryData(authKeys.me(), data);
       queryClient.invalidateQueries({ queryKey: authKeys.me() });
     },

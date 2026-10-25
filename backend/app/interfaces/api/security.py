@@ -23,7 +23,7 @@ from app.interfaces.api.errors import (
 
 _hasher = PasswordHasher()
 JWT_ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 15
+ACCESS_TOKEN_EXPIRE_MINUTES = 24 * 60  # 1 day (1440 minutes)
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 CHECKIN_TOKEN_EXPIRE_DAYS = 7
 

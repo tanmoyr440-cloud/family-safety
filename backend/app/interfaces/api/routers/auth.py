@@ -84,7 +84,7 @@ def _set_auth_cookies(
         httponly=True,
         secure=cookie_secure,
         samesite=samesite,
-        max_age=15 * 60,
+        max_age=24 * 3600,  # 1 day (86400 seconds)
         path="/",
     )
     response.set_cookie(

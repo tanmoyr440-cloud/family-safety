@@ -43,10 +43,8 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
   });
 }
 
-// Route-level code-splitting: isolate owner app from parent-facing packet bundles
-const DashboardPage = lazyWithRetry(() =>
-  import("@/features/dashboard/pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
-);
+import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
+
 const AccountsPage = lazyWithRetry(() =>
   import("@/features/accounts/pages/AccountsPage").then((m) => ({ default: m.AccountsPage })),
 );
@@ -125,7 +123,7 @@ export const router = createBrowserRouter([
     ),
     errorElement: <RouteErrorBoundary />,
     children: [
-      { index: true, element: withSuspense(<DashboardPage />) },
+      { index: true, element: <DashboardPage /> },
       { path: "accounts", element: withSuspense(<AccountsPage />) },
       { path: "loans", element: withSuspense(<LoansPage />) },
       { path: "contacts", element: withSuspense(<ContactsPage />) },

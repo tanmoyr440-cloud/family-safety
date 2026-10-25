@@ -310,8 +310,13 @@ async def test_accounts_and_packet_endpoints(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_health_and_notifications_endpoints(client: AsyncClient) -> None:
+async def test_health_and_notifications_endpoints(
+    client: AsyncClient,
+    db_session_factory: Any,
+) -> None:
     """Verifies health check and notification logs."""
+    from app.interfaces.worker.heartbeat import record_heartbeat
+
     await _register_and_login(client)
 
     # Health
@@ -322,6 +327,7 @@ async def test_health_and_notifications_endpoints(client: AsyncClient) -> None:
     v1_h_resp = await client.get("/api/v1/health")
     assert v1_h_resp.status_code == 200
 
+    await record_heartbeat(db_session_factory, job_name="test_router_health", success=True)
     sched_resp = await client.get("/api/v1/health/scheduler")
     assert sched_resp.status_code == 200
     assert sched_resp.json()["status"] == "ok"
