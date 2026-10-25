@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useMonitorStatus } from "../api/useMonitorStatus";
 import { useLoans } from "@/features/loans/api/useLoans";
+import { useLoanInstallments } from "@/features/loans/api/useLoanInstallments";
 import { useContacts } from "@/features/contacts/api/useContacts";
 import { useCurrentUser } from "@/features/auth/api/useCurrentUser";
 import { usePortfolioSummary } from "@/features/accounts/api/useMutualFunds";
@@ -36,6 +37,11 @@ export const DashboardPage: React.FC = () => {
     refetch: refetchLoans,
   } = useLoans();
 
+  const primaryLoan = loans?.[0] ?? null;
+  const { data: installments, refetch: refetchInstallments } = useLoanInstallments(
+    primaryLoan?.id,
+  );
+
   const { data: contacts, refetch: refetchContacts } = useContacts();
   const { data: user } = useCurrentUser();
 
@@ -57,6 +63,7 @@ export const DashboardPage: React.FC = () => {
       await Promise.all([
         refetchMonitor(),
         refetchLoans(),
+        refetchInstallments(),
         refetchContacts(),
         refetchSummary(),
         refetchBankAccounts(),
@@ -121,8 +128,6 @@ export const DashboardPage: React.FC = () => {
     );
   }
 
-  const primaryLoan = loans?.[0] ?? null;
-
   return (
     <div className="space-y-8">
       {/* Paused state banner */}
@@ -146,6 +151,17 @@ export const DashboardPage: React.FC = () => {
       {/* Attention items & System Warnings */}
       <AttentionList status={monitor} contacts={contacts} mfaEnabled={user?.mfa_enabled} />
 
+      {/* Core Monitoring & Obligations Grid: Inactivity Ring & Car Loan EMI */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <InactivityRing status={monitor} />
+
+        {isLoansLoading ? (
+          <Skeleton className="h-64 rounded-2xl" />
+        ) : (
+          <NextEmiCard loan={primaryLoan} installments={installments} />
+        )}
+      </div>
+
       {/* Key Financial & Protection Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         <PortfolioOverviewCard
@@ -160,17 +176,6 @@ export const DashboardPage: React.FC = () => {
           documents={documents}
           onOpenSendAlert={() => setIsSendAlertOpen(true)}
         />
-      </div>
-
-      {/* Operational Details Grid: Inactivity Ring & Loan EMI Card */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <InactivityRing status={monitor} />
-
-        {isLoansLoading ? (
-          <Skeleton className="h-64 rounded-2xl" />
-        ) : (
-          <NextEmiCard loan={primaryLoan} />
-        )}
       </div>
 
       {/* Direct Emergency Dispatch Dialog */}

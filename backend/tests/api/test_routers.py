@@ -203,10 +203,17 @@ async def test_loans_and_installments_endpoints(client: AsyncClient) -> None:
     assert inst["status"] == "PAID"
     assert inst["amount_paise"] == 1616600
 
-    # 5. List installments
+    # 5. List installments (should include both paid and next upcoming cycle)
     inst_list = await client.get(f"/api/v1/loans/{loan_id}/installments")
     assert inst_list.status_code == 200
-    assert len(inst_list.json()) >= 1
+    assert len(inst_list.json()) >= 2
+
+    # 6. Verify that GET /api/v1/loans advances next_due to upcoming cycle
+    updated_loans_resp = await client.get("/api/v1/loans")
+    assert updated_loans_resp.status_code == 200
+    loans_data = updated_loans_resp.json()
+    assert loans_data[0]["next_due"]["status"] == "UPCOMING"
+    assert loans_data[0]["next_due"]["year_month"] != curr_ym
 
 
 @pytest.mark.asyncio

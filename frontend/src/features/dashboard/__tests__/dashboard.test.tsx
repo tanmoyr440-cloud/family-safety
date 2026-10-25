@@ -6,7 +6,7 @@ import { axe } from "vitest-axe";
 import { server } from "@/shared/testing/setup";
 import { renderWithProviders } from "@/shared/testing/utils";
 import { DashboardPage } from "../pages/DashboardPage";
-import { makeMonitorStatus } from "@/shared/testing/factories";
+import { makeInstallment, makeLoan, makeMonitorStatus } from "@/shared/testing/factories";
 
 describe("Dashboard Page", () => {
   it("renders loading skeletons initially and has no accessibility violations", async () => {
@@ -311,6 +311,49 @@ describe("Dashboard Page", () => {
 
     expect(screen.getByText(/network gateway failure/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
+
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("displays paid EMI banner and advances next EMI date with timeline when installment is paid", async () => {
+    server.use(
+      http.get(new RegExp("/api/v1/loans$"), () => {
+        return HttpResponse.json([
+          makeLoan({
+            next_due: {
+              year_month: "2026-11",
+              due_date: "2026-11-24",
+              status: "UPCOMING",
+            },
+          }),
+        ]);
+      }),
+      http.get(new RegExp("/api/v1/loans/[^/]+/installments$"), () => {
+        return HttpResponse.json([
+          makeInstallment({
+            year_month: "2026-11",
+            due_date: "2026-11-24",
+            status: "UPCOMING",
+          }),
+          makeInstallment({
+            year_month: "2026-10",
+            due_date: "2026-10-24",
+            status: "PAID",
+            paid_at: "2026-10-25T10:00:00Z",
+          }),
+        ]);
+      }),
+    );
+
+    const { container } = renderWithProviders(<DashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/2026-10 EMI Marked as Paid/i)).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/Next EMI Date/i)).toBeInTheDocument();
+    expect(screen.getByText(/EMI Timeline/i)).toBeInTheDocument();
+    expect(screen.getByText(/Inactivity Timeline/i)).toBeInTheDocument();
 
     expect(await axe(container)).toHaveNoViolations();
   });

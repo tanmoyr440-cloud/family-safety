@@ -2,7 +2,7 @@
 
 import uuid
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Header, status
 
@@ -52,22 +52,85 @@ def _mask_account(raw_acc: str) -> str:
     return f"XXXX{cleaned[-4:]}"
 
 
-def _map_loan(loan: Loan) -> LoanResponse:
+def _calculate_next_due(
+    loan: Loan,
+    installments: list[Installment],
+    now: datetime,
+) -> NextDueSchema:
+    """Calculate the next pending or upcoming due installment for a loan."""
+    today = now.date()
+    inst_by_ym = {inst.year_month: inst for inst in installments}
+
+    # 1. First check if any past installments are unpaid/missed
+    unpaid_past = [
+        inst
+        for inst in installments
+        if inst.year_month < f"{today.year:04d}-{today.month:02d}"
+        and inst.status != InstallmentStatus.PAID
+    ]
+    if unpaid_past:
+        unpaid_past.sort(key=lambda i: i.due_date)
+        earliest = unpaid_past[0]
+        return NextDueSchema(
+            year_month=earliest.year_month,
+            due_date=earliest.due_date,
+            status=earliest.status.value,
+        )
+
+    # 2. Check current month
+    curr_ym = f"{today.year:04d}-{today.month:02d}"
+    curr_inst = inst_by_ym.get(curr_ym)
+
+    if curr_inst and curr_inst.status == InstallmentStatus.PAID:
+        # Current month is already PAID! Advance month by month until we find an unpaid month
+        test_year = today.year
+        test_month = today.month
+        while True:
+            if test_month == 12:
+                test_year += 1
+                test_month = 1
+            else:
+                test_month += 1
+            next_ym = f"{test_year:04d}-{test_month:02d}"
+            next_due_date = loan.due_day.due_date_for(test_year, test_month)
+            next_inst = inst_by_ym.get(next_ym)
+            if not next_inst or next_inst.status != InstallmentStatus.PAID:
+                status = "UPCOMING" if today <= next_due_date else "DUE"
+                return NextDueSchema(
+                    year_month=next_ym,
+                    due_date=next_due_date,
+                    status=status,
+                )
+    else:
+        # Current month is NOT paid yet
+        due_date = loan.due_day.due_date_for(today.year, today.month)
+        grace_limit = due_date + timedelta(days=loan.grace_days)
+        if curr_inst and curr_inst.status == InstallmentStatus.MISSED:
+            status = "MISSED"
+        elif today > grace_limit:
+            status = "MISSED"
+        elif today > due_date:
+            status = "DUE"
+        else:
+            status = "UPCOMING"
+
+        return NextDueSchema(
+            year_month=curr_ym,
+            due_date=due_date,
+            status=status,
+        )
+
+
+def _map_loan(loan: Loan, installments: list[Installment] | None = None) -> LoanResponse:
     """Map domain Loan entity to LoanResponse DTO."""
     instructions = PaymentInstructionsSchema()
     now = clock.now()
-    due_date = loan.due_day.due_date_for(now.year, now.month)
-    year_month = f"{now.year:04d}-{now.month:02d}"
-
-    next_due = NextDueSchema(
-        year_month=year_month,
-        due_date=due_date,
-        status="UPCOMING" if now.date() <= due_date else "DUE",
-    )
+    next_due = _calculate_next_due(loan, installments or [], now)
 
     return LoanResponse(
         id=loan.id,
         lender=loan.lender,
+        account_number=loan.account_number,
         account_masked=loan.account_masked,
         emi_paise=loan.emi.paise,
         due_day=loan.due_day.value,
@@ -105,7 +168,11 @@ async def list_loans(
     """Retrieve all active loan obligations for current owner."""
     async with uow:
         loans = await uow.loans.get_loans_for_owner(current_owner.id)
-    return [_map_loan(loan) for loan in loans]
+        result: list[LoanResponse] = []
+        for loan in loans:
+            installments = await uow.installments.get_installments(loan.id)
+            result.append(_map_loan(loan, installments))
+    return result
 
 
 @router.post(
@@ -151,7 +218,7 @@ async def create_loan(
         await uow.installments.save(inst)
         await uow.commit()
 
-    return _map_loan(loan)
+    return _map_loan(loan, [inst])
 
 
 @router.patch(
@@ -187,8 +254,9 @@ async def update_loan(
 
         await uow.loans.save(loan)
         await uow.commit()
+        installments = await uow.installments.get_installments(loan.id)
 
-    return _map_loan(loan)
+    return _map_loan(loan, installments)
 
 
 @router.get(
@@ -208,21 +276,46 @@ async def list_installments(
         if not loan or loan.owner_id != current_owner.id:
             raise NotFoundException("Loan not found.")
         installments = await uow.installments.get_installments(id)
+        now = clock.now()
+        today = now.date()
+        ym = f"{now.year:04d}-{now.month:02d}"
+
+        inst_by_ym = {i.year_month: i for i in installments}
+
         if not installments:
-            now = clock.now()
-            ym = f"{now.year:04d}-{now.month:02d}"
             due_date = loan.due_day.due_date_for(now.year, now.month)
             inst = Installment(
                 loan_id=id,
                 year_month=ym,
                 due_date=due_date,
                 amount=loan.emi,
-                status=InstallmentStatus.UPCOMING if now.date() <= due_date else InstallmentStatus.DUE,
+                status=InstallmentStatus.UPCOMING if today <= due_date else InstallmentStatus.DUE,
             )
             await uow.installments.save(inst)
             await uow.commit()
             installments = [inst]
+            inst_by_ym[ym] = inst
 
+        # If current month installment is PAID, ensure next month installment exists!
+        curr_inst = inst_by_ym.get(ym)
+        if curr_inst and curr_inst.status == InstallmentStatus.PAID:
+            next_year = now.year if now.month < 12 else now.year + 1
+            next_month = now.month + 1 if now.month < 12 else 1
+            next_ym = f"{next_year:04d}-{next_month:02d}"
+            if next_ym not in inst_by_ym and loan.is_active_for_month(next_ym):
+                next_due = loan.due_day.due_date_for(next_year, next_month)
+                next_inst = Installment(
+                    loan_id=id,
+                    year_month=next_ym,
+                    due_date=next_due,
+                    amount=loan.emi,
+                    status=InstallmentStatus.UPCOMING,
+                )
+                await uow.installments.save(next_inst)
+                await uow.commit()
+                installments.append(next_inst)
+
+    installments.sort(key=lambda i: i.due_date, reverse=True)
     return [_map_installment(i) for i in installments]
 
 

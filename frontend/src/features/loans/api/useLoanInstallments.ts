@@ -19,6 +19,7 @@ export function useLoanInstallments(loanId: string | undefined) {
       return unwrap<Installment[]>(result);
     },
     enabled: Boolean(loanId),
-    staleTime: 30_000,
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
   });
 }

@@ -56,6 +56,26 @@ class ConfirmLoanPayment:
 
             installment.mark_paid(paid_at=payment_date)
             await self._uow.installments.save(installment)
+
+            # Auto-provision next month installment cycle if active
+            parts = year_month.split("-")
+            year, month = int(parts[0]), int(parts[1])
+            next_year = year if month < 12 else year + 1
+            next_month = month + 1 if month < 12 else 1
+            next_ym = f"{next_year:04d}-{next_month:02d}"
+            if loan.is_active_for_month(next_ym):
+                existing_next = await self._uow.installments.get_by_year_month(loan_id, next_ym)
+                if existing_next is None:
+                    next_due = loan.due_day.due_date_for(next_year, next_month)
+                    next_inst = Installment(
+                        loan_id=loan_id,
+                        year_month=next_ym,
+                        due_date=next_due,
+                        amount=loan.emi,
+                        status=InstallmentStatus.UPCOMING,
+                    )
+                    await self._uow.installments.save(next_inst)
+
             await self._uow.commit()
 
         return installment
