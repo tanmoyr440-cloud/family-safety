@@ -16,6 +16,7 @@ import { PausedBanner } from "../components/PausedBanner";
 import { PortfolioOverviewCard } from "../components/PortfolioOverviewCard";
 import { ProtectionCoverageCard } from "../components/ProtectionCoverageCard";
 import { SendEmergencyAlertDialog } from "@/features/notifications/components/SendEmergencyAlertDialog";
+import { DashboardLoadingState } from "../components/DashboardLoadingState";
 import { Skeleton } from "@/shared/ui/Skeleton";
 import { Button } from "@/shared/ui/Button";
 import { AlertCircle, RefreshCw } from "lucide-react";
@@ -75,26 +76,8 @@ export const DashboardPage: React.FC = () => {
 
   const isRefreshing = isManualRefreshing || isMonitorFetching;
 
-  if (isMonitorLoading) {
-    return (
-      <div className="space-y-8" role="status" aria-label="Loading dashboard">
-        {/* Header Skeleton */}
-        <div className="space-y-2 border-b border-slate-200 pb-6">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-96 max-w-full" />
-        </div>
-
-        {/* Check-in CTA Skeleton */}
-        <Skeleton className="h-16 w-full sm:w-64 rounded-2xl" />
-
-        {/* Cards Grid Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Skeleton className="h-72 rounded-2xl" />
-          <Skeleton className="h-72 rounded-2xl" />
-        </div>
-        <span className="sr-only">Loading dashboard status...</span>
-      </div>
-    );
+  if (isMonitorLoading && !monitor) {
+    return <DashboardLoadingState />;
   }
 
   if (isMonitorError || !monitor) {
