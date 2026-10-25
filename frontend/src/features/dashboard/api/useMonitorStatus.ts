@@ -13,7 +13,7 @@ export function useMonitorStatus() {
       const result = await api.GET("/api/v1/monitor");
       return unwrap<MonitorStatus>(result);
     },
-    staleTime: 30_000,
+    staleTime: 10_000,
     refetchOnWindowFocus: true,
   });
 }

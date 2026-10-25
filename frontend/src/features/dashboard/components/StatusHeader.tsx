@@ -1,10 +1,14 @@
 import * as React from "react";
 import type { MonitorStatus } from "../api/useMonitorStatus";
 import { StatusPill } from "@/shared/ui/StatusPill";
-import { formatISTDate } from "@/shared/lib/dates";
+import { formatDateTimeIST, formatISTDate } from "@/shared/lib/dates";
+import { Button } from "@/shared/ui/Button";
+import { RotateCw } from "lucide-react";
 
 export interface StatusHeaderProps {
   status: MonitorStatus;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 function getStatusMessage(status: MonitorStatus): {
@@ -66,7 +70,11 @@ function getStatusMessage(status: MonitorStatus): {
   }
 }
 
-export const StatusHeader: React.FC<StatusHeaderProps> = ({ status }) => {
+export const StatusHeader: React.FC<StatusHeaderProps> = ({
+  status,
+  onRefresh,
+  isRefreshing,
+}) => {
   const info = getStatusMessage(status);
 
   return (
@@ -76,8 +84,28 @@ export const StatusHeader: React.FC<StatusHeaderProps> = ({ status }) => {
           {info.headline}
         </h1>
         <p className="text-sm text-slate-600 max-w-2xl">{info.description}</p>
+        {status.last_activity_at && (
+          <p className="text-[11px] text-muted-foreground pt-0.5">
+            Last recorded activity: {formatDateTimeIST(status.last_activity_at)}
+          </p>
+        )}
       </div>
-      <div className="shrink-0">
+
+      <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-center">
+        {onRefresh && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 border-slate-200 gap-1.5"
+            aria-label="Refresh dashboard data"
+          >
+            <RotateCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-blue-600" : ""}`} />
+            <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
+          </Button>
+        )}
         <StatusPill tone={info.tone} label={info.label} />
       </div>
     </div>

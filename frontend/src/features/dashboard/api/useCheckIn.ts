@@ -40,9 +40,10 @@ export function useCheckIn() {
         queryClient.setQueryData(monitorKeys.status(), context.previousStatus);
       }
     },
-    onSettled: () => {
-      // Reconcile with actual server response
-      queryClient.invalidateQueries({ queryKey: monitorKeys.all });
+    onSettled: async () => {
+      // Reconcile with actual server response immediately
+      await queryClient.invalidateQueries({ queryKey: monitorKeys.all });
+      await queryClient.refetchQueries({ queryKey: monitorKeys.all });
     },
   });
 }

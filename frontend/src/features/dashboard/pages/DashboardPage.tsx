@@ -3,12 +3,18 @@ import { useMonitorStatus } from "../api/useMonitorStatus";
 import { useLoans } from "@/features/loans/api/useLoans";
 import { useContacts } from "@/features/contacts/api/useContacts";
 import { useCurrentUser } from "@/features/auth/api/useCurrentUser";
+import { usePortfolioSummary } from "@/features/accounts/api/useMutualFunds";
+import { useBankAccounts } from "@/features/accounts/api/useBankAccounts";
+import { useDocuments } from "@/features/documents/api/useDocuments";
 import { StatusHeader } from "../components/StatusHeader";
 import { CheckInButton } from "../components/CheckInButton";
 import { InactivityRing } from "../components/InactivityRing";
 import { NextEmiCard } from "../components/NextEmiCard";
 import { AttentionList } from "../components/AttentionList";
 import { PausedBanner } from "../components/PausedBanner";
+import { PortfolioOverviewCard } from "../components/PortfolioOverviewCard";
+import { ProtectionCoverageCard } from "../components/ProtectionCoverageCard";
+import { SendEmergencyAlertDialog } from "@/features/notifications/components/SendEmergencyAlertDialog";
 import { Skeleton } from "@/shared/ui/Skeleton";
 import { Button } from "@/shared/ui/Button";
 import { AlertCircle, RefreshCw } from "lucide-react";
@@ -20,11 +26,47 @@ export const DashboardPage: React.FC = () => {
     isError: isMonitorError,
     error: monitorError,
     refetch: refetchMonitor,
+    isFetching: isMonitorFetching,
   } = useMonitorStatus();
 
-  const { data: loans, isLoading: isLoansLoading } = useLoans();
-  const { data: contacts } = useContacts();
+  const {
+    data: loans,
+    isLoading: isLoansLoading,
+    refetch: refetchLoans,
+  } = useLoans();
+
+  const { data: contacts, refetch: refetchContacts } = useContacts();
   const { data: user } = useCurrentUser();
+
+  const {
+    data: portfolioSummary,
+    isLoading: isSummaryLoading,
+    refetch: refetchSummary,
+  } = usePortfolioSummary();
+
+  const { data: bankAccounts, refetch: refetchBankAccounts } = useBankAccounts();
+  const { data: documents, refetch: refetchDocuments } = useDocuments();
+
+  const [isManualRefreshing, setIsManualRefreshing] = React.useState(false);
+  const [isSendAlertOpen, setIsSendAlertOpen] = React.useState(false);
+
+  const handleRefreshAll = async () => {
+    setIsManualRefreshing(true);
+    try {
+      await Promise.all([
+        refetchMonitor(),
+        refetchLoans(),
+        refetchContacts(),
+        refetchSummary(),
+        refetchBankAccounts(),
+        refetchDocuments(),
+      ]);
+    } finally {
+      setTimeout(() => setIsManualRefreshing(false), 500);
+    }
+  };
+
+  const isRefreshing = isManualRefreshing || isMonitorFetching;
 
   if (isMonitorLoading) {
     return (
@@ -68,7 +110,7 @@ export const DashboardPage: React.FC = () => {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => refetchMonitor()}
+          onClick={handleRefreshAll}
           className="gap-2 bg-white border-red-200 text-red-900 hover:bg-red-100"
         >
           <RefreshCw className="h-4 w-4" aria-hidden="true" />
@@ -85,8 +127,12 @@ export const DashboardPage: React.FC = () => {
       {/* Paused state banner */}
       {monitor.status === "PAUSED" && <PausedBanner pausedUntil={monitor.paused_until} />}
 
-      {/* Status Header */}
-      <StatusHeader status={monitor} />
+      {/* Status Header with live manual refresh button */}
+      <StatusHeader
+        status={monitor}
+        onRefresh={handleRefreshAll}
+        isRefreshing={isRefreshing}
+      />
 
       {/* Primary Check-in Action (Prominent, Thumb-reachable) */}
       <section aria-label="Quick Check-in">
@@ -96,7 +142,23 @@ export const DashboardPage: React.FC = () => {
       {/* Attention items & System Warnings */}
       <AttentionList status={monitor} contacts={contacts} mfaEnabled={user?.mfa_enabled} />
 
-      {/* Grid: Inactivity Ring & Loan EMI Card */}
+      {/* Key Financial & Protection Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <PortfolioOverviewCard
+          summary={portfolioSummary}
+          isLoading={isSummaryLoading}
+        />
+
+        <ProtectionCoverageCard
+          status={monitor}
+          contacts={contacts}
+          bankAccounts={bankAccounts}
+          documents={documents}
+          onOpenSendAlert={() => setIsSendAlertOpen(true)}
+        />
+      </div>
+
+      {/* Operational Details Grid: Inactivity Ring & Loan EMI Card */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <InactivityRing status={monitor} />
 
@@ -106,6 +168,12 @@ export const DashboardPage: React.FC = () => {
           <NextEmiCard loan={primaryLoan} />
         )}
       </div>
+
+      {/* Direct Emergency Dispatch Dialog */}
+      <SendEmergencyAlertDialog
+        open={isSendAlertOpen}
+        onOpenChange={setIsSendAlertOpen}
+      />
     </div>
   );
 };

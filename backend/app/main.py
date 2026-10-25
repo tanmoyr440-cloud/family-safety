@@ -121,8 +121,17 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
                 text("CREATE INDEX IF NOT EXISTS ix_contact_otps_contact_id ON contact_otps (contact_id);")
             )
 
-        # Ensure mutual_fund_holdings has asset_type and isin columns
+        # Ensure loans, bank_accounts, and mutual_fund_holdings have unmasked columns and asset types
         if is_postgres:
+            await conn.execute(
+                text("ALTER TABLE loans ADD COLUMN IF NOT EXISTS account_number VARCHAR(64);")
+            )
+            await conn.execute(
+                text("ALTER TABLE bank_accounts ADD COLUMN IF NOT EXISTS account_number VARCHAR(64);")
+            )
+            await conn.execute(
+                text("ALTER TABLE mutual_fund_holdings ADD COLUMN IF NOT EXISTS folio VARCHAR(64);")
+            )
             await conn.execute(
                 text("ALTER TABLE mutual_fund_holdings ADD COLUMN IF NOT EXISTS asset_type VARCHAR(32) DEFAULT 'MUTUAL_FUND';")
             )
@@ -131,14 +140,32 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
             )
         else:
             try:
+                loans_cols_res = await conn.execute(text("PRAGMA table_info(loans)"))
+                loans_col_names = [row[1] for row in loans_cols_res.fetchall()]
+                if "account_number" not in loans_col_names:
+                    await conn.execute(text("ALTER TABLE loans ADD COLUMN account_number VARCHAR(64);"))
+            except Exception as ex:
+                logger.warning("Could not add account_number to loans sqlite: %s", ex)
+
+            try:
+                ba_cols_res = await conn.execute(text("PRAGMA table_info(bank_accounts)"))
+                ba_col_names = [row[1] for row in ba_cols_res.fetchall()]
+                if "account_number" not in ba_col_names:
+                    await conn.execute(text("ALTER TABLE bank_accounts ADD COLUMN account_number VARCHAR(64);"))
+            except Exception as ex:
+                logger.warning("Could not add account_number to bank_accounts sqlite: %s", ex)
+
+            try:
                 mf_cols_res = await conn.execute(text("PRAGMA table_info(mutual_fund_holdings)"))
                 mf_col_names = [row[1] for row in mf_cols_res.fetchall()]
+                if "folio" not in mf_col_names:
+                    await conn.execute(text("ALTER TABLE mutual_fund_holdings ADD COLUMN folio VARCHAR(64);"))
                 if "asset_type" not in mf_col_names:
                     await conn.execute(text("ALTER TABLE mutual_fund_holdings ADD COLUMN asset_type VARCHAR(32) DEFAULT 'MUTUAL_FUND';"))
                 if "isin" not in mf_col_names:
                     await conn.execute(text("ALTER TABLE mutual_fund_holdings ADD COLUMN isin VARCHAR(32);"))
             except Exception as ex:
-                logger.warning("Could not add asset_type/isin columns to sqlite: %s", ex)
+                logger.warning("Could not add columns to mutual_fund_holdings sqlite: %s", ex)
 
         # Migrate previously imported CDSL Demat equity funds to 'STOCK'
         try:
