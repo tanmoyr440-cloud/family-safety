@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   Button,
@@ -13,6 +13,7 @@ import {
   MoneyText,
   Skeleton,
   StatusPill,
+  SwipeToRefresh,
 } from "./index";
 
 describe("Shared UI Primitives", () => {
@@ -104,5 +105,39 @@ describe("Shared UI Primitives", () => {
     const cancelBtn = screen.getByRole("button", { name: /cancel/i });
     await user.click(cancelBtn);
     expect(handleOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("SwipeToRefresh renders children and triggers refresh callback on swipe up", async () => {
+    const handleRefresh = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(
+      <SwipeToRefresh onRefresh={handleRefresh} threshold={50}>
+        <div data-testid="page-content">Dashboard Content</div>
+      </SwipeToRefresh>,
+    );
+
+    expect(screen.getByTestId("page-content")).toBeInTheDocument();
+
+    const wrapper = container.firstChild as HTMLElement;
+
+    // Simulate touchstart at y=300
+    act(() => {
+      fireEvent.touchStart(wrapper, {
+        touches: [{ clientX: 100, clientY: 300 }],
+      });
+    });
+
+    // Simulate touchmove pulling up to y=100 (diffY = 200 > threshold 50)
+    act(() => {
+      fireEvent.touchMove(wrapper, {
+        touches: [{ clientX: 100, clientY: 100 }],
+      });
+    });
+
+    // Simulate touchend
+    await act(async () => {
+      fireEvent.touchEnd(wrapper);
+    });
+
+    expect(handleRefresh).toHaveBeenCalledTimes(1);
   });
 });

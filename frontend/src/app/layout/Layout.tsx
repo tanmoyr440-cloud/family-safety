@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Bell,
   Eye,
@@ -9,12 +10,13 @@ import {
   Landmark,
   LogOut,
   Menu,
+  RefreshCw,
   Settings,
   Users,
   X,
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
-import { Logo } from "@/shared/ui";
+import { Logo, SwipeToRefresh } from "@/shared/ui";
 import { InstallPwaPrompt } from "@/shared/ui/InstallPwaPrompt";
 import { useCurrentUser } from "@/features/auth/api/useCurrentUser";
 import { useLogout } from "@/features/auth/api/useLogout";
@@ -56,7 +58,25 @@ export const Layout: React.FC = () => {
   const location = useLocation();
   const { data: user } = useCurrentUser();
   const { mutate: logout } = useLogout();
+  const queryClient = useQueryClient();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  const handleManualRefresh = React.useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      if (typeof window !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(15);
+      }
+    } catch {
+      // Haptics optional
+    }
+    try {
+      await queryClient.refetchQueries({ type: "active" });
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  }, [queryClient]);
 
   // Active dock index for smooth sliding pill animation
   const activeDockIndex = React.useMemo(() => {
@@ -171,6 +191,23 @@ export const Layout: React.FC = () => {
               </span>
               <span>Monitoring active</span>
             </div>
+
+            {/* Quick Refresh Button (Live Data Sync) */}
+            <button
+              type="button"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className="p-1.5 rounded-xl border border-slate-200/80 bg-white text-slate-600 hover:text-blue-600 hover:bg-blue-50/50 hover:border-blue-200 shadow-2xs transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              title="Refresh live financial data (or swipe up anywhere on screen)"
+              aria-label="Refresh live data"
+            >
+              <RefreshCw
+                className={cn(
+                  "h-3.5 w-3.5 transition-transform duration-300",
+                  isRefreshing && "animate-spin text-blue-600",
+                )}
+              />
+            </button>
 
             {/* Quick Action: Preview as Parent */}
             <Link
@@ -297,29 +334,31 @@ export const Layout: React.FC = () => {
         )}
       </header>
 
-      {/* Main Content Area with Smooth Page Transitions */}
-      <main
-        id="main-content"
-        className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 pb-32 md:pb-12"
-      >
-        <React.Suspense
-          fallback={
-            <div
-              className="flex items-center justify-center min-h-[40vh]"
-              aria-label="Loading content"
-            >
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            </div>
-          }
+      {/* Main Content Area with Swipe Up / Pull Down Refresh and Smooth Page Transitions */}
+      <SwipeToRefresh className="flex-1 flex flex-col">
+        <main
+          id="main-content"
+          className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 pb-32 md:pb-12"
         >
-          <div
-            key={location.pathname}
-            className="animate-in fade-in-50 duration-200 ease-out"
+          <React.Suspense
+            fallback={
+              <div
+                className="flex items-center justify-center min-h-[40vh]"
+                aria-label="Loading content"
+              >
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            }
           >
-            <Outlet />
-          </div>
-        </React.Suspense>
-      </main>
+            <div
+              key={location.pathname}
+              className="animate-in fade-in-50 duration-200 ease-out"
+            >
+              <Outlet />
+            </div>
+          </React.Suspense>
+        </main>
+      </SwipeToRefresh>
 
       {/* PWA Installation Prompt (Appears on mobile / non-installed browsers) */}
       <InstallPwaPrompt />

@@ -6,3 +6,4 @@ export * from "./Skeleton";
 export * from "./ConfirmDialog";
 export * from "./MoneyText";
 export * from "./Logo";
+export * from "./SwipeToRefresh";
