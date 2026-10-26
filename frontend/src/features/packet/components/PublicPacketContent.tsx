@@ -1,5 +1,6 @@
 import * as React from "react";
 import type { PublicPacketSessionData } from "../api/usePublicPacketSession";
+import { ParentSimpleGuideCard } from "./ParentSimpleGuideCard";
 import { downloadPublicPacketDocument } from "../api/downloadDocument";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/Card";
 import { MoneyText } from "@/shared/ui/MoneyText";
@@ -136,6 +137,9 @@ export const PublicPacketContent: React.FC<PublicPacketContentProps> = ({
           )}
         </CardContent>
       </Card>
+
+      {/* PARENT SIMPLE STEP-BY-STEP GUIDE */}
+      <ParentSimpleGuideCard ownerName={ownerName} loans={packet.loans} />
 
       {/* SECTION 2: INVESTMENT ACCOUNTS (GROWW) */}
       <Card className="page-break-avoid border-slate-200 shadow-xs">
