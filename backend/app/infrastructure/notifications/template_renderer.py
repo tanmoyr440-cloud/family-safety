@@ -104,21 +104,21 @@ _DEFAULT_TEMPLATES = {
         "No attached documents were on file at the time of this alert.\n\n"
         "{% endif %}\n"
         "================================================================================\n"
-        "6. SIMPLE STEP-BY-STEP GUIDE FOR PARENTS / माता-पिता के लिए आसान निर्देश\n"
+        "6. SIMPLE STEP-BY-STEP GUIDE FOR PARENTS / বাবা-মা ও পরিবারের জন্য সহজ নির্দেশিকা\n"
         "================================================================================\n"
-        "A. म्यूचुअल फंड और शेयर का पैसा कैसे निकालें (How to Claim Funds):\n"
-        "   1. नॉमिनी (माता/पिता) का आधार कार्ड, पैन कार्ड और बैंक पासबुक/कैंसिल्ड चेक साथ रखें।\n"
-        "   2. नज़दीकी CAMS या KFintech के दफ़्तर जाएँ (टोल-फ्री: 1800-419-2267 / 1800-309-4001) या Groww (080-68249147) पर कॉल करें।\n"
-        "   3. वहाँ कहें: 'मुझे नॉमिनी ट्रांसमिशन (Transmission/Claim) फ़ॉर्म भरना है।' यह फ़ोलियो नंबर दें।\n"
-        "   4. 7 से 15 दिनों में पैसा सीधे नॉमिनी के बैंक खाते में आ जाता है। यह प्रक्रिया पूरी तरह मुफ़्त है; किसी दलाल को पैसे न दें।\n\n"
-        "B. कार लोन की EMI कैसे भरें (How to Pay Car Loan EMI):\n"
-        "   1. हर महीने की 24 तारीख को चेक करें कि क्या बैंक खाते से EMI कट गई है।\n"
-        "   2. अगर पैसे नहीं कटे, तो नज़दीकी HDFC बैंक शाखा जाकर लोन अकाउंट नंबर बताकर नकद या चेक से जमा करें और रसीद लें।\n"
-        "   3. या UPI से carloan@hdfc पर भेजें। इससे गाड़ी पर कोई पेनल्टी या ज़ब्ती की कार्रवाई नहीं होगी।\n\n"
-        "C. 4 ज़रूरी सावधानियाँ (Golden Safety Rules):\n"
-        "   * फ़ोन पर कभी किसी को OTP, पासवर्ड या ATM PIN न बताएं।\n"
-        "   * नॉमिनी क्लेम के लिए किसी भी व्यक्ति या एजेंट को कोई पैसा न दें।\n"
-        "   * किसी भी शंका में सीधे बैंक जाकर मैनेजर से मिलें या किसी भरोसेमंद रिश्तेदार को साथ ले जाएँ।\n\n"
+        "A. মিউচুয়াল ফান্ড ও শেয়ারের টাকা তোলার নিয়ম (How to Claim Funds):\n"
+        "   1. নমিনির (বাবা/মা) আধার কার্ড, প্যান কার্ড ও ব্যাংক পাসবইয়ের প্রথম পাতা/ক্যান্সেলড চেক সাথে রাখুন।\n"
+        "   2. নিকটবর্তী CAMS বা KFintech অফিসে যান (টোল-ফ্রি: 1800-419-2267 / 1800-309-4001) অথবা Groww হেল্পলাইনে (080-68249147) ফোন করুন।\n"
+        "   3. সেখানে বলুন: 'আমাকে নমিনি ট্রান্সমিশন (Claim) ফর্ম দিন।' এই ফোলিও নম্বরটি দিন।\n"
+        "   4. ৭ থেকে ১৫ দিনের মধ্যে সমস্ত টাকা সরাসরি নমিনির ব্যাংক অ্যাকাউন্টে চলে আসবে। এটি সম্পূর্ণ বিনামূল্যের সরকারি প্রক্রিয়া; কাউকে কোনো কমিশন দেবেন না।\n\n"
+        "B. গাড়ির লোনের কিস্তি (EMI) দেওয়ার নিয়ম (How to Pay Car Loan EMI):\n"
+        "   1. প্রতি মাসের ২৪ তারিখে ব্যাংক ব্যালেন্স চেক করুন যে কিস্তির টাকা কেটেছে কি না।\n"
+        "   2. টাকা না কাটলে, নিকটবর্তী HDFC ব্যাংক শাখায় গিয়ে লোন অ্যাকাউন্ট নম্বর দিয়ে ক্যাশ বা চেকে জমা দিন এবং সিল দেওয়া রসিদ নিন।\n"
+        "   3. অথবা UPI দিয়ে carloan@hdfc -এ টাকা পাঠান। এর ফলে কোনো জরিমানা বা সমস্যা হবে না।\n\n"
+        "C. জরুরি সতর্কতা (Golden Safety Rules):\n"
+        "   * ফোনে কাউকে কখনোই OTP, পাসওয়ার্ড বা এটিএম পিন বলবেন না। ব্যাংক কখনোই ফোনে গোপন পিন বা OTP চায় না।\n"
+        "   * নমিনি ক্লের জন্য কোনো দালাল বা মধ্যস্থতাকারীকে টাকা দেবেন না।\n"
+        "   * যেকোনো সমস্যায় সরাসরি ব্যাংক ম্যানেজারের সাথে দেখা করুন।\n\n"
         "================================================================================\n"
         "7. SECURE EMERGENCY PACKET LINK\n"
         "================================================================================\n"
@@ -307,26 +307,26 @@ _DEFAULT_TEMPLATES = {
       <!-- Simple Step-by-Step Guide for Parents -->
       <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
         <div style="font-size: 15px; font-weight: 700; color: #166534; margin-bottom: 12px;">
-          &#128161; Simple Step-by-Step Guide for Parents / माता-पिता के लिए आसान निर्देश
+          &#128161; Simple Step-by-Step Guide for Parents / বাবা-মা ও পরিবারের জন্য সহজ নির্দেশিকা
         </div>
         
         <div style="font-size: 13px; color: #1e293b; line-height: 1.6; margin-bottom: 14px;">
-          <strong style="color: #15803d;">1. म्यूचुअल फंड और शेयर का पैसा कैसे निकालें (How to Claim Funds):</strong><br>
-          &bull; <strong>काग़ज़ात:</strong> नॉमिनी (माता/पिता) का आधार कार्ड, पैन कार्ड, बैंक पासबुक या कैंसिल्ड चेक।<br>
-          &bull; <strong>कहाँ जाएँ:</strong> अपने शहर में नज़दीकी <strong>CAMS</strong> या <strong>KFintech</strong> के दफ़्तर जाएँ या हेल्पलाइन पर कॉल करें (CAMS: 1800-419-2267 / Groww: 080-68249147)।<br>
-          &bull; <strong>क्या कहें:</strong> <em>“मुझे नॉमिनी ट्रांसमिशन फ़ॉर्म (Transmission/Claim Form) दीजिए।”</em><br>
-          &bull; <strong>पैसा कब मिलेगा:</strong> 7 से 15 दिनों में पूरा पैसा सीधे आपके बैंक खाते में आ जाएगा। यह प्रक्रिया पूरी तरह मुफ़्त है; किसी एजेंट को कोई कमीशन न दें।
+          <strong style="color: #15803d;">১. মিউচুয়াল ফান্ড ও শেয়ারের টাকা তোলার নিয়ম (How to Claim Funds):</strong><br>
+          &bull; <strong>কাগজপত্র:</strong> নমিনির (বাবা/মা) আধার কার্ড, প্যান কার্ড, ব্যাংক পাসবইয়ের প্রথম পাতা বা ক্যান্সেলড চেক।<br>
+          &bull; <strong>কোথায় যাবেন:</strong> শহরের নিকটবর্তী <strong>CAMS</strong> অথবা <strong>KFintech</strong> অফিসে যান বা হেল্পলাইনে ফোন করুন (CAMS: 1800-419-2267 / Groww: 080-68249147)।<br>
+          &bull; <strong>কী বলবেন:</strong> <em>“আমাকে নমিনি ট্রান্সমিশন (Nominee Transmission/Claim) ফর্ম দিন।”</em><br>
+          &bull; <strong>টাকা কখন পাবেন:</strong> ৭ থেকে ১৫ দিনের মধ্যে সমস্ত টাকা সরাসরি আপনার ব্যাংক অ্যাকাউন্টে জমা হয়ে যাবে। এই প্রক্রিয়া সম্পূর্ণ বিনামূল্যে; কোনো দালাল বা এজেন্টকে টাকা দেবেন না।
         </div>
 
         <div style="font-size: 13px; color: #1e293b; line-height: 1.6; margin-bottom: 14px;">
-          <strong style="color: #b91c1c;">2. कार लोन की EMI कैसे भरें (How to Pay Car Loan EMI):</strong><br>
-          &bull; हर महीने की 24 तारीख को चेक करें कि क्या बैंक खाते से EMI कटी है।<br>
-          &bull; अगर पैसे नहीं कटे, तो नज़दीकी <strong>HDFC बैंक</strong> शाखा जाकर लोन खाता नंबर बताकर नकद या चेक से जमा करें और रसीद लें।<br>
-          &bull; या PhonePe/Google Pay से UPI ID: <strong>carloan@hdfc</strong> पर पेमेंट करें।
+          <strong style="color: #b91c1c;">২. গাড়ির লোনের কিস্তি (EMI) দেওয়ার নিয়ম (How to Pay Car Loan EMI):</strong><br>
+          &bull; প্রতি মাসের ২৪ তারিখে ব্যাংক অ্যাকাউন্ট চেক করুন যে কিস্তির টাকা কেটেছে কি না।<br>
+          &bull; টাকা না কাটলে, নিকটবর্তী <strong>HDFC ব্যাংক</strong> শাখায় গিয়ে লোন অ্যাকাউন্ট নম্বর জানিয়ে ক্যাশ বা চেক জমা দিয়ে সিলমোহরযুক্ত রসিদ সংগ্রহ করুন।<br>
+          &bull; অথবা PhonePe/Google Pay দিয়ে UPI ID: <strong>carloan@hdfc</strong> -এ পেমেন্ট করুন।
         </div>
 
         <div style="font-size: 12px; color: #991b1b; background: #fff1f2; padding: 10px; border-radius: 8px; border: 1px solid #fecdd3;">
-          <strong>&#9888; ज़रूरी सावधानियाँ:</strong> कभी भी किसी को फ़ोन पर OTP, ATM PIN या पासवर्ड न बताएं। बैंक कभी फ़ोन पर OTP नहीं मांगता।
+          <strong>&#9888; জরুরি সতর্কতা:</strong> ফোনে কাউকে কখনোই OTP, এটিএম পিন বা পাসওয়ার্ড বলবেন না। ব্যাংক কখনোই ফোনে গোপন পিন বা OTP চায় না।
         </div>
       </div>
 
@@ -380,14 +380,14 @@ _DEFAULT_TEMPLATES = {
         "and lender portal details:\n"
         "{{ packet_url|default('http://localhost:5173/public/packet') }}\n\n"
         "================================================================================\n"
-        "HOW PARENTS CAN EASILY PAY THIS EMI / क़िस्त भरने का आसान तरीक़ा\n"
+        "HOW PARENTS CAN EASILY PAY THIS EMI / কিস্তি দেওয়ার সহজ নিয়ম\n"
         "================================================================================\n"
-        "1. बैंक शाखा जाकर (सबसे आसान):\n"
-        "   नज़दीकी {{ lender|default('HDFC Bank') }} शाखा में जाएँ।\n"
-        "   काउंटर पर कहें: 'मुझे कार लोन अकाउंट {{ account_number|default(account_masked)|default('') }} में Rs {{ amount_inr|default('16,166') }} की EMI जमा करनी है।'\n"
-        "   नकद या चेक जमा करें और मोहर लगी रसीद (Receipt) ज़रूर लें।\n\n"
-        "2. मोबाइल UPI द्वारा:\n"
-        "   किसी भी PhonePe, Google Pay या Paytm से UPI ID: carloan@hdfc पर Rs {{ amount_inr|default('16,166') }} भेजें। रिमार्क में लोन अकाउंट नंबर लिख दें।\n\n"
+        "1. ব্যাংক শাখায় গিয়ে (সবচেয়ে সহজ):\n"
+        "   নিকটবর্তী {{ lender|default('HDFC Bank') }} শাখায় যান।\n"
+        "   কাউন্টারে বলুন: 'আমাকে কার লোন অ্যাকাউন্ট {{ account_number|default(account_masked)|default('') }}-এ Rs {{ amount_inr|default('16,166') }} EMI জমা দিতে হবে।'\n"
+        "   ক্যাশ বা চেক জমা দিন এবং সিল দেওয়া রসিদ (Receipt) অবশ্যই সংগ্রহ করুন।\n\n"
+        "2. মোবাইল UPI দ্বারা:\n"
+        "   যেকোনো PhonePe, Google Pay বা Paytm থেকে UPI ID: carloan@hdfc -এ Rs {{ amount_inr|default('16,166') }} পাঠান। নোটে লোন অ্যাকাউন্ট নম্বর লিখে দিন।\n\n"
         "Warm regards,\n"
         "Family Safety Net"
     ),
@@ -435,11 +435,11 @@ _DEFAULT_TEMPLATES = {
       <!-- Simple Bilingual Payment Guide for Parents -->
       <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
         <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
-          &#128161; How Parents Can Easily Pay This EMI / क़िस्त भरने का आसान तरीक़ा:
+          &#128161; How Parents Can Easily Pay This EMI / কিস্তি দেওয়ার সহজ নিয়ম:
         </div>
         <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #334155; line-height: 1.6;">
-          <li><strong>Option 1 (बैंक शाखा जाकर - सबसे आसान):</strong> नज़दीकी {{ lender|default('HDFC Bank') }} शाखा में जाएँ। काउंटर पर लोन अकाउंट नंबर ({{ account_number|default(account_masked)|default('') }}) बताकर नकद या चेक से ₹{{ amount_inr|default('16,166') }} जमा करें और रसीद लें।</li>
-          <li><strong>Option 2 (मोबाइल UPI से):</strong> Google Pay, PhonePe या Paytm से UPI ID: <code>carloan@hdfc</code> पर ₹{{ amount_inr|default('16,166') }} भेजें।</li>
+          <li><strong>উপায় ১ (ব্যাংক শাখায় গিয়ে - সবচেয়ে সহজ):</strong> নিকটবর্তী {{ lender|default('HDFC Bank') }} শাখায় যান। কাউন্টারে লোন অ্যাকাউন্ট নম্বর ({{ account_number|default(account_masked)|default('') }}) জানিয়ে নগদ বা চেকে ₹{{ amount_inr|default('16,166') }} জমা দিয়ে সিলমোহরযুক্ত রসিদ সংগ্রহ করুন।</li>
+          <li><strong>উপায় ২ (মোবাইল UPI দিয়ে):</strong> Google Pay, PhonePe বা Paytm থেকে UPI ID: <code>carloan@hdfc</code> -এ ₹{{ amount_inr|default('16,166') }} পাঠান।</li>
         </ul>
       </div>
 

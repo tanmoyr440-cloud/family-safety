@@ -27,14 +27,14 @@ export interface ParentSimpleGuideCardProps {
   }>;
 }
 
-type Language = "en" | "hi";
+type Language = "en" | "bn";
 type ActiveTab = "mf" | "loan" | "bank" | "rules";
 
 export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
   ownerName,
   loans = [],
 }) => {
-  const [lang, setLang] = React.useState<Language>("hi");
+  const [lang, setLang] = React.useState<Language>("bn");
   const [tab, setTab] = React.useState<ActiveTab>("mf");
 
   const primaryLoan = loans[0];
@@ -47,7 +47,7 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
   const loanDueDay = primaryLoan?.due_day ? `${primaryLoan.due_day}th` : "24th";
   const loanUpi = primaryLoan?.payment_instructions?.upi_id || "carloan@hdfc";
 
-  const isHindi = lang === "hi";
+  const isBengali = lang === "bn";
 
   return (
     <Card className="page-break-avoid border-blue-200 bg-gradient-to-br from-blue-50/70 via-indigo-50/40 to-white shadow-xs overflow-hidden">
@@ -59,17 +59,17 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold tracking-wider uppercase text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-full">
-                {isHindi ? "आसान भाषा में निर्देश" : "Simple Family Guide"}
+                {isBengali ? "সহজ বাংলায় নির্দেশিকা" : "Simple Family Guide"}
               </span>
             </div>
             <CardTitle className="text-base font-bold text-slate-900 mt-0.5">
-              {isHindi
-                ? "माता-पिता और परिवार के लिए सरल मार्गदर्शिका"
+              {isBengali
+                ? "বাবা-মা ও পরিবারের জন্য সহজ নির্দেশিকা"
                 : `Step-by-Step Guidance for ${ownerName}'s Parents`}
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {isHindi
-                ? "बिना किसी परेशानी के पैसे क्लेम करने और लोन EMI भरने के आसान नियम"
+              {isBengali
+                ? "মিউচুয়াল ফান্ড/শেয়ারের টাকা তোলা ও লোনের কিস্তি (EMI) দেওয়ার সহজ নিয়ম"
                 : "Simple, jargon-free instructions on how to handle investments, loans, and bank accounts"}
             </p>
           </div>
@@ -80,27 +80,27 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
           <Languages className="h-3.5 w-3.5 text-slate-500 ml-1.5 mr-0.5" aria-hidden="true" />
           <button
             type="button"
-            onClick={() => setLang("hi")}
+            onClick={() => setLang("bn")}
             className={cn(
               "px-2.5 py-1 text-xs font-semibold rounded-lg transition-all",
-              isHindi
+              isBengali
                 ? "bg-white text-blue-700 shadow-xs border border-blue-200"
                 : "text-slate-600 hover:text-slate-900",
             )}
-            aria-pressed={isHindi}
+            aria-pressed={isBengali}
           >
-            हिंदी (Hindi)
+            বাংলা (Bengali)
           </button>
           <button
             type="button"
             onClick={() => setLang("en")}
             className={cn(
               "px-2.5 py-1 text-xs font-semibold rounded-lg transition-all",
-              !isHindi
+              !isBengali
                 ? "bg-white text-blue-700 shadow-xs border border-blue-200"
                 : "text-slate-600 hover:text-slate-900",
             )}
-            aria-pressed={!isHindi}
+            aria-pressed={!isBengali}
           >
             English (Simple)
           </button>
@@ -128,9 +128,9 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
           >
             <TrendingUp className="h-4 w-4 text-emerald-600 shrink-0" aria-hidden="true" />
             <div className="leading-tight">
-              <span className="block">{isHindi ? "म्यूचुअल फंड / शेयर" : "Mutual Funds & Stocks"}</span>
+              <span className="block">{isBengali ? "মিউচুয়াল ফান্ড / শেয়ার" : "Mutual Funds & Stocks"}</span>
               <span className="text-[10px] font-normal text-muted-foreground block">
-                {isHindi ? "पैसे कैसे मिलेंगे" : "How to claim"}
+                {isBengali ? "টাকা কীভাবে পাবেন" : "How to claim"}
               </span>
             </div>
           </button>
@@ -149,9 +149,9 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
           >
             <Car className="h-4 w-4 text-rose-600 shrink-0" aria-hidden="true" />
             <div className="leading-tight">
-              <span className="block">{isHindi ? "कार लोन EMI" : "Car Loan EMI"}</span>
+              <span className="block">{isBengali ? "গাড়ির লোন EMI" : "Car Loan EMI"}</span>
               <span className="text-[10px] font-normal text-muted-foreground block">
-                {isHindi ? "क़िस्त कैसे भरें" : "How to pay"}
+                {isBengali ? "কিস্তি কীভাবে দেবেন" : "How to pay"}
               </span>
             </div>
           </button>
@@ -170,9 +170,9 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
           >
             <Landmark className="h-4 w-4 text-indigo-600 shrink-0" aria-hidden="true" />
             <div className="leading-tight">
-              <span className="block">{isHindi ? "बैंक खाते" : "Bank Accounts"}</span>
+              <span className="block">{isBengali ? "ব্যাংক অ্যাকাউন্ট" : "Bank Accounts"}</span>
               <span className="text-[10px] font-normal text-muted-foreground block">
-                {isHindi ? "रक़म कैसे लें" : "Nominee claim"}
+                {isBengali ? "টাকা কীভাবে নেবেন" : "Nominee claim"}
               </span>
             </div>
           </button>
@@ -191,9 +191,9 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
           >
             <ShieldCheck className="h-4 w-4 text-amber-600 shrink-0" aria-hidden="true" />
             <div className="leading-tight">
-              <span className="block">{isHindi ? "ज़रूरी सावधानियाँ" : "Safety Rules"}</span>
+              <span className="block">{isBengali ? "জরুরি সতর্কতা" : "Safety Rules"}</span>
               <span className="text-[10px] font-normal text-muted-foreground block">
-                {isHindi ? "क्या कभी न करें" : "What to avoid"}
+                {isBengali ? "যা কখনো করবেন না" : "What to avoid"}
               </span>
             </div>
           </button>
@@ -206,13 +206,13 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
               <div className="space-y-0.5">
                 <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-emerald-600" />
-                  {isHindi
-                    ? "म्यूचुअल फंड और शेयर के पैसे प्राप्त करने का आसान तरीक़ा"
+                  {isBengali
+                    ? "মিউচুয়াল ফান্ড ও শেয়ারের টাকা তোলার সহজ ধাপ"
                     : "How to Claim & Redeem Mutual Funds & Stocks"}
                 </h3>
                 <p className="text-muted-foreground text-[11px]">
-                  {isHindi
-                    ? "यह पैसा सरकारी संस्थाओं (CAMS / KFintech) के पास सुरक्षित है। इसे सीधे नॉमिनी के खाते में पाने के 4 आसान क़दम:"
+                  {isBengali
+                    ? "আপনার সন্তানের সমস্ত বিনিয়োগ সেবি (SEBI) ও রেজিস্ট্রি (CAMS / KFintech)-র কাছে সম্পূর্ণ নিরাপদ রয়েছে। টাকা পাওয়ার ৪টি সহজ ধাপ:"
                     : "Investments are safely recorded with regulated registries (CAMS / KFintech). Here are 4 clear steps:"}
                 </p>
               </div>
@@ -226,28 +226,28 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
                     1
                   </span>
                   <span className="font-bold text-slate-900 text-xs">
-                    {isHindi ? "काग़ज़ात इकट्ठा करें (Documents to gather)" : "Step 1: Gather 4 simple documents"}
+                    {isBengali ? "কাগজপত্র গুছিয়ে নিন (Documents needed)" : "Step 1: Gather 4 simple documents"}
                   </span>
                 </div>
                 <ul className="space-y-1 text-[11px] text-slate-700 pl-7 list-disc">
                   <li>
-                    {isHindi
-                      ? "नॉमिनी (माता/पिता) का आधार कार्ड और पैन कार्ड"
+                    {isBengali
+                      ? "নমিনির (বাবা/মা) আধার কার্ড ও প্যান কার্ডের জেরক্স"
                       : "Nominee's Aadhaar Card & PAN Card"}
                   </li>
                   <li>
-                    {isHindi
-                      ? "नॉमिनी के बैंक खाते का कैंसिल्ड चेक या पासबुक (जिसमें पैसा आना है)"
+                    {isBengali
+                      ? "নমিনির ব্যাংক পাসবইয়ের প্রথম পাতার জেরক্স অথবা ক্যান্সেলড চেক (যে অ্যাকাউন্টে টাকা আসবে)"
                       : "Nominee's bank passbook or cancelled cheque (for direct transfer)"}
                   </li>
                   <li>
-                    {isHindi
-                      ? "फ़ोलियो नंबर (Folio Numbers — नीचे दी गई तालिका में लिखे हैं)"
+                    {isBengali
+                      ? "ফোলিও নম্বর (নিচের তালিকায় সব ফোলিও নম্বর দেওয়া আছে)"
                       : "Folio numbers listed in the table below"}
                   </li>
                   <li>
-                    {isHindi
-                      ? "आधिकारिक मृत्यु प्रमाण पत्र (यदि खाताधारक का निधन हो गया हो)"
+                    {isBengali
+                      ? "অরিজিনাল ডেথ সার্টিফিকেট ও জেরক্স (যদি সন্তান দুর্ভাগ্যবশত প্রয়াত হয়ে থাকেন)"
                       : "Official Death Certificate (in unfortunate event of bereavement)"}
                   </li>
                 </ul>
@@ -260,13 +260,13 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
                     2
                   </span>
                   <span className="font-bold text-slate-900 text-xs">
-                    {isHindi ? "कहाँ जाना है (Where to contact)" : "Step 2: Visit nearest registry or call"}
+                    {isBengali ? "কোথায় যোগাযোগ করবেন (Where to contact)" : "Step 2: Visit nearest registry or call"}
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-700 pl-7 space-y-1 leading-relaxed">
                   <p>
-                    {isHindi
-                      ? "अपने शहर में नज़दीकी CAMS या KFintech के आधिकारिक दफ़्तर जाएँ। यह हर ज़िले में उपलब्ध होते हैं।"
+                    {isBengali
+                      ? "আপনার জেলার নিকটবর্তী CAMS অথবা KFintech-এর অফিশিয়াল অফিসে যান (প্রতিটি শহরে অফিস রয়েছে) অথবা টোল-ফ্রি নম্বরে ফোন করুন:"
                       : "Visit the nearest CAMS or KFintech branch office in your city or call official helplines:"}
                   </p>
                   <div className="pt-1 flex flex-wrap gap-1.5 font-mono text-[10px]">
@@ -290,12 +290,12 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
                     3
                   </span>
                   <span className="font-bold text-slate-900 text-xs">
-                    {isHindi ? "शाखा में क्या बोलना है (What to say)" : "Step 3: What to ask the officer"}
+                    {isBengali ? "অফিসে গিয়ে কী বলবেন (What to say)" : "Step 3: What to ask the officer"}
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-700 pl-7 italic bg-white p-2 rounded-lg border border-slate-200">
-                  {isHindi
-                    ? `“मेरे बेटे/बेटी (${ownerName}) के म्यूचुअल फंड इस फ़ोलियो में हैं। मैं नॉमिनी हूँ, कृपया मुझे 'नॉमिनी ट्रांसमिशन फ़ॉर्म' (Nominee Claim Form) दीजिए।”`
+                  {isBengali
+                    ? `“আমার সন্তানের (${ownerName}) মিউচুয়াল ফান্ড এই ফোলিওতে রয়েছে। আমি নমিনি, আমাকে অনুগ্রহ করে 'নমিনি ট্রান্সমিশন ফর্ম' (Nominee Claim Form) দিন।”`
                     : `“I am the registered nominee for ${ownerName}'s mutual fund folio. Please provide the official Transmission / Claim form.”`}
                 </p>
               </div>
@@ -307,18 +307,18 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
                     4
                   </span>
                   <span className="font-bold text-emerald-950 text-xs">
-                    {isHindi ? "पैसे कैसे और कब मिलेंगे" : "Step 4: Direct deposit to your account"}
+                    {isBengali ? "সরাসরি আপনার ব্যাংক অ্যাকাউন্টে টাকা আসবে" : "Step 4: Direct deposit to your account"}
                   </span>
                 </div>
                 <div className="text-[11px] text-emerald-900 pl-7 space-y-1">
                   <p>
-                    {isHindi
-                      ? "फ़ॉर्म जमा करने के 7 से 15 दिनों में पूरा पैसा सीधे नॉमिनी के बैंक खाते में RTGS/NEFT से आ जाता है।"
+                    {isBengali
+                      ? "ফর্ম জমা দেওয়ার ৭ থেকে ১৫ দিনের মধ্যে সমস্ত টাকা সরাসরি নমিনির ব্যাংক অ্যাকাউন্টে (NEFT/RTGS-এর মাধ্যমে) চলে আসে।"
                       : "Within 7 to 15 working days, AMCs transfer funds directly into the nominee's verified bank account."}
                   </p>
                   <p className="font-semibold text-[10px] text-emerald-800">
-                    {isHindi
-                      ? "✓ यह प्रक्रिया पूरी तरह मुफ़्त है। किसी भी एजेंट या बिचौलिए को एक भी रुपया न दें।"
+                    {isBengali
+                      ? "✓ এটি সম্পূর্ণ সরকারি ও বিনামূল্যের পদ্ধতি। কোনো দালাল বা মধ্যস্থতাকারীকে কোনো টাকা বা কমিশন দেবেন না।"
                       : "✓ This is an official free government-regulated procedure. Never pay commissions to agents."}
                   </p>
                 </div>
@@ -334,13 +334,13 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
               <div className="space-y-0.5">
                 <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
                   <Car className="h-4 w-4 text-rose-600" />
-                  {isHindi
-                    ? "कार लोन की क़िस्त (EMI) कैसे और कब भरें"
+                  {isBengali
+                    ? "গাড়ির লোনের কিস্তি (EMI) কীভাবে ও কখন দেবেন"
                     : "How to Pay the Monthly Car Loan EMI"}
                 </h3>
                 <p className="text-muted-foreground text-[11px]">
-                  {isHindi
-                    ? "गाड़ी पर लेट फ़ीस या पेनल्टी से बचने के लिए समय पर क़िस्त भरने का तरीक़ा:"
+                  {isBengali
+                    ? "গাড়ির ওপর কোনো লেট ফি বা পেনাল্টি এড়াতে সময়মতো কিস্তি পরিশোধের উপায়:"
                     : "Prevent late payment penalties or repossession with these simple steps:"}
                 </p>
               </div>
@@ -348,16 +348,16 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
               <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-950 flex items-center gap-3">
                 <div>
                   <span className="text-[10px] text-rose-700 block uppercase font-semibold">
-                    {isHindi ? "मासिक क़िस्त" : "Monthly EMI"}
+                    {isBengali ? "মাসিক কিস্তি" : "Monthly EMI"}
                   </span>
                   <span className="text-sm font-bold font-mono">{loanEmiFormatted}</span>
                 </div>
                 <div className="border-l border-rose-200 pl-3">
                   <span className="text-[10px] text-rose-700 block uppercase font-semibold">
-                    {isHindi ? "तारीख़" : "Due Date"}
+                    {isBengali ? "তারিখ" : "Due Date"}
                   </span>
                   <span className="text-sm font-bold font-mono">
-                    {isHindi ? `हर महीने की ${loanDueDay}` : `${loanDueDay} of month`}
+                    {isBengali ? `প্রতি মাসের ${loanDueDay} তারিখ` : `${loanDueDay} of month`}
                   </span>
                 </div>
               </div>
@@ -366,21 +366,21 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
             <div className="space-y-3">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
                 <span className="font-bold text-slate-900 text-xs block">
-                  {isHindi
-                    ? "क़दम 1: सबसे पहले अपने बैंक खाते का बैलेंस चेक करें"
+                  {isBengali
+                    ? "ধাপ ১: প্রথমে নিজের ব্যাংক ব্যালেন্স চেক করুন"
                     : "Step 1: First check if auto-debit was deducted"}
                 </span>
                 <p className="text-[11px] leading-relaxed text-slate-600">
-                  {isHindi
-                    ? `हर महीने की ${loanDueDay} तारीख़ को अपने बैंक खाते में चेक करें कि क्या ${loanEmiFormatted} बैंक से कट गए हैं। अगर पैसे कट चुके हैं, तो आपको कुछ नहीं करना है।`
+                  {isBengali
+                    ? `প্রতি মাসের ${loanDueDay} তারিখে ব্যাংক অ্যাকাউন্ট বা মেসেজ চেক করুন যে ${loanEmiFormatted} ব্যাংক থেকে অটো-ডেবিট হয়েছে কি না। টাকা কেটে গেলে আপনার আর কিছু করার প্রয়োজন নেই।`
                     : `Check your bank account on the ${loanDueDay}. If ${loanEmiFormatted} was automatically deducted via NACH/auto-debit, no further action is needed.`}
                 </p>
               </div>
 
               <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 space-y-2">
                 <span className="font-bold text-amber-950 text-xs block">
-                  {isHindi
-                    ? "क़दम 2: अगर पैसे नहीं कटे, तो घबराएँ नहीं! इन 2 आसान तरीक़ों से भरें:"
+                  {isBengali
+                    ? "ধাপ ২: যদি টাকা না কেটে থাকে, তবে চিন্তা করবেন না! এই ২টি সহজ উপায়ে কিস্তি দিন:"
                     : "Step 2: If auto-debit did not happen, don't worry! Use either method:"}
                 </span>
 
@@ -388,13 +388,13 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
                   {/* Way A */}
                   <div className="p-3 rounded-lg bg-white border border-amber-200 space-y-1">
                     <span className="font-bold text-slate-900 text-xs block text-blue-700">
-                      {isHindi ? "तरीक़ा 1: बैंक शाखा जाकर (सबसे आसान)" : "Option A: Visit Nearest Branch (Easiest)"}
+                      {isBengali ? "উপায় ১: ব্যাংক শাখায় গিয়ে (সবচেয়ে সহজ ও নিরাপদ)" : "Option A: Visit Nearest Branch (Easiest)"}
                     </span>
                     <p className="text-[11px] text-slate-600 leading-relaxed">
-                      {isHindi ? (
+                      {isBengali ? (
                         <>
-                          नज़दीकी <strong>{loanLender}</strong> शाखा में जाएँ। काउंटर पर कहें:{" "}
-                          <em>“मुझे इस कार लोन की {loanEmiFormatted} की क़िस्त भरनी है।”</em>
+                          নিকটবর্তী <strong>{loanLender}</strong> শাখায় যান। কাউন্টারে গিয়ে বলুন:{" "}
+                          <em>“আমি এই গাড়ির লোনের {loanEmiFormatted} টাকার কিস্তি জমা দিতে চাই।”</em>
                         </>
                       ) : (
                         <>
@@ -405,23 +405,23 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
                     </p>
                     <div className="pt-1 text-[11px] font-mono bg-slate-50 p-1.5 rounded border border-slate-200 text-slate-800">
                       <span className="font-sans font-semibold text-slate-500 text-[10px] block">
-                        {isHindi ? "लोन खाता नंबर (Loan A/C):" : "Loan Account Number:"}
+                        {isBengali ? "লোন অ্যাকাউন্ট নম্বর (Loan A/C):" : "Loan Account Number:"}
                       </span>
                       <strong>{loanAccount}</strong>
                     </div>
                     <span className="text-[10px] text-emerald-700 font-semibold block pt-1">
-                      {isHindi ? "✓ जमा करने के बाद रसीद (Receipt) ज़रूर लें।" : "✓ Always collect the printed payment receipt."}
+                      {isBengali ? "✓ টাকা জমা দেওয়ার পর সিল দেওয়া রসিদ (Receipt) অবশ্যই সংগ্রহ করবেন।" : "✓ Always collect the printed payment receipt."}
                     </span>
                   </div>
 
                   {/* Way B */}
                   <div className="p-3 rounded-lg bg-white border border-amber-200 space-y-1">
                     <span className="font-bold text-slate-900 text-xs block text-blue-700">
-                      {isHindi ? "तरीक़ा 2: मोबाइल UPI से (घर बैठे)" : "Option B: Online / Mobile UPI Payment"}
+                      {isBengali ? "উপায় ২: মোবাইল UPI দিয়ে (ঘরে বসে)" : "Option B: Online / Mobile UPI Payment"}
                     </span>
                     <p className="text-[11px] text-slate-600 leading-relaxed">
-                      {isHindi
-                        ? "अपने किसी रिश्तेदार या खुद के Google Pay, PhonePe, या Paytm से इस UPI ID पर पेमेंट करें:"
+                      {isBengali
+                        ? "আত্মীয়ের বা নিজের Google Pay, PhonePe বা Paytm থেকে এই UPI ID-তে পেমেন্ট করুন:"
                         : "Use any UPI app (GPay, PhonePe, Paytm, BHIM) to transfer directly:"}
                     </p>
                     <div className="pt-1 text-[11px] font-mono bg-slate-50 p-1.5 rounded border border-slate-200 text-slate-800">
@@ -431,7 +431,7 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
                       <strong>{loanUpi}</strong>
                     </div>
                     <span className="text-[10px] text-slate-500 block pt-1">
-                      {isHindi ? "रिमार्क में लोन अकाउंट नंबर लिख दें।" : "Add loan account number in payment note."}
+                      {isBengali ? "পেমেন্টের নোটে লোন অ্যাকাউন্ট নম্বরটি লিখে দেবেন।" : "Add loan account number in payment note."}
                     </span>
                   </div>
                 </div>
@@ -446,13 +446,13 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
             <div className="border-b border-slate-100 pb-3 space-y-0.5">
               <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
                 <Landmark className="h-4 w-4 text-indigo-600" />
-                {isHindi
-                  ? "बचत बैंक खातों से रक़म प्राप्त करने की प्रक्रिया"
+                {isBengali
+                  ? "সেভিংস ব্যাংক অ্যাকাউন্টের টাকা তোলার পদ্ধতি"
                   : "How to Claim Savings Bank Account Balances"}
               </h3>
               <p className="text-muted-foreground text-[11px]">
-                {isHindi
-                  ? "बैंक शाखा में नॉमिनी के तौर पर बचत खाते की रक़म पाना बहुत सीधा है:"
+                {isBengali
+                  ? "ব্যাংক অ্যাকাউন্ট থেকে নমিনি হিসেবে ব্যালেন্স তোলার নিয়ম অত্যন্ত সহজ:"
                   : "Settling savings accounts as a registered nominee is straightforward:"}
               </p>
             </div>
@@ -464,12 +464,12 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
                     1
                   </span>
                   <span className="font-bold text-slate-900 text-xs">
-                    {isHindi ? "शाखा जाएँ" : "Step 1: Visit Branch"}
+                    {isBengali ? "শাখা পরিদর্শন" : "Step 1: Visit Branch"}
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-600 pl-7 leading-relaxed">
-                  {isHindi
-                    ? "जिस बैंक में खाता है, उसकी नज़दीकी शाखा में जाएँ और बैंक प्रबंधक (Branch Manager) से मिलें।"
+                  {isBengali
+                    ? "যে ব্যাংকে সেভিংস অ্যাকাউন্ট রয়েছে, তার নিকটবর্তী শাখায় গিয়ে ব্রাঞ্চ ম্যানেজারের সাথে দেখা করুন।"
                     : "Visit the branch where the savings account is maintained and meet the manager."}
                 </p>
               </div>
@@ -480,12 +480,12 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
                     2
                   </span>
                   <span className="font-bold text-slate-900 text-xs">
-                    {isHindi ? "नॉमिनी क्लेम फ़ॉर्म लें" : "Step 2: Fill Claim Form"}
+                    {isBengali ? "নমিনি ফর্ম পূরণ" : "Step 2: Fill Claim Form"}
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-600 pl-7 leading-relaxed">
-                  {isHindi
-                    ? "बैंक से 'Deceased Claim / Nominee Settlement Form' मांगें। अपना आधार, पैन और मृत्यु प्रमाण पत्र संलग्न करें।"
+                  {isBengali
+                    ? "ব্যাংক থেকে 'Deceased Claim / Nominee Settlement Kit' চেয়ে নিন। নমিনির আধার, প্যান ও প্রয়োজনীয় সার্টিফিকেট জমা দিন।"
                     : "Request the official Deceased Claim Form. Attach nominee's KYC (Aadhaar/PAN) and death certificate."}
                 </p>
               </div>
@@ -496,12 +496,12 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
                     3
                   </span>
                   <span className="font-bold text-emerald-950 text-xs">
-                    {isHindi ? "खाते में ट्रांसफ़र" : "Step 3: Transfer to Nominee"}
+                    {isBengali ? "অ্যাকাউন্টে ট্রান্সফার" : "Step 3: Transfer to Nominee"}
                   </span>
                 </div>
                 <p className="text-[11px] text-emerald-900 pl-7 leading-relaxed">
-                  {isHindi
-                    ? "बैंक 7 से 10 दिनों में सत्यापन पूरा करके बची हुई पूरी रक़म सीधे नॉमिनी के खाते में भेज देता है।"
+                  {isBengali
+                    ? "ব্যাংক ভেরিফিকেশন সম্পন্ন করে ৭ থেকে ১০ দিনের মধ্যে অ্যাকাউন্টের সমস্ত ব্যালেন্স সরাসরি নমিনির অ্যাকাউন্টে পাঠিয়ে দেবে।"
                     : "The bank completes verification and directly transfers the remaining balance to the nominee."}
                 </p>
               </div>
@@ -515,13 +515,13 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
             <div className="border-b border-slate-100 pb-3 space-y-0.5">
               <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-amber-600" />
-                {isHindi
-                  ? "4 ज़रूरी सावधानियाँ — धोखाधड़ी से बचने के लिए क्या कभी न करें"
+                {isBengali
+                  ? "৪টি অতি জরুরি সতর্কতা — প্রতারণা থেকে বাঁচতে যা কখনোই করবেন না"
                   : "4 Golden Safety Rules — Never Fall for Frauds"}
               </h3>
               <p className="text-muted-foreground text-[11px]">
-                {isHindi
-                  ? "आपके परिवार की सुरक्षा के लिए ये 4 नियम हमेशा याद रखें:"
+                {isBengali
+                  ? "আপনার পরিবারের সুরক্ষার জন্য এই ৪টি নিয়ম সর্বদা মনে রাখবেন:"
                   : "Always keep these strict security guidelines in mind:"}
               </p>
             </div>
@@ -530,11 +530,11 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
               <div className="p-3.5 rounded-xl bg-red-50/80 border border-red-200 space-y-1">
                 <span className="font-bold text-red-900 text-xs flex items-center gap-1.5">
                   <AlertOctagon className="h-4 w-4 text-red-600 shrink-0" />
-                  {isHindi ? "1. फ़ोन पर कभी OTP या PIN न बताएं" : "1. Never Share OTP or ATM PIN"}
+                  {isBengali ? "১. ফোনে কাউকে কখনোই OTP বা পিন বলবেন না" : "1. Never Share OTP or ATM PIN"}
                 </span>
                 <p className="text-[11px] text-red-800 leading-relaxed pl-5">
-                  {isHindi
-                    ? "कोई भी व्यक्ति फ़ोन करके कहे कि वह बैंक, Groww या पुलिस से बोल रहा है, तो कभी भी फ़ोन पर OTP न दें। बैंक कभी फ़ोन पर OTP नहीं मांगता।"
+                  {isBengali
+                    ? "ব্যাংক, Groww বা পুলিশ পরিচয় দিয়ে কেউ ফোন করে OTP চাইলে কখনোই বলবেন না। ব্যাংক বা অফিশিয়াল প্রতিষ্ঠান কখনো ফোনে OTP চায় না।"
                     : "No bank or investment official will ever ask for an OTP or PIN over phone calls or WhatsApp. Never share OTP with anyone."}
                 </p>
               </div>
@@ -542,11 +542,11 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
               <div className="p-3.5 rounded-xl bg-red-50/80 border border-red-200 space-y-1">
                 <span className="font-bold text-red-900 text-xs flex items-center gap-1.5">
                   <AlertOctagon className="h-4 w-4 text-red-600 shrink-0" />
-                  {isHindi ? "2. किसी दलाल या एजेंट को पैसे न दें" : "2. Never Pay Any Commission to Agents"}
+                  {isBengali ? "২. কোনো দালাল বা এজেন্টকে টাকা দেবেন না" : "2. Never Pay Any Commission to Agents"}
                 </span>
                 <p className="text-[11px] text-red-800 leading-relaxed pl-5">
-                  {isHindi
-                    ? "नॉमिनी को पैसा दिलाने के नाम पर किसी को कोई फ़ीस या कमीशन न दें। बैंक और म्यूचुअल फंड का यह काम पूरी तरह मुफ़्त होता है।"
+                  {isBengali
+                    ? "নমিনির টাকা তোলার জন্য কোনো এজেন্টের সাহায্য বা কমিশনের প্রয়োজন নেই। সরকারি নিয়মে এই কাজ সম্পূর্ণ বিনামূল্যে হয়।"
                     : "Nominee claims are 100% free by government regulations. Never pay commissions or fees to unauthorized agents."}
                 </p>
               </div>
@@ -554,11 +554,11 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
               <div className="p-3.5 rounded-xl bg-blue-50/80 border border-blue-200 space-y-1">
                 <span className="font-bold text-blue-900 text-xs flex items-center gap-1.5">
                   <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
-                  {isHindi ? "3. सीधे बैंक शाखा जाकर बात करें" : "3. Always Visit Official Branches"}
+                  {isBengali ? "৩. সরাসরি অফিশিয়াল ব্যাংক শাখায় যোগাযোগ করুন" : "3. Always Visit Official Branches"}
                 </span>
                 <p className="text-[11px] text-blue-800 leading-relaxed pl-5">
-                  {isHindi
-                    ? "किसी भी बात में शंका होने पर किसी अनजान की बातों में न आएँ। सीधे अपने नज़दीकी बैंक की शाखा में जाएँ और बैंक मैनेजर से मिलें।"
+                  {isBengali
+                    ? "কোনো ব্যাপারে সন্দেহ হলে কোনো অচেনা লোকের কথায় কান না দিয়ে সরাসরি ব্যাংক ম্যানেজারের কাছে যান অথবা পরিবারের কোনো বিশ্বস্ত সদস্যকে সাথে রাখুন।"
                     : "In case of any doubt, visit the official branch in person or speak directly with the branch manager."}
                 </p>
               </div>
@@ -566,11 +566,11 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
               <div className="p-3.5 rounded-xl bg-blue-50/80 border border-blue-200 space-y-1">
                 <span className="font-bold text-blue-900 text-xs flex items-center gap-1.5">
                   <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
-                  {isHindi ? "4. भुगतान की रसीद हमेशा संभालकर रखें" : "4. Always Keep Stamped Receipts"}
+                  {isBengali ? "৪. পেমেন্টের রসিদ সবসময় যত্ন করে রাখুন" : "4. Always Keep Stamped Receipts"}
                 </span>
                 <p className="text-[11px] text-blue-800 leading-relaxed pl-5">
-                  {isHindi
-                    ? "जब भी आप कार लोन की EMI बैंक में जमा करें या कोई फ़ॉर्म दें, काउंटर से मोहर लगी रसीद (Acknowledged Receipt) ज़रूर लें और सुरक्षित रखें।"
+                  {isBengali
+                    ? "লোনের কিস্তি ব্যাংকে জমা দিলে বা কোনো ফর্ম জমা দিলে কাউন্টার থেকে সিল দেওয়া রসিদ অবশ্যই চেয়ে নেবেন এবং নিরাপদে রাখবেন।"
                     : "Whenever paying an EMI or submitting claim paperwork, always retain the stamped bank receipt for your records."}
                 </p>
               </div>

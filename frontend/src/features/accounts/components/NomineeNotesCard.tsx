@@ -339,7 +339,7 @@ export const NomineeNotesCard: React.FC = () => {
                   type="button"
                   onClick={() =>
                     setNotes(
-                      "Maa/Papa: Don't panic. All mutual funds and stocks are safe with CAMS & KFintech. For car loan, please pay the ₹16,166 EMI due on 24th at the nearest HDFC Bank branch using the loan account number below to prevent any penalties. Keep all receipts safe.",
+                      "বাবা/মা: কোনো চিন্তা করবেন না। সমস্ত মিউচুয়াল ফান্ড ও শেয়ার CAMS এবং KFintech-এ সম্পূর্ণ সুরক্ষিত আছে। গাড়ির লোনের জন্য প্রতি মাসের ২৪ তারিখে নিকটবর্তী HDFC ব্যাংক শাখায় নিচের লোন অ্যাকাউন্ট নম্বর দিয়ে ₹১৬,১৬৬ কিস্তি জমা দিয়ে রসিদ রাখবেন।\n\nMaa/Papa: Don't worry. All mutual funds and stocks are safe with CAMS & KFintech. For the car loan, please pay the ₹16,166 EMI due on the 24th at the nearest HDFC Bank branch using the loan account number below and keep the stamped receipt safe.",
                     )
                   }
                   className="text-[11px] text-purple-700 hover:text-purple-900 font-medium hover:underline"
@@ -488,14 +488,14 @@ export const NomineeNotesCard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 font-semibold text-blue-950 text-xs">
                   <HelpCircle className="h-4 w-4 text-blue-600" aria-hidden="true" />
-                  Parent Awareness &amp; Step-by-Step Guidance (माता-पिता के लिए सरल निर्देश)
+                  Parent Awareness &amp; Step-by-Step Guidance (বাবা-মা ও পরিবারের জন্য সহজ নির্দেশিকা)
                 </div>
                 <span className="text-[10px] bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded-full border border-blue-200">
-                  Hindi &amp; English Included
+                  বাংলা &amp; English Included
                 </span>
               </div>
               <p className="text-[11px] text-blue-900/80 leading-relaxed">
-                Emergency packets and contact alerts automatically feature simple, jargon-free step-by-step guidance in Hindi &amp; English explaining how to claim mutual funds via CAMS/KFintech, how to pay the ₹16,166 car loan EMI at the branch, and security rules against phone fraud.
+                Emergency packets and contact alerts automatically feature simple, jargon-free step-by-step guidance in Bengali (বাংলা) &amp; English explaining how to claim mutual funds via CAMS/KFintech, how to pay the ₹16,166 car loan EMI at the branch, and security rules against phone fraud.
               </p>
             </div>
           </div>
