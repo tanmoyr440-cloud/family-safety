@@ -152,7 +152,9 @@ export const PublicPacketContent: React.FC<PublicPacketContentProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
               <span className="text-[11px] text-muted-foreground block">Client Account ID</span>
-              <span className="font-mono font-semibold text-slate-900 text-sm">XXXX5678</span>
+              <span className="font-mono font-semibold text-slate-900 text-sm">
+                {(packet as any).groww_account_id || "XXXX5678"}
+              </span>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">

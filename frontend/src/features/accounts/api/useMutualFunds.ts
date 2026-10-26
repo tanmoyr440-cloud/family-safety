@@ -81,6 +81,34 @@ export function useAddMutualFundHolding() {
   });
 }
 
+export function useUpdateMutualFundHolding() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: {
+        folio_number?: string;
+        units?: number;
+      };
+    }) => {
+      const result = await (api as any).PATCH("/api/v1/mutual-funds/holdings/{id}", {
+        params: { path: { id } },
+        body: data,
+      });
+      return unwrap<MutualFundHolding>(result);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: accountKeys.mutualFunds() });
+      queryClient.invalidateQueries({ queryKey: accountKeys.portfolioSummary() });
+      queryClient.invalidateQueries({ queryKey: ["packet", "preview"] });
+    },
+  });
+}
+
 export function useDeleteMutualFundHolding() {
   const queryClient = useQueryClient();
 

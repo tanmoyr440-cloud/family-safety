@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const loanFormSchema = z.object({
   lender: z.string().trim().min(1, "Lender name is required"),
-  account_number: z.string().trim().min(3, "Account number must be at least 3 characters"),
+  account_number: z.string().trim().optional(),
   emi_rupees: z.number().positive("EMI amount must be greater than zero"),
   due_day: z
     .number()
@@ -27,5 +27,5 @@ export const loanFormSchema = z.object({
 
 export type LoanFormValues = z.infer<typeof loanFormSchema>;
 
-export const editLoanFormSchema = loanFormSchema.omit({ account_number: true });
+export const editLoanFormSchema = loanFormSchema;
 export type EditLoanFormValues = z.infer<typeof editLoanFormSchema>;

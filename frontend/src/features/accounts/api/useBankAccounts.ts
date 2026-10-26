@@ -36,6 +36,37 @@ export function useAddBankAccount() {
   });
 }
 
+export function useUpdateBankAccount() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: {
+        bank_name?: string;
+        account_number?: string;
+        ifsc_code?: string;
+        branch_name?: string;
+        account_type?: string;
+        holder_name?: string;
+      };
+    }) => {
+      const result = await (api as any).PATCH("/api/v1/bank-accounts/{id}", {
+        params: { path: { id } },
+        body: data,
+      });
+      return unwrap<BankAccount>(result);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: accountKeys.bankAccounts() });
+      queryClient.invalidateQueries({ queryKey: ["packet", "preview"] });
+    },
+  });
+}
+
 export function useDeleteBankAccount() {
   const queryClient = useQueryClient();
 

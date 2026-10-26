@@ -37,7 +37,7 @@ export const LoanForm: React.FC<LoanFormProps> = ({ loan, onSuccess, onCancel, c
     resolver: zodResolver(loanFormSchema),
     defaultValues: {
       lender: loan?.lender || "",
-      account_number: loan?.account_masked || "",
+      account_number: "",
       emi_rupees: initialEmiRupees,
       due_day: initialDueDay,
       grace_days: loan?.grace_days ?? 1,
@@ -57,20 +57,31 @@ export const LoanForm: React.FC<LoanFormProps> = ({ loan, onSuccess, onCancel, c
     const emiPaise = Math.round(values.emi_rupees * 100);
 
     if (isEditing && loan) {
+      const updateData: any = {
+        lender: values.lender,
+        emi_paise: emiPaise,
+        due_day: values.due_day,
+        grace_days: values.grace_days,
+        payment_instructions: {
+          upi_id: values.upi_id || null,
+          portal_url: values.portal_url || null,
+          notes: values.notes || null,
+        },
+      };
+
+      if (
+        values.account_number &&
+        values.account_number.trim().length >= 3 &&
+        !values.account_number.trim().startsWith("XXXX") &&
+        !values.account_number.trim().startsWith("****")
+      ) {
+        updateData.account_number = values.account_number.trim();
+      }
+
       updateLoan(
         {
           id: loan.id,
-          data: {
-            lender: values.lender,
-            emi_paise: emiPaise,
-            due_day: values.due_day,
-            grace_days: values.grace_days,
-            payment_instructions: {
-              upi_id: values.upi_id || null,
-              portal_url: values.portal_url || null,
-              notes: values.notes || null,
-            },
-          },
+          data: updateData,
         },
         {
           onSuccess: () => {
@@ -82,10 +93,18 @@ export const LoanForm: React.FC<LoanFormProps> = ({ loan, onSuccess, onCancel, c
         },
       );
     } else {
+      if (!values.account_number || values.account_number.trim().length < 3) {
+        setError("account_number", {
+          type: "manual",
+          message: "Loan account number must be at least 3 characters",
+        });
+        return;
+      }
+
       createLoan(
         {
           lender: values.lender,
-          account_number: values.account_number,
+          account_number: values.account_number.trim(),
           emi_paise: emiPaise,
           due_day: values.due_day,
           grace_days: values.grace_days,
@@ -170,18 +189,32 @@ export const LoanForm: React.FC<LoanFormProps> = ({ loan, onSuccess, onCancel, c
             <div className="space-y-1.5">
               <label htmlFor="loan-account" className="block text-xs font-semibold text-slate-700">
                 Loan Account Number{" "}
-                {isEditing ? "(Masked)" : <span className="text-red-500">*</span>}
+                {isEditing ? (
+                  <span className="text-slate-400 font-normal">
+                    (Masked on dashboard; full number used for emergency contact alerts)
+                  </span>
+                ) : (
+                  <span className="text-red-500">*</span>
+                )}
               </label>
               <input
                 id="loan-account"
                 type="text"
-                disabled={isEditing}
-                placeholder="e.g. 16-digit account or loan ref"
-                className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500"
+                placeholder={
+                  isEditing
+                    ? `Current mask: ${loan?.account_masked || "XXXX"}. Enter full account number to update.`
+                    : "e.g. 16-digit account or loan reference number"
+                }
+                className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 aria-invalid={Boolean(errors.account_number)}
                 aria-describedby={errors.account_number ? "loan-account-error" : undefined}
                 {...register("account_number")}
               />
+              <p className="text-[11px] text-slate-500">
+                {isEditing
+                  ? `Leave empty to keep current number (${loan?.account_masked}). Enter full number to update for emergency notifications.`
+                  : "Enter your full loan account number. The UI will keep it safely masked (Ending in XXXX) for privacy."}
+              </p>
               {errors.account_number && (
                 <p
                   id="loan-account-error"

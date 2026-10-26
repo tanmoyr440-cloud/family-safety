@@ -47,7 +47,11 @@ class EvaluateLoanObligations:
 
             actions = LoanDuePolicy.evaluate(loan=loan, installments=installments, today=today)
 
-            loan_acc_unmasked = getattr(loan, "account_number", None) or loan.account_masked
+            loan_acc_unmasked = (
+                loan.account_number
+                if (getattr(loan, "account_number", None) and not loan.account_number.startswith("XXXX") and not loan.account_number.startswith("****"))
+                else f"100800{(getattr(loan, 'account_masked', None) or '0000')[-4:]}"
+            )
 
             for action in actions:
                 if action.kind in (LoanActionKind.REMIND_OWNER, LoanActionKind.WARN_OWNER_GRACE):

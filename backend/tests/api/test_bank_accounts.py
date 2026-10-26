@@ -78,3 +78,41 @@ async def test_bank_account_validation_errors(client: AsyncClient) -> None:
     )
     assert resp_ifsc.status_code == 400
     assert "Invalid IFSC code" in resp_ifsc.json().get("detail", "")
+
+
+@pytest.mark.asyncio
+async def test_bank_account_update_and_unmasked_status(client: AsyncClient) -> None:
+    """Verifies PATCH /bank-accounts/{id} updates account number and recomputes mask."""
+    _, _, csrf = await _register_and_login(client)
+    headers = {"X-CSRF-Token": csrf}
+
+    # Create account
+    create_resp = await client.post(
+        "/api/v1/bank-accounts",
+        headers=headers,
+        json={
+            "bank_name": "ICICI Bank",
+            "account_number": "1111222233334444",
+            "ifsc_code": "ICIC0000001",
+        },
+    )
+    assert create_resp.status_code == 201
+    account = create_resp.json()
+    assert account["account_number_masked"] == "XXXX4444"
+    assert account["has_unmasked_account"] is True
+    acc_id = account["id"]
+
+    # Update account with new unmasked account number and bank name
+    patch_resp = await client.patch(
+        f"/api/v1/bank-accounts/{acc_id}",
+        headers=headers,
+        json={
+            "bank_name": "ICICI Bank Ltd",
+            "account_number": "9999888877776666",
+        },
+    )
+    assert patch_resp.status_code == 200
+    updated = patch_resp.json()
+    assert updated["bank_name"] == "ICICI Bank Ltd"
+    assert updated["account_number_masked"] == "XXXX6666"
+    assert updated["has_unmasked_account"] is True

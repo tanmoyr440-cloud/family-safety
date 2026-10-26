@@ -2,11 +2,13 @@ import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/Card";
 import { Button } from "@/shared/ui/Button";
 import { AddBankAccountDialog } from "./AddBankAccountDialog";
+import { EditBankAccountDialog } from "./EditBankAccountDialog";
 import { useBankAccounts, useDeleteBankAccount, type BankAccount } from "../api/useBankAccounts";
-import { Building2, Check, Copy, Info, Loader2, Plus, Trash2 } from "lucide-react";
+import { Building2, Check, Copy, Info, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 
 export const BankAccountsCard: React.FC = () => {
   const [isAddOpen, setIsAddOpen] = React.useState(false);
+  const [accountToEdit, setAccountToEdit] = React.useState<BankAccount | null>(null);
   const [copiedIfscId, setCopiedIfscId] = React.useState<string | null>(null);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
@@ -105,26 +107,48 @@ export const BankAccountsCard: React.FC = () => {
                         )}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(account)}
-                        disabled={isCurrentlyDeleting}
-                        aria-label={`Delete ${account.bank_name} account`}
-                        className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                      >
-                        {isCurrentlyDeleting ? (
-                          <Loader2 className="h-4 w-4 animate-spin text-red-500" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setAccountToEdit(account)}
+                          disabled={isCurrentlyDeleting}
+                          aria-label={`Edit ${account.bank_name} account`}
+                          className="text-slate-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+                          title="Edit bank account details & unmasked alert number"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(account)}
+                          disabled={isCurrentlyDeleting}
+                          aria-label={`Delete ${account.bank_name} account`}
+                          className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                        >
+                          {isCurrentlyDeleting ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-red-500" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
 
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-700">
                       <div>
-                        <span className="text-[10px] uppercase font-semibold text-slate-400 block">
-                          Account Number
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] uppercase font-semibold text-slate-400 block">
+                            Account Number
+                          </span>
+                          {account.has_unmasked_account === false && (
+                            <span
+                              className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-amber-50 text-amber-700 border border-amber-200"
+                              title="Full unmasked number missing for emergency alerts. Click Edit to add."
+                            >
+                              ⚠️ Alert Number Missing
+                            </span>
+                          )}
+                        </div>
                         <span className="font-mono font-medium text-slate-900 text-xs">
                           {account.account_number_masked}
                         </span>
@@ -187,6 +211,11 @@ export const BankAccountsCard: React.FC = () => {
       </Card>
 
       <AddBankAccountDialog open={isAddOpen} onOpenChange={setIsAddOpen} />
+      <EditBankAccountDialog
+        open={Boolean(accountToEdit)}
+        onOpenChange={(open) => !open && setAccountToEdit(null)}
+        account={accountToEdit}
+      />
     </>
   );
 };

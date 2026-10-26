@@ -68,6 +68,56 @@ class ManageBankAccounts:
 
         return account
 
+    async def update_account(
+        self,
+        owner_id: str,
+        account_id: str,
+        bank_name: str | None = None,
+        account_number: str | None = None,
+        ifsc_code: str | None = None,
+        branch_name: str | None = None,
+        account_type: str | None = None,
+        holder_name: str | None = None,
+    ) -> BankAccount | None:
+        """Update an existing bank account owned by the caller."""
+        async with self._uow:
+            account = await self._uow.bank_accounts.get_by_id(account_id)
+            if not account or account.owner_id != owner_id:
+                return None
+
+            if bank_name is not None:
+                clean_bank_name = bank_name.strip()
+                if not clean_bank_name:
+                    raise ValueError("Bank name cannot be empty.")
+                account.bank_name = clean_bank_name
+
+            if account_number is not None:
+                clean_acc_num = account_number.strip().replace(" ", "").replace("-", "")
+                if clean_acc_num and not clean_acc_num.startswith("XXXX") and not clean_acc_num.startswith("****"):
+                    if len(clean_acc_num) < 4:
+                        raise ValueError("Bank account number must be at least 4 digits.")
+                    account.account_number = clean_acc_num
+                    account.account_number_masked = mask_bank_account_number(clean_acc_num)
+
+            if ifsc_code is not None:
+                clean_ifsc = normalize_ifsc(ifsc_code)
+                if not is_valid_ifsc(clean_ifsc):
+                    raise ValueError(f"Invalid IFSC code '{ifsc_code}'. IFSC must be 11 characters.")
+                account.ifsc_code = clean_ifsc
+
+            if branch_name is not None:
+                account.branch_name = branch_name.strip() if branch_name.strip() else None
+
+            if account_type is not None:
+                account.account_type = account_type.strip().upper() if account_type.strip() else "SAVINGS"
+
+            if holder_name is not None:
+                account.holder_name = holder_name.strip() if holder_name.strip() else None
+
+            await self._uow.bank_accounts.save(account)
+            await self._uow.commit()
+            return account
+
     async def delete_account(self, owner_id: str, account_id: str) -> None:
         """Delete an existing bank account owned by the caller."""
         async with self._uow:

@@ -1089,6 +1089,8 @@ export interface components {
             created_at?: string | null;
             /** Account Number */
             account_number?: string | null;
+            /** Has Unmasked Account */
+            has_unmasked_account?: boolean;
         };
         /** Body_importCasStatement */
         Body_importCasStatement: {
@@ -1312,6 +1314,8 @@ export interface components {
             next_due?: components["schemas"]["NextDueSchema"] | null;
             /** Account Number */
             account_number?: string | null;
+            /** Has Unmasked Account */
+            has_unmasked_account?: boolean;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -1418,6 +1422,8 @@ export interface components {
             created_at?: string | null;
             /** Folio */
             folio?: string | null;
+            /** Has Unmasked Folio */
+            has_unmasked_folio?: boolean;
         };
         /** MutualFundNavResponse */
         MutualFundNavResponse: {

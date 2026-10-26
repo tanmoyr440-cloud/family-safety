@@ -176,6 +176,7 @@ async def test_loans_and_installments_endpoints(client: AsyncClient) -> None:
     assert loan["emi_paise"] == 1616600
     assert loan["due_day"] == 24
     assert loan["account_masked"] == "XXXX9012"
+    assert loan["has_unmasked_account"] is True
 
     # 2. List loans
     list_resp = await client.get("/api/v1/loans")
@@ -186,10 +187,12 @@ async def test_loans_and_installments_endpoints(client: AsyncClient) -> None:
     patch_resp = await client.patch(
         f"/api/v1/loans/{loan_id}",
         headers=headers,
-        json={"grace_days": 2},
+        json={"grace_days": 2, "account_number": "987654321098"},
     )
     assert patch_resp.status_code == 200
     assert patch_resp.json()["grace_days"] == 2
+    assert patch_resp.json()["account_masked"] == "XXXX1098"
+    assert patch_resp.json()["has_unmasked_account"] is True
 
     # 4. Mark installment paid
     curr_ym = f"{date.today().year:04d}-{date.today().month:02d}"

@@ -171,3 +171,34 @@ async def test_portfolio_summary_endpoint(client: AsyncClient) -> None:
     assert "Portfolio snapshot is up to date" in s_data["reminder_message"]
 
 
+@pytest.mark.asyncio
+async def test_update_mutual_fund_holding_folio(client: AsyncClient) -> None:
+    """Verifies PATCH /mutual-funds/holdings/{id} updates folio and recomputes mask."""
+    _, _, csrf = await _register_and_login(client)
+    headers = {"X-CSRF-Token": csrf}
+
+    # Add holding
+    add_resp = await client.post(
+        "/api/v1/mutual-funds/holdings",
+        headers=headers,
+        json={"scheme_code": 122639, "units": 10.0, "folio_number": "12345678"},
+    )
+    assert add_resp.status_code == 201
+    holding = add_resp.json()
+    assert holding["folio_masked"] == "XXXX5678"
+    assert holding["has_unmasked_folio"] is True
+    holding_id = holding["id"]
+
+    # Update holding with new unmasked folio
+    patch_resp = await client.patch(
+        f"/api/v1/mutual-funds/holdings/{holding_id}",
+        headers=headers,
+        json={"folio_number": "87654321/99", "units": 15.0},
+    )
+    assert patch_resp.status_code == 200
+    updated = patch_resp.json()
+    assert updated["units"] == 15.0
+    assert updated["folio_masked"] == "XXXX1/99"
+    assert updated["has_unmasked_folio"] is True
+
+

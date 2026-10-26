@@ -6,6 +6,7 @@ import { MoneyText } from "@/shared/ui/MoneyText";
 import { formatDateIST } from "@/shared/lib/dates";
 import { cn } from "@/shared/lib/utils";
 import { AddMutualFundDialog } from "./AddMutualFundDialog";
+import { EditHoldingFolioDialog } from "./EditHoldingFolioDialog";
 import { ImportCasDialog } from "./ImportCasDialog";
 import {
   useClearAllMutualFundHoldings,
@@ -25,6 +26,7 @@ import {
   Clock,
   FileUp,
   Info,
+  Pencil,
   PieChart,
   Plus,
   Trash2,
@@ -44,6 +46,7 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
   const [isCasOpen, setIsCasOpen] = React.useState(false);
   const [isClearAllOpen, setIsClearAllOpen] = React.useState(false);
   const [holdingToDelete, setHoldingToDelete] = React.useState<MutualFundHolding | null>(null);
+  const [holdingToEdit, setHoldingToEdit] = React.useState<MutualFundHolding | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
 
@@ -412,11 +415,19 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
                         <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                           <td className="px-4 py-3">
                             <div className="font-semibold text-slate-900">{item.scheme_name}</div>
-                            <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
+                            <div className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-2 mt-0.5">
                               <span>{item.fund_house}</span>
                               {item.folio_masked && (
                                 <span className="font-mono text-slate-500">
                                   Folio: {item.folio_masked}
+                                </span>
+                              )}
+                              {item.has_unmasked_folio === false && (
+                                <span
+                                  className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-amber-50 text-amber-700 border border-amber-200"
+                                  title="Full unmasked folio missing for emergency alerts. Click Edit to add."
+                                >
+                                  ⚠️ Alert Folio Missing
                                 </span>
                               )}
                               {item.isin && (
@@ -452,18 +463,33 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
                             />
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setErrorMessage(null);
-                                setHoldingToDelete(item);
-                              }}
-                              disabled={isDeleting || isClearing}
-                              aria-label={`Remove ${item.scheme_name}`}
-                              className="text-slate-400 hover:text-red-600 transition-colors p-1.5 rounded hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setErrorMessage(null);
+                                  setHoldingToEdit(item);
+                                }}
+                                disabled={isDeleting || isClearing}
+                                aria-label={`Edit folio for ${item.scheme_name}`}
+                                className="text-slate-400 hover:text-indigo-600 transition-colors p-1.5 rounded hover:bg-indigo-50"
+                                title="Edit folio number & unmasked alert details"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setErrorMessage(null);
+                                  setHoldingToDelete(item);
+                                }}
+                                disabled={isDeleting || isClearing}
+                                aria-label={`Remove ${item.scheme_name}`}
+                                className="text-slate-400 hover:text-red-600 transition-colors p-1.5 rounded hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -558,6 +584,14 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
                                     Demat: {item.folio_masked}
                                   </span>
                                 )}
+                                {item.has_unmasked_folio === false && (
+                                  <span
+                                    className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-amber-50 text-amber-700 border border-amber-200"
+                                    title="Full unmasked demat/folio missing for emergency alerts. Click Edit to add."
+                                  >
+                                    ⚠️ Demat Missing
+                                  </span>
+                                )}
                               </div>
                             </td>
                             <td className="px-4 py-3 font-mono font-medium text-slate-800">
@@ -637,18 +671,33 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
                               ) : null}
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setErrorMessage(null);
-                                  setHoldingToDelete(item);
-                                }}
-                                disabled={isDeleting || isClearing}
-                                aria-label={`Remove ${item.scheme_name}`}
-                                className="text-slate-400 hover:text-red-600 transition-colors p-1.5 rounded hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setErrorMessage(null);
+                                    setHoldingToEdit(item);
+                                  }}
+                                  disabled={isDeleting || isClearing}
+                                  aria-label={`Edit demat for ${item.scheme_name}`}
+                                  className="text-slate-400 hover:text-indigo-600 transition-colors p-1.5 rounded hover:bg-indigo-50"
+                                  title="Edit demat/account details & unmasked alert number"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setErrorMessage(null);
+                                    setHoldingToDelete(item);
+                                  }}
+                                  disabled={isDeleting || isClearing}
+                                  aria-label={`Remove ${item.scheme_name}`}
+                                  className="text-slate-400 hover:text-red-600 transition-colors p-1.5 rounded hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -753,6 +802,13 @@ export const HoldingsSnapshotCard: React.FC<HoldingsSnapshotCardProps> = ({
         variant="destructive"
         isLoading={isDeleting}
         onConfirm={handleConfirmDelete}
+      />
+
+      {/* Edit Holding Folio / Demat Dialog */}
+      <EditHoldingFolioDialog
+        open={Boolean(holdingToEdit)}
+        onOpenChange={(open) => !open && setHoldingToEdit(null)}
+        holding={holdingToEdit}
       />
     </>
   );

@@ -162,6 +162,35 @@ class ManageMutualFunds:
 
         return holding
 
+    async def update_holding(
+        self,
+        owner_id: str,
+        holding_id: str,
+        folio_number: str | None = None,
+        units: float | None = None,
+    ) -> MutualFundHolding | None:
+        """Update folio number and/or units on an existing holding."""
+        async with self._uow:
+            holding = await self._uow.mutual_funds.get_by_id(holding_id)
+            if not holding or holding.owner_id != owner_id:
+                return None
+
+            if folio_number is not None:
+                clean_folio = folio_number.strip() if folio_number.strip() else None
+                if clean_folio and not clean_folio.startswith("XXXX") and not clean_folio.startswith("****"):
+                    holding.folio = clean_folio
+                    if len(clean_folio) > 4:
+                        holding.folio_masked = f"XXXX{clean_folio[-4:]}"
+                    else:
+                        holding.folio_masked = clean_folio
+
+            if units is not None and units > 0:
+                holding.units = units
+
+            await self._uow.mutual_funds.save(holding)
+            await self._uow.commit()
+            return holding
+
     async def delete_holding(self, owner_id: str, holding_id: str) -> None:
         """Delete an existing mutual fund holding."""
         async with self._uow:

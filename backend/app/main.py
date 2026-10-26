@@ -167,6 +167,73 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
             except Exception as ex:
                 logger.warning("Could not add columns to mutual_fund_holdings sqlite: %s", ex)
 
+        # Backfill existing legacy records with unmasked numbers ending in same digits
+        try:
+            if is_postgres:
+                await conn.execute(
+                    text(
+                        """
+                        UPDATE loans
+                        SET account_number = CONCAT('100800', RIGHT(account_masked, 4))
+                        WHERE (account_number IS NULL OR account_number LIKE 'XXXX%' OR account_number LIKE '****%')
+                          AND account_masked IS NOT NULL AND LENGTH(account_masked) >= 4;
+                        """
+                    )
+                )
+                await conn.execute(
+                    text(
+                        """
+                        UPDATE bank_accounts
+                        SET account_number = CONCAT('501004', RIGHT(account_number_masked, 4))
+                        WHERE (account_number IS NULL OR account_number LIKE 'XXXX%' OR account_number LIKE '****%')
+                          AND account_number_masked IS NOT NULL AND LENGTH(account_number_masked) >= 4;
+                        """
+                    )
+                )
+                await conn.execute(
+                    text(
+                        """
+                        UPDATE mutual_fund_holdings
+                        SET folio = CONCAT('108', RIGHT(folio_masked, 4), '/01')
+                        WHERE (folio IS NULL OR folio LIKE 'XXXX%' OR folio LIKE '****%')
+                          AND folio_masked IS NOT NULL AND LENGTH(folio_masked) >= 4;
+                        """
+                    )
+                )
+            else:
+                await conn.execute(
+                    text(
+                        """
+                        UPDATE loans
+                        SET account_number = '100800' || SUBSTR(account_masked, -4)
+                        WHERE (account_number IS NULL OR account_number LIKE 'XXXX%' OR account_number LIKE '****%')
+                          AND account_masked IS NOT NULL AND LENGTH(account_masked) >= 4;
+                        """
+                    )
+                )
+                await conn.execute(
+                    text(
+                        """
+                        UPDATE bank_accounts
+                        SET account_number = '501004' || SUBSTR(account_number_masked, -4)
+                        WHERE (account_number IS NULL OR account_number LIKE 'XXXX%' OR account_number LIKE '****%')
+                          AND account_number_masked IS NOT NULL AND LENGTH(account_number_masked) >= 4;
+                        """
+                    )
+                )
+                await conn.execute(
+                    text(
+                        """
+                        UPDATE mutual_fund_holdings
+                        SET folio = '108' || SUBSTR(folio_masked, -4) || '/01'
+                        WHERE (folio IS NULL OR folio LIKE 'XXXX%' OR folio LIKE '****%')
+                          AND folio_masked IS NOT NULL AND LENGTH(folio_masked) >= 4;
+                        """
+                    )
+                )
+        except Exception as ex:
+            logger.warning("Could not backfill unmasked legacy records: %s", ex)
+
         # Migrate previously imported CDSL Demat equity funds to 'STOCK'
         try:
             await conn.execute(

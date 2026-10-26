@@ -167,6 +167,7 @@ class LoanResponse(BaseModel):
     lender: str
     account_number: str | None = None
     account_masked: str
+    has_unmasked_account: bool = False
     emi_paise: int
     due_day: int
     grace_days: int
@@ -187,6 +188,7 @@ class CreateLoanRequest(BaseModel):
 
 class UpdateLoanRequest(BaseModel):
     lender: str | None = None
+    account_number: str | None = Field(default=None, min_length=3, max_length=64)
     emi_paise: int | None = Field(default=None, gt=0)
     due_day: int | None = Field(default=None, ge=1, le=31)
     grace_days: int | None = Field(default=None, ge=0, le=10)
@@ -261,11 +263,21 @@ class AddBankAccountRequest(BaseModel):
     holder_name: str | None = Field(default=None, max_length=255)
 
 
+class UpdateBankAccountRequest(BaseModel):
+    bank_name: str | None = Field(default=None, min_length=2, max_length=255)
+    account_number: str | None = Field(default=None, min_length=4, max_length=34)
+    ifsc_code: str | None = Field(default=None, min_length=11, max_length=11)
+    branch_name: str | None = Field(default=None, max_length=255)
+    account_type: str | None = Field(default=None, max_length=32)
+    holder_name: str | None = Field(default=None, max_length=255)
+
+
 class BankAccountResponse(BaseModel):
     id: str
     bank_name: str
     account_number: str | None = None
     account_number_masked: str
+    has_unmasked_account: bool = False
     ifsc_code: str
     branch_name: str | None = None
     account_type: str = "SAVINGS"
@@ -368,6 +380,11 @@ class AddMutualFundHoldingRequest(BaseModel):
     folio_number: str | None = None
 
 
+class UpdateMutualFundHoldingRequest(BaseModel):
+    folio_number: str | None = Field(default=None, max_length=64)
+    units: float | None = Field(default=None, gt=0)
+
+
 class MutualFundHoldingResponse(BaseModel):
     id: str
     scheme_code: int
@@ -376,6 +393,7 @@ class MutualFundHoldingResponse(BaseModel):
     units: float
     folio: str | None = None
     folio_masked: str | None = None
+    has_unmasked_folio: bool = False
     asset_type: str = "MUTUAL_FUND"
     isin: str | None = None
     latest_nav: float | None = None

@@ -22,6 +22,7 @@ from app.interfaces.api.schemas import (
     MutualFundNavResponse,
     MutualFundSchemeResponse,
     PortfolioSummaryResponse,
+    UpdateMutualFundHoldingRequest,
 )
 
 
@@ -173,7 +174,11 @@ async def list_mutual_fund_holdings(
             scheme_name=h.scheme_name,
             fund_house=h.fund_house,
             units=h.units,
+            folio=h.folio,
             folio_masked=h.folio_masked,
+            has_unmasked_folio=bool(
+                h.folio and not h.folio.startswith("XXXX") and not h.folio.startswith("****")
+            ),
             asset_type=h.asset_type,
             isin=h.isin,
             latest_nav=h.latest_nav,
@@ -218,7 +223,63 @@ async def add_mutual_fund_holding(
         scheme_name=holding.scheme_name,
         fund_house=holding.fund_house,
         units=holding.units,
+        folio=holding.folio,
         folio_masked=holding.folio_masked,
+        has_unmasked_folio=bool(
+            holding.folio
+            and not holding.folio.startswith("XXXX")
+            and not holding.folio.startswith("****")
+        ),
+        asset_type=holding.asset_type,
+        isin=holding.isin,
+        latest_nav=latest_nav,
+        nav_date=nav_date,
+        value_paise=value_paise,
+        created_at=holding.created_at,
+    )
+
+
+@router.patch(
+    "/mutual-funds/holdings/{id}",
+    response_model=MutualFundHoldingResponse,
+    operation_id="updateMutualFundHolding",
+    summary="Update a mutual fund holding folio or units",
+)
+async def update_mutual_fund_holding(
+    id: str,
+    body: UpdateMutualFundHoldingRequest,
+    current_owner: Owner = Depends(get_current_owner),
+    uow: UnitOfWork = Depends(get_uow),
+) -> MutualFundHoldingResponse:
+    """Update folio number or units on a mutual fund or demat stock holding."""
+    use_case = ManageMutualFunds(uow=uow, source=mf_adapter, clock=clock, stock_source=stock_adapter)
+    holding = await use_case.update_holding(
+        owner_id=current_owner.id,
+        holding_id=id,
+        folio_number=body.folio_number,
+        units=body.units,
+    )
+    if not holding:
+        raise NotFoundException("Holding not found.")
+
+    nav_dto = await use_case.get_scheme_nav(holding.scheme_code)
+    latest_nav = nav_dto.nav if nav_dto else None
+    nav_date = nav_dto.nav_date if nav_dto else None
+    value_paise = holding.calculate_value_paise(latest_nav) if latest_nav is not None else 0
+
+    return MutualFundHoldingResponse(
+        id=holding.id,
+        scheme_code=holding.scheme_code,
+        scheme_name=holding.scheme_name,
+        fund_house=holding.fund_house,
+        units=holding.units,
+        folio=holding.folio,
+        folio_masked=holding.folio_masked,
+        has_unmasked_folio=bool(
+            holding.folio
+            and not holding.folio.startswith("XXXX")
+            and not holding.folio.startswith("****")
+        ),
         asset_type=holding.asset_type,
         isin=holding.isin,
         latest_nav=latest_nav,

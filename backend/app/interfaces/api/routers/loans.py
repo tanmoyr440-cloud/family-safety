@@ -126,12 +126,18 @@ def _map_loan(loan: Loan, installments: list[Installment] | None = None) -> Loan
     instructions = PaymentInstructionsSchema()
     now = clock.now()
     next_due = _calculate_next_due(loan, installments or [], now)
+    has_unmasked = bool(
+        loan.account_number
+        and not loan.account_number.startswith("XXXX")
+        and not loan.account_number.startswith("****")
+    )
 
     return LoanResponse(
         id=loan.id,
         lender=loan.lender,
         account_number=loan.account_number,
         account_masked=loan.account_masked,
+        has_unmasked_account=has_unmasked,
         emi_paise=loan.emi.paise,
         due_day=loan.due_day.value,
         grace_days=loan.grace_days,
@@ -244,12 +250,22 @@ async def update_loan(
         updated_due_day = DueDay(body.due_day) if body.due_day is not None else loan.due_day
         updated_grace = body.grace_days if body.grace_days is not None else loan.grace_days
 
+        updated_account_num = loan.account_number
+        updated_masked = loan.account_masked
+        if body.account_number is not None:
+            clean_acc = body.account_number.strip().replace(" ", "").replace("-", "")
+            if clean_acc and not clean_acc.startswith("XXXX") and not clean_acc.startswith("****"):
+                updated_account_num = clean_acc
+                updated_masked = _mask_account(clean_acc)
+
         loan = replace(
             loan,
             lender=updated_lender,
             emi=updated_emi,
             due_day=updated_due_day,
             grace_days=updated_grace,
+            account_number=updated_account_num,
+            account_masked=updated_masked,
         )
 
         await uow.loans.save(loan)
