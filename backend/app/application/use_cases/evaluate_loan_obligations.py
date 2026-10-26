@@ -47,6 +47,8 @@ class EvaluateLoanObligations:
 
             actions = LoanDuePolicy.evaluate(loan=loan, installments=installments, today=today)
 
+            loan_acc_unmasked = getattr(loan, "account_number", None) or loan.account_masked
+
             for action in actions:
                 if action.kind in (LoanActionKind.REMIND_OWNER, LoanActionKind.WARN_OWNER_GRACE):
                     ym = action.year_month or today.strftime("%Y-%m")
@@ -63,13 +65,24 @@ class EvaluateLoanObligations:
                             channel=ch,
                             now=now,
                             contact_id="owner",
-                            payload_extra={"days_until_due": action.days_until_due},
+                            payload_extra={
+                                "days_until_due": action.days_until_due,
+                                "lender": loan.lender,
+                                "account_masked": loan.account_masked,
+                                "amount_inr": f"{loan.emi.paise / 100:,.2f}",
+                                "due_date": f"{loan.due_day.value}th",
+                            },
                         )
                         if await self._uow.outbox.enqueue(msg):
                             messages_queued += 1
 
                 elif action.kind == LoanActionKind.NOTIFY_PARENTS_MISSED:
-                    # Target all verified contacts
+                    overdue_inr = (
+                        f"{action.total_overdue_amount.paise / 100:,.2f}"
+                        if action.total_overdue_amount
+                        else f"{loan.emi.paise / 100:,.2f}"
+                    )
+                    # Target all verified contacts (UNMASKED account details for emergency contacts)
                     for contact in verified_contacts:
                         for ch, addr in [
                             (ChannelKind.SMS, str(contact.phone)),
@@ -90,6 +103,14 @@ class EvaluateLoanObligations:
                                         else 0
                                     ),
                                     "unpaid_months": action.unpaid_months,
+                                    "lender": loan.lender,
+                                    "account_number": loan_acc_unmasked,
+                                    "account_masked": loan.account_masked,
+                                    "amount_inr": overdue_inr,
+                                    "due_date": f"{loan.due_day.value}th",
+                                    "owner_name": owner.name,
+                                    "recipient_name": contact.name,
+                                    "packet_url": "http://localhost:5173/public/packet",
                                 },
                             )
                             if await self._uow.outbox.enqueue(msg):
@@ -111,6 +132,14 @@ class EvaluateLoanObligations:
                             payload_extra={
                                 "is_copy": True,
                                 "unpaid_months": action.unpaid_months,
+                                "lender": loan.lender,
+                                "account_number": loan_acc_unmasked,
+                                "account_masked": loan.account_masked,
+                                "amount_inr": overdue_inr,
+                                "due_date": f"{loan.due_day.value}th",
+                                "owner_name": owner.name,
+                                "recipient_name": owner.name,
+                                "packet_url": "http://localhost:5173/public/packet",
                             },
                         )
                         if await self._uow.outbox.enqueue(msg):
@@ -136,6 +165,13 @@ class EvaluateLoanObligations:
                                 channel=ch,
                                 now=now,
                                 contact_id=contact.id,
+                                payload_extra={
+                                    "lender": loan.lender,
+                                    "account_number": loan_acc_unmasked,
+                                    "account_masked": loan.account_masked,
+                                    "owner_name": owner.name,
+                                    "recipient_name": contact.name,
+                                },
                             )
                             if await self._uow.outbox.enqueue(msg):
                                 messages_queued += 1

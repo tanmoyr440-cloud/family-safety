@@ -27,10 +27,11 @@ class MutualFundHoldingValuationDTO:
     scheme_name: str
     fund_house: str
     units: float
-    folio_masked: str | None
-    latest_nav: float | None
-    nav_date: str | None
-    value_paise: int
+    folio: str | None = None
+    folio_masked: str | None = None
+    latest_nav: float | None = None
+    nav_date: str | None = None
+    value_paise: int = 0
     asset_type: str = "MUTUAL_FUND"
     isin: str | None = None
     created_at: datetime | None = None
@@ -110,6 +111,7 @@ class ManageMutualFunds:
                     scheme_name=h.scheme_name,
                     fund_house=h.fund_house,
                     units=h.units,
+                    folio=h.folio,
                     folio_masked=h.folio_masked,
                     latest_nav=latest_nav,
                     nav_date=nav_date,

@@ -315,12 +315,13 @@ _DEFAULT_TEMPLATES = {
     ),
     "loan_missed_parent_sms.txt": (
         "Family Safety Net: {{ owner_name|default('Your family member') }}'s "
-        "{{ lender|default('car loan') }} EMI of Rs {{ amount_inr|default('16,166') }} "
-        "due on {{ due_date|default('24th') }} has not been confirmed. "
+        "{{ lender|default('car loan') }} (A/C: {{ account_number|default(account_masked)|default('Recorded with Lender') }}) "
+        "EMI of Rs {{ amount_inr|default('16,166') }} due on {{ due_date|default('24th') }} has not been confirmed. "
         "View payment guidance: {{ packet_url|default('https://familysafetynet.app/packet') }}"
     ),
     "loan_notify_parents_resolved_sms.txt": (
-        "Family Safety Net: The pending {{ lender|default('car loan') }} EMI for "
+        "Family Safety Net: The pending {{ lender|default('car loan') }} "
+        "(A/C: {{ account_number|default(account_masked)|default('') }}) EMI for "
         "{{ owner_name|default('your family member') }} has now been confirmed paid. "
         "No further action needed."
     ),

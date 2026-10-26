@@ -586,3 +586,83 @@ async def test_composite_fallback_email_channel() -> None:
     assert "MockFailingChannel" in str(multi_exc_info.value)
 
 
+@pytest.mark.asyncio
+async def test_contact_notifications_unmasked_financial_details() -> None:
+    """Verifies that notifications sent to emergency contacts include unmasked account numbers and folios."""
+    from app.infrastructure.notifications.template_renderer import TemplateRenderer
+
+    renderer = TemplateRenderer()
+
+    # 1. Inactivity Alert Email to Contact
+    email_context = {
+        "owner_name": "Tanmoy",
+        "recipient_name": "Father",
+        "holdings": [
+            {
+                "scheme_name": "Parag Parikh Flexi Cap Fund",
+                "fund_house": "PPFAS Mutual Fund",
+                "units": 150.25,
+                "folio": "1208160098765432",
+                "folio_masked": "XXXX5432",
+                "value_inr": "54,230.00",
+            }
+        ],
+        "loans": [
+            {
+                "lender": "HDFC Bank Car Loan",
+                "account_number": "50100456789123",
+                "account_masked": "XXXX9123",
+                "emi_inr": "16,166.00",
+                "due_day": 24,
+            }
+        ],
+        "bank_accounts": [
+            {
+                "bank_name": "State Bank of India",
+                "account_number": "3045987123456",
+                "account_number_masked": "XXXX3456",
+                "ifsc_code": "SBIN0001234",
+                "branch_name": "Salt Lake",
+                "account_type": "SAVINGS",
+            }
+        ],
+        "days_idle": 90,
+    }
+
+    text_email = renderer.render("inactivity_notify_parents_email", email_context)
+    html_email = renderer.render_html("inactivity_notify_parents_email", email_context)
+
+    # In both text and HTML, unmasked folio and account numbers must be present
+    assert "1208160098765432" in text_email
+    assert "50100456789123" in text_email
+    assert "3045987123456" in text_email
+
+    assert html_email is not None
+    assert "1208160098765432" in html_email
+    assert "50100456789123" in html_email
+    assert "3045987123456" in html_email
+
+    # 2. Missed Loan SMS to Contact
+    loan_sms_context = {
+        "owner_name": "Tanmoy",
+        "lender": "HDFC Bank",
+        "account_number": "50100456789123",
+        "account_masked": "XXXX9123",
+        "amount_inr": "16,166",
+        "due_date": "24th",
+        "packet_url": "https://familysafetynet.app/p/test-token",
+    }
+    sms_text = renderer.render("loan_missed_parent_sms", loan_sms_context)
+    assert "50100456789123" in sms_text
+    assert "HDFC Bank" in sms_text
+    assert "16,166" in sms_text
+
+    # 3. Missed Loan Email to Contact
+    loan_email_text = renderer.render("loan_missed_parent_email", loan_sms_context)
+    loan_email_html = renderer.render_html("loan_missed_parent_email", loan_sms_context)
+    assert "50100456789123" in loan_email_text
+    assert loan_email_html is not None
+    assert "50100456789123" in loan_email_html
+
+
+
