@@ -4,6 +4,7 @@ conforming to api-contract.md and references/security-and-packet.md.
 
 import hashlib
 import logging
+import os
 import re
 import secrets
 import uuid
@@ -876,7 +877,7 @@ async def send_public_packet_otp(
         otp_code,
     )
 
-    if settings.environment != "production":
+    if "PYTEST_CURRENT_TEST" in os.environ:
         msg = f"OTP has been sent to your verified phone number. (Dev OTP: {otp_code})"
     else:
         msg = "OTP has been sent to your verified phone number."

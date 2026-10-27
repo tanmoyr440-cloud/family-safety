@@ -19,7 +19,6 @@ export const PublicPacketOtpPrompt: React.FC<PublicPacketOtpPromptProps> = ({
   onVerified,
 }) => {
   const [codeSent, setCodeSent] = React.useState(false);
-  const [devHint, setDevHint] = React.useState<string | null>(null);
   const [otp, setOtp] = React.useState("");
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
@@ -29,11 +28,8 @@ export const PublicPacketOtpPrompt: React.FC<PublicPacketOtpPromptProps> = ({
   const handleSendCode = () => {
     setErrorMessage(null);
     sendOtp(undefined, {
-      onSuccess: (data) => {
+      onSuccess: () => {
         setCodeSent(true);
-        if (data?.message && data.message.includes("Dev OTP:")) {
-          setDevHint(data.message);
-        }
       },
       onError: (err: Error) => {
         setErrorMessage(
@@ -125,11 +121,6 @@ export const PublicPacketOtpPrompt: React.FC<PublicPacketOtpPromptProps> = ({
               <p className="text-xs font-medium text-slate-900">
                 Code sent to {recipientPhoneMasked}
               </p>
-              {devHint && (
-                <p className="text-[11px] font-mono font-medium text-blue-700 bg-blue-50 py-1 px-2.5 rounded-lg border border-blue-200 inline-block">
-                  {devHint}
-                </p>
-              )}
               <p className="text-[11px] text-muted-foreground">
                 Enter the 6-digit code delivered to your phone:
               </p>
