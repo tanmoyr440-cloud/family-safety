@@ -303,10 +303,14 @@ async def test_accounts_and_packet_endpoints(client: AsyncClient) -> None:
     assert pub_info.headers["Cache-Control"] == "no-store"
     assert pub_info.headers["X-Robots-Tag"] == "noindex"
 
-    # Public packet OTP verify
+    # Public packet OTP send & verify
+    send_otp = await client.post(f"/api/v1/public/packet/{share_token}/otp/send")
+    assert send_otp.status_code == 200
+    otp_code = send_otp.json()["message"].split("Dev OTP: ")[1].split(")")[0]
+
     pub_otp = await client.post(
         f"/api/v1/public/packet/{share_token}/otp/verify",
-        json={"otp": "123456"},
+        json={"otp": otp_code},
     )
     assert pub_otp.status_code == 200
     session_token = pub_otp.json()["session_token"]

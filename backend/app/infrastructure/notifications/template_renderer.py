@@ -510,6 +510,59 @@ _DEFAULT_TEMPLATES = {
 </html>
 """
     ),
+    # Emergency Packet Access OTP Templates
+    "packet_access_otp_sms.txt": (
+        "Family Safety Net: Your 6-digit access code for {{ owner_name|default('your family member') }}'s "
+        "emergency packet is {{ otp }}. Valid for 15 minutes. Never share this code with anyone."
+    ),
+    "packet_access_otp_email.txt": (
+        "Dear {{ contact_name|default('Family Contact') }},\n\n"
+        "You requested access to the Family Safety Net emergency packet for {{ owner_name|default('your family member') }}.\n\n"
+        "Your 6-digit verification code is: {{ otp }}\n\n"
+        "This code is valid for 15 minutes. Enter it on the emergency packet page to unlock the financial records, loan EMI details, and guidance.\n\n"
+        "Security reminder: Never share this OTP with anyone over phone or email.\n\n"
+        "Warm regards,\n"
+        "Family Safety Net"
+    ),
+    "packet_access_otp_email.html": (
+        """<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Emergency Packet Access Code</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; margin: 0; padding: 24px; }
+    .container { max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; }
+    .header { background: #0f172a; color: #ffffff; padding: 24px 32px; }
+    .header h1 { margin: 0; font-size: 18px; font-weight: 700; }
+    .content { padding: 32px; }
+    .otp-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0; }
+    .otp-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 32px; font-weight: 800; letter-spacing: 0.25em; color: #1d4ed8; }
+    .footer { background: #f8fafc; padding: 16px 32px; border-top: 1px solid #f1f5f9; font-size: 12px; color: #64748b; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Family Safety Net &bull; Emergency Packet Access</h1>
+    </div>
+    <div class="content">
+      <p>Hello <strong>{{ contact_name|default('Family Contact') }}</strong>,</p>
+      <p>You requested access to <strong>{{ owner_name|default('your family member') }}'s</strong> emergency packet.</p>
+      <div class="otp-box">
+        <div style="font-size: 12px; font-weight: 600; color: #1e40af; text-transform: uppercase; margin-bottom: 6px;">Your 6-Digit Verification Code</div>
+        <div class="otp-code">{{ otp }}</div>
+        <div style="font-size: 12px; color: #64748b; margin-top: 6px;">Valid for 15 minutes</div>
+      </div>
+      <p style="font-size: 13px; color: #475569;">Enter this code on the emergency packet access screen to view financial holdings, car loan instructions, and documents.</p>
+      <p style="font-size: 12px; color: #991b1b; margin-top: 16px;"><strong>Security notice:</strong> Do not share this OTP with anyone over the phone or email.</p>
+    </div>
+    <div class="footer">Sent with care by Family Safety Net</div>
+  </div>
+</body>
+</html>
+"""
+    ),
 }
 
 

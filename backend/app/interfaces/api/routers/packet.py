@@ -3,6 +3,9 @@ conforming to api-contract.md and references/security-and-packet.md.
 """
 
 import hashlib
+import logging
+import re
+import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -10,8 +13,11 @@ from fastapi import APIRouter, Depends, Header, Query, Response, status
 from sqlalchemy import select
 
 from app.application.ports.clock import Clock
+from app.application.ports.notification_channel import OutboundMessage
 from app.application.ports.unit_of_work import UnitOfWork
+from app.config import settings
 from app.domain.entities.owner import Owner
+from app.domain.policies.escalation_policy import ChannelKind
 from app.infrastructure.persistence.models import (
     ContactModel,
     DocumentModel,
@@ -54,9 +60,74 @@ from app.interfaces.api.security import (
     decode_packet_session_token,
     decode_packet_share_token,
 )
+from app.interfaces.worker.service import create_default_channels
 
 router = APIRouter(tags=["packet"])
+logger = logging.getLogger(__name__)
 _doc_store = EncryptedDocumentStore()
+
+
+async def _dispatch_packet_otp_notification(
+    phone: str | None,
+    email: str | None,
+    contact_name: str,
+    owner_name: str,
+    otp_code: str,
+) -> None:
+    """Send real OTP to emergency contact via configured SMS and Email notification channels."""
+    try:
+        channels = create_default_channels()
+        clean_phone = None
+        if phone:
+            raw_phone = re.sub(r"[\s\-\(\)]", "", str(phone))
+            if raw_phone:
+                if not raw_phone.startswith("+"):
+                    clean_phone = f"+91{raw_phone}" if len(raw_phone) == 10 else f"+{raw_phone}"
+                else:
+                    clean_phone = raw_phone
+
+        clean_email = email.strip() if email else None
+
+        for ch in channels:
+            try:
+                if ch.kind == ChannelKind.SMS and clean_phone:
+                    await ch.send(
+                        OutboundMessage(
+                            id=str(uuid.uuid4()),
+                            channel=ChannelKind.SMS,
+                            recipient=clean_phone,
+                            template_id="packet_access_otp_sms.txt",
+                            payload={
+                                "otp": otp_code,
+                                "owner_name": owner_name,
+                                "contact_name": contact_name,
+                            },
+                        )
+                    )
+                elif ch.kind == ChannelKind.EMAIL and clean_email:
+                    await ch.send(
+                        OutboundMessage(
+                            id=str(uuid.uuid4()),
+                            channel=ChannelKind.EMAIL,
+                            recipient=clean_email,
+                            template_id="packet_access_otp_email.txt",
+                            payload={
+                                "otp": otp_code,
+                                "owner_name": owner_name,
+                                "contact_name": contact_name,
+                            },
+                        )
+                    )
+            except Exception as channel_err:
+                logger.warning(
+                    "Failed to dispatch packet OTP via channel %s to phone=%s email=%s: %s",
+                    getattr(ch, "kind", ch),
+                    clean_phone,
+                    clean_email,
+                    channel_err,
+                )
+    except Exception as exc:
+        logger.warning("Error dispatching packet OTP notification: %s", exc)
 
 
 class SystemClock(Clock):
@@ -754,11 +825,17 @@ async def send_public_packet_otp(
 
     session_factory = get_session_factory()
     async with session_factory() as session:
-        stmt = select(PacketShareModel).where(PacketShareModel.id == share_id)
-        share = (await session.execute(stmt)).scalar_one_or_none()
-        if not share:
+        stmt = (
+            select(PacketShareModel, OwnerModel.name, ContactModel)
+            .join(OwnerModel, PacketShareModel.owner_id == OwnerModel.id)
+            .join(ContactModel, PacketShareModel.contact_id == ContactModel.id)
+            .where(PacketShareModel.id == share_id)
+        )
+        row = (await session.execute(stmt)).first()
+        if not row:
             raise UnauthorizedException("Packet link not found.")
 
+        share, owner_name, contact = row
         now = clock.now()
         if share.revoked_at is not None or share.expires_at < now:
             raise UnauthorizedException("Packet access link has expired or been revoked.")
@@ -766,9 +843,10 @@ async def send_public_packet_otp(
         if share.otp_locked_until and share.otp_locked_until > now:
             raise OtpLockedOutException()
 
-        # In dev/test, use fixed OTP; generate hashed token in production
-        otp_code = "123456"
+        # Generate cryptographically secure 6-digit OTP
+        otp_code = f"{secrets.randbelow(1_000_000):06d}"
         share.otp_hash = hashlib.sha256(otp_code.encode("utf-8")).hexdigest()
+        share.otp_attempts = 0
 
         await record_audit_event(
             session=session,
@@ -777,11 +855,33 @@ async def send_public_packet_otp(
             action="PACKET_OTP_SENT",
             subject_type="PACKET_SHARE",
             subject_id=share.id,
-            metadata={"contact_id": share.contact_id},
+            metadata={"contact_id": share.contact_id, "phone": contact.phone},
         )
         await session.commit()
 
-    return ActionResponse(message="OTP has been sent to your verified phone number.")
+    # Dispatch via SMS and Email channels
+    await _dispatch_packet_otp_notification(
+        phone=contact.phone,
+        email=contact.email,
+        contact_name=contact.name,
+        owner_name=owner_name,
+        otp_code=otp_code,
+    )
+
+    logger.info(
+        "Emergency packet access OTP generated for '%s' (phone=%s, email=%s): %s",
+        contact.name,
+        contact.phone,
+        contact.email,
+        otp_code,
+    )
+
+    if settings.environment != "production":
+        msg = f"OTP has been sent to your verified phone number. (Dev OTP: {otp_code})"
+    else:
+        msg = "OTP has been sent to your verified phone number."
+
+    return ActionResponse(message=msg)
 
 
 @router.post(
@@ -815,7 +915,7 @@ async def verify_public_packet_otp(
             raise OtpLockedOutException()
 
         input_hash = hashlib.sha256(body.otp.encode("utf-8")).hexdigest()
-        is_valid = (share.otp_hash and input_hash == share.otp_hash) or (body.otp == "123456")
+        is_valid = bool(share.otp_hash and input_hash == share.otp_hash)
 
         if not is_valid:
             share.otp_attempts += 1

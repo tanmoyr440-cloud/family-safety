@@ -245,10 +245,14 @@ async def test_security_headers_on_packet_and_documents(client: AsyncClient) -> 
     assert info_resp.headers["X-Robots-Tag"] == "noindex"
     assert info_resp.headers["Referrer-Policy"] == "no-referrer"
 
-    # Verify OTP to get session token
+    # Send and verify OTP to get session token
+    send_resp = await client.post(f"/api/v1/public/packet/{token}/otp/send")
+    assert send_resp.status_code == 200
+    otp_code = send_resp.json()["message"].split("Dev OTP: ")[1].split(")")[0]
+
     verify_resp = await client.post(
         f"/api/v1/public/packet/{token}/otp/verify",
-        json={"otp": "123456"},
+        json={"otp": otp_code},
     )
     assert verify_resp.status_code == 200
     session_token = verify_resp.json()["session_token"]
@@ -347,9 +351,13 @@ async def test_cross_user_access_isolation() -> None:
         )
         token_b = share_b.json()["token"]
 
+        send_b = await client_b.post(f"/api/v1/public/packet/{token_b}/otp/send")
+        assert send_b.status_code == 200
+        otp_b = send_b.json()["message"].split("Dev OTP: ")[1].split(")")[0]
+
         verify_b = await client_b.post(
             f"/api/v1/public/packet/{token_b}/otp/verify",
-            json={"otp": "123456"},
+            json={"otp": otp_b},
         )
         assert verify_b.status_code == 200
         session_token_b = verify_b.json()["session_token"]
@@ -392,11 +400,16 @@ async def test_share_revocation_invalidates_active_session(client: AsyncClient) 
     share_id = share_resp.json()["id"]
     token = share_resp.json()["token"]
 
-    # Obtain session token
+    # Send and verify OTP to obtain session token
+    send_resp = await client.post(f"/api/v1/public/packet/{token}/otp/send")
+    assert send_resp.status_code == 200
+    otp_code = send_resp.json()["message"].split("Dev OTP: ")[1].split(")")[0]
+
     verify_resp = await client.post(
         f"/api/v1/public/packet/{token}/otp/verify",
-        json={"otp": "123456"},
+        json={"otp": otp_code},
     )
+    assert verify_resp.status_code == 200
     session_token = verify_resp.json()["session_token"]
 
     # Active session works initially
@@ -506,3 +519,57 @@ async def test_access_audit_log_entries(client: AsyncClient) -> None:
         events = (await session.execute(stmt)).scalars().all()
         actions = [e.action for e in events]
         assert "CONTACT_CONSENT_VERIFIED" in actions
+
+
+@pytest.mark.asyncio
+async def test_packet_otp_rejects_hardcoded_bypass(client: AsyncClient) -> None:
+    """Verifies that hardcoded 123456 cannot bypass OTP verification."""
+    _, _, headers = await _register_user(client, "eve_security")
+
+    contact_resp = await client.post(
+        "/api/v1/contacts",
+        headers=headers,
+        json={
+            "name": "Eve Security Parent",
+            "relation": "Mother",
+            "phone": "+919876543219",
+            "email": "eve_sec_mom@example.com",
+            "priority": 1,
+        },
+    )
+    contact_id = contact_resp.json()["id"]
+
+    share_resp = await client.post(
+        "/api/v1/packet/shares",
+        headers=headers,
+        json={"contact_id": contact_id},
+    )
+    token = share_resp.json()["token"]
+
+    # 1. Calling verify before send fails (no OTP hash in DB)
+    no_send_verify = await client.post(
+        f"/api/v1/public/packet/{token}/otp/verify",
+        json={"otp": "123456"},
+    )
+    assert no_send_verify.status_code == 401
+
+    # 2. Send real OTP
+    send_resp = await client.post(f"/api/v1/public/packet/{token}/otp/send")
+    assert send_resp.status_code == 200
+    real_otp = send_resp.json()["message"].split("Dev OTP: ")[1].split(")")[0]
+
+    # 3. Trying 123456 fails (unless real OTP randomly was 123456)
+    if real_otp != "123456":
+        bypass_attempt = await client.post(
+            f"/api/v1/public/packet/{token}/otp/verify",
+            json={"otp": "123456"},
+        )
+        assert bypass_attempt.status_code == 401
+
+    # 4. Trying real OTP succeeds
+    real_verify = await client.post(
+        f"/api/v1/public/packet/{token}/otp/verify",
+        json={"otp": real_otp},
+    )
+    assert real_verify.status_code == 200
+    assert "session_token" in real_verify.json()

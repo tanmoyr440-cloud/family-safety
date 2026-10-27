@@ -132,7 +132,7 @@ export const SessionExpiredModal: React.FC<SessionExpiredModalProps> = ({
                   maxLength={6}
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                  placeholder="123456"
+                  placeholder="••••••"
                   className="w-full text-center tracking-widest font-mono text-lg rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
