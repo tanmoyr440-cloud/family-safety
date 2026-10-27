@@ -264,7 +264,7 @@ export const handlers = [
         due_day: body.due_day || 24,
         grace_days: body.grace_days ?? 1,
         payment_instructions: body.payment_instructions || {
-          upi_id: "carloan@hdfc",
+          upi_id: "tanmoyr450-1@oksbi",
           portal_url: "https://netbanking.hdfcbank.com",
           notes: null,
         },

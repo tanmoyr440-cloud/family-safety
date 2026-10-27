@@ -311,7 +311,7 @@ export const LoanForm: React.FC<LoanFormProps> = ({ loan, onSuccess, onCancel, c
               <input
                 id="loan-upi"
                 type="text"
-                placeholder="e.g. carloan@hdfc"
+                placeholder="e.g. tanmoyr450-1@oksbi"
                 className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 aria-invalid={Boolean(errors.upi_id)}
                 aria-describedby={errors.upi_id ? "loan-upi-error" : undefined}

@@ -113,8 +113,8 @@ _DEFAULT_TEMPLATES = {
         "   4. ৭ থেকে ১৫ দিনের মধ্যে সমস্ত টাকা সরাসরি নমিনির ব্যাংক অ্যাকাউন্টে চলে আসবে। এটি সম্পূর্ণ বিনামূল্যের সরকারি প্রক্রিয়া; কাউকে কোনো কমিশন দেবেন না।\n\n"
         "B. গাড়ির লোনের কিস্তি (EMI) দেওয়ার নিয়ম (How to Pay Car Loan EMI):\n"
         "   1. প্রতি মাসের ২৪ তারিখে ব্যাংক ব্যালেন্স চেক করুন যে কিস্তির টাকা কেটেছে কি না।\n"
-        "   2. টাকা না কাটলে, নিকটবর্তী HDFC ব্যাংক শাখায় গিয়ে লোন অ্যাকাউন্ট নম্বর দিয়ে ক্যাশ বা চেকে জমা দিন এবং সিল দেওয়া রসিদ নিন।\n"
-        "   3. অথবা UPI দিয়ে carloan@hdfc -এ টাকা পাঠান। এর ফলে কোনো জরিমানা বা সমস্যা হবে না।\n\n"
+        "   2. টাকা না কাটলে, মোবাইল UPI (Google Pay, PhonePe বা Paytm) দিয়ে tanmoyr450-1@oksbi -এ টাকা পাঠান।\n"
+        "   3. অথবা নিকটবর্তী HDFC ব্যাংক শাখায় গিয়ে লোন অ্যাকাউন্ট নম্বর দিয়ে ক্যাশ বা চেকে জমা দিন এবং সিল দেওয়া রসিদ নিন।\n\n"
         "C. জরুরি সতর্কতা (Golden Safety Rules):\n"
         "   * ফোনে কাউকে কখনোই OTP, পাসওয়ার্ড বা এটিএম পিন বলবেন না। ব্যাংক কখনোই ফোনে গোপন পিন বা OTP চায় না।\n"
         "   * নমিনি ক্লের জন্য কোনো দালাল বা মধ্যস্থতাকারীকে টাকা দেবেন না।\n"
@@ -321,8 +321,8 @@ _DEFAULT_TEMPLATES = {
         <div style="font-size: 13px; color: #1e293b; line-height: 1.6; margin-bottom: 14px;">
           <strong style="color: #b91c1c;">২. গাড়ির লোনের কিস্তি (EMI) দেওয়ার নিয়ম (How to Pay Car Loan EMI):</strong><br>
           &bull; প্রতি মাসের ২৪ তারিখে ব্যাংক অ্যাকাউন্ট চেক করুন যে কিস্তির টাকা কেটেছে কি না।<br>
-          &bull; টাকা না কাটলে, নিকটবর্তী <strong>HDFC ব্যাংক</strong> শাখায় গিয়ে লোন অ্যাকাউন্ট নম্বর জানিয়ে ক্যাশ বা চেক জমা দিয়ে সিলমোহরযুক্ত রসিদ সংগ্রহ করুন।<br>
-          &bull; অথবা PhonePe/Google Pay দিয়ে UPI ID: <strong>carloan@hdfc</strong> -এ পেমেন্ট করুন।
+          &bull; টাকা না কাটলে, মোবাইল UPI (Google Pay, PhonePe, Paytm) দিয়ে UPI ID: <strong>tanmoyr450-1@oksbi</strong> -এ পেমেন্ট করুন।<br>
+          &bull; অথবা নিকটবর্তী <strong>HDFC ব্যাংক</strong> শাখায় গিয়ে লোন অ্যাকাউন্ট নম্বর জানিয়ে ক্যাশ বা চেক জমা দিয়ে সিলমোহরযুক্ত রসিদ সংগ্রহ করুন।
         </div>
 
         <div style="font-size: 12px; color: #991b1b; background: #fff1f2; padding: 10px; border-radius: 8px; border: 1px solid #fecdd3;">
@@ -382,12 +382,12 @@ _DEFAULT_TEMPLATES = {
         "================================================================================\n"
         "HOW PARENTS CAN EASILY PAY THIS EMI / কিস্তি দেওয়ার সহজ নিয়ম\n"
         "================================================================================\n"
-        "1. ব্যাংক শাখায় গিয়ে (সবচেয়ে সহজ):\n"
+        "1. মোবাইল UPI দ্বারা (সবচেয়ে সহজ ও দ্রুত):\n"
+        "   যেকোনো Google Pay, PhonePe বা Paytm থেকে UPI ID: tanmoyr450-1@oksbi -এ Rs {{ amount_inr|default('16,166') }} পাঠান। নোটে লোন অ্যাকাউন্ট নম্বর লিখে দিন।\n\n"
+        "2. ব্যাংক শাখায় গিয়ে:\n"
         "   নিকটবর্তী {{ lender|default('HDFC Bank') }} শাখায় যান।\n"
         "   কাউন্টারে বলুন: 'আমাকে কার লোন অ্যাকাউন্ট {{ account_number|default(account_masked)|default('') }}-এ Rs {{ amount_inr|default('16,166') }} EMI জমা দিতে হবে।'\n"
         "   ক্যাশ বা চেক জমা দিন এবং সিল দেওয়া রসিদ (Receipt) অবশ্যই সংগ্রহ করুন।\n\n"
-        "2. মোবাইল UPI দ্বারা:\n"
-        "   যেকোনো PhonePe, Google Pay বা Paytm থেকে UPI ID: carloan@hdfc -এ Rs {{ amount_inr|default('16,166') }} পাঠান। নোটে লোন অ্যাকাউন্ট নম্বর লিখে দিন।\n\n"
         "Warm regards,\n"
         "Family Safety Net"
     ),
@@ -438,8 +438,8 @@ _DEFAULT_TEMPLATES = {
           &#128161; How Parents Can Easily Pay This EMI / কিস্তি দেওয়ার সহজ নিয়ম:
         </div>
         <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #334155; line-height: 1.6;">
-          <li><strong>উপায় ১ (ব্যাংক শাখায় গিয়ে - সবচেয়ে সহজ):</strong> নিকটবর্তী {{ lender|default('HDFC Bank') }} শাখায় যান। কাউন্টারে লোন অ্যাকাউন্ট নম্বর ({{ account_number|default(account_masked)|default('') }}) জানিয়ে নগদ বা চেকে ₹{{ amount_inr|default('16,166') }} জমা দিয়ে সিলমোহরযুক্ত রসিদ সংগ্রহ করুন।</li>
-          <li><strong>উপায় ২ (মোবাইল UPI দিয়ে):</strong> Google Pay, PhonePe বা Paytm থেকে UPI ID: <code>carloan@hdfc</code> -এ ₹{{ amount_inr|default('16,166') }} পাঠান।</li>
+          <li><strong>উপায় ১ (মোবাইল UPI দিয়ে - সবচেয়ে সহজ ও দ্রুত):</strong> Google Pay, PhonePe বা Paytm থেকে UPI ID: <code>tanmoyr450-1@oksbi</code> -এ ₹{{ amount_inr|default('16,166') }} পাঠান।</li>
+          <li><strong>উপায় ২ (ব্যাংক শাখায় গিয়ে):</strong> নিকটবর্তী {{ lender|default('HDFC Bank') }} শাখায় যান। কাউন্টারে লোন অ্যাকাউন্ট নম্বর ({{ account_number|default(account_masked)|default('') }}) জানিয়ে নগদ বা চেকে ₹{{ amount_inr|default('16,166') }} জমা দিয়ে সিলমোহরযুক্ত রসিদ সংগ্রহ করুন।</li>
         </ul>
       </div>
 

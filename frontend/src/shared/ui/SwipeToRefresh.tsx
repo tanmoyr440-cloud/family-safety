@@ -34,6 +34,14 @@ export const SwipeToRefresh: React.FC<SwipeToRefreshProps> = ({
   const touchStartRef = React.useRef<{ x: number; y: number; time: number } | null>(null);
   const canPullUpRef = React.useRef(false);
   const canPullDownRef = React.useRef(false);
+  const isMountedRef = React.useRef(true);
+
+  React.useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const handleRefresh = React.useCallback(async () => {
     if (isRefreshing) return;
@@ -57,15 +65,19 @@ export const SwipeToRefresh: React.FC<SwipeToRefreshProps> = ({
           : Promise.resolve();
 
       await Promise.all([refreshTask, minDelay]);
-      setIsSuccess(true);
+      if (isMountedRef.current) {
+        setIsSuccess(true);
+      }
       await new Promise((resolve) => setTimeout(resolve, 750));
     } catch (err) {
       console.warn("Swipe refresh error:", err);
     } finally {
-      setIsRefreshing(false);
-      setIsSuccess(false);
-      setPullDistance(0);
-      setPullDirection(null);
+      if (isMountedRef.current) {
+        setIsRefreshing(false);
+        setIsSuccess(false);
+        setPullDistance(0);
+        setPullDirection(null);
+      }
     }
   }, [isRefreshing, onRefresh, queryClient]);
 

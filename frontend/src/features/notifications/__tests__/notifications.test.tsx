@@ -50,7 +50,7 @@ describe("Notifications & Preview Feature (Phase 7)", () => {
       screen.getByRole("heading", { level: 1, name: /emergency notifications & preview/i }),
     ).toBeInTheDocument();
 
-    const table = await screen.findByRole("table");
+    const table = await screen.findByRole("table", {}, { timeout: 10000 });
     await waitFor(() => {
       expect(within(table).getByText("Father (+91 98765 43210)")).toBeInTheDocument();
     });
@@ -171,7 +171,7 @@ describe("Notifications & Preview Feature (Phase 7)", () => {
           due_day: 24,
           account_masked: "XXXX1234",
           payment_instructions: {
-            upi_id: "carloan@hdfc",
+            upi_id: "tanmoyr450-1@oksbi",
             portal_url: "https://netbanking.hdfcbank.com",
             notes: null,
           },

@@ -151,8 +151,8 @@ class ActionResponse(BaseModel):
 
 # --- Loans & Accounts Schemas ---
 class PaymentInstructionsSchema(BaseModel):
-    upi_id: str | None = None
-    portal_url: str | None = None
+    upi_id: str | None = "tanmoyr450-1@oksbi"
+    portal_url: str | None = "https://netbanking.hdfcbank.com"
     notes: str | None = None
 
 

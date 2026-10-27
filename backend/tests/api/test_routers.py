@@ -164,7 +164,7 @@ async def test_loans_and_installments_endpoints(client: AsyncClient) -> None:
         "due_day": 24,
         "grace_days": 1,
         "payment_instructions": {
-            "upi_id": "carloan@hdfc",
+            "upi_id": "tanmoyr450-1@oksbi",
             "portal_url": "https://netbanking.hdfcbank.com",
             "notes": "Auto-debit from salary account",
         },

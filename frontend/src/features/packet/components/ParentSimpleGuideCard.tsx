@@ -45,7 +45,7 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
     ? `₹${(primaryLoan.emi_paise / 100).toLocaleString("en-IN")}`
     : "₹16,166";
   const loanDueDay = primaryLoan?.due_day ? `${primaryLoan.due_day}th` : "24th";
-  const loanUpi = primaryLoan?.payment_instructions?.upi_id || "carloan@hdfc";
+  const loanUpi = primaryLoan?.payment_instructions?.upi_id || "tanmoyr450-1@oksbi";
 
   const isBengali = lang === "bn";
 
@@ -384,11 +384,34 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
                     : "Step 2: If auto-debit did not happen, don't worry! Use either method:"}
                 </span>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  {/* Way A */}
+                <div className="flex flex-col gap-3 pt-1">
+                  {/* Way 1: UPI Payment (On Top) */}
                   <div className="p-3 rounded-lg bg-white border border-amber-200 space-y-1">
                     <span className="font-bold text-slate-900 text-xs block text-blue-700">
-                      {isBengali ? "উপায় ১: ব্যাংক শাখায় গিয়ে (সবচেয়ে সহজ ও নিরাপদ)" : "Option A: Visit Nearest Branch (Easiest)"}
+                      {isBengali ? "উপায় ১: মোবাইল UPI দিয়ে (সবচেয়ে সহজ ও দ্রুত - ঘরে বসে)" : "Option 1: Mobile UPI Payment (Fastest & Easiest)"}
+                    </span>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      {isBengali
+                        ? "Google Pay, PhonePe, Paytm বা যেকোনো UPI অ্যাপ থেকে নিচের এই UPI ID-তে পেমেন্ট করুন:"
+                        : "Use any UPI app (GPay, PhonePe, Paytm, BHIM) to pay directly to this UPI ID:"}
+                    </p>
+                    <div className="pt-1 text-[11px] font-mono bg-slate-50 p-1.5 rounded border border-slate-200 text-slate-800">
+                      <span className="font-sans font-semibold text-slate-500 text-[10px] block">
+                        UPI ID:
+                      </span>
+                      <strong>{loanUpi}</strong>
+                    </div>
+                    <span className="text-[10px] text-emerald-700 font-semibold block pt-1">
+                      {isBengali
+                        ? `✓ পেমেন্টের নোটে লোন অ্যাকাউন্ট নম্বর (${loanAccount}) লিখে দেবেন। কোনো জরিমানা বা লেট ফি হবে না।`
+                        : `✓ Add loan account number (${loanAccount}) in payment remarks/note to avoid penalties.`}
+                    </span>
+                  </div>
+
+                  {/* Way 2: Bank Branch */}
+                  <div className="p-3 rounded-lg bg-white border border-amber-200 space-y-1">
+                    <span className="font-bold text-slate-900 text-xs block text-blue-700">
+                      {isBengali ? "উপায় ২: ব্যাংক শাখায় গিয়ে (সরাসরি ব্রাঞ্চে নগদ বা চেকে)" : "Option 2: Visit Nearest Bank Branch"}
                     </span>
                     <p className="text-[11px] text-slate-600 leading-relaxed">
                       {isBengali ? (
@@ -411,27 +434,6 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
                     </div>
                     <span className="text-[10px] text-emerald-700 font-semibold block pt-1">
                       {isBengali ? "✓ টাকা জমা দেওয়ার পর সিল দেওয়া রসিদ (Receipt) অবশ্যই সংগ্রহ করবেন।" : "✓ Always collect the printed payment receipt."}
-                    </span>
-                  </div>
-
-                  {/* Way B */}
-                  <div className="p-3 rounded-lg bg-white border border-amber-200 space-y-1">
-                    <span className="font-bold text-slate-900 text-xs block text-blue-700">
-                      {isBengali ? "উপায় ২: মোবাইল UPI দিয়ে (ঘরে বসে)" : "Option B: Online / Mobile UPI Payment"}
-                    </span>
-                    <p className="text-[11px] text-slate-600 leading-relaxed">
-                      {isBengali
-                        ? "আত্মীয়ের বা নিজের Google Pay, PhonePe বা Paytm থেকে এই UPI ID-তে পেমেন্ট করুন:"
-                        : "Use any UPI app (GPay, PhonePe, Paytm, BHIM) to transfer directly:"}
-                    </p>
-                    <div className="pt-1 text-[11px] font-mono bg-slate-50 p-1.5 rounded border border-slate-200 text-slate-800">
-                      <span className="font-sans font-semibold text-slate-500 text-[10px] block">
-                        UPI ID:
-                      </span>
-                      <strong>{loanUpi}</strong>
-                    </div>
-                    <span className="text-[10px] text-slate-500 block pt-1">
-                      {isBengali ? "পেমেন্টের নোটে লোন অ্যাকাউন্ট নম্বরটি লিখে দেবেন।" : "Add loan account number in payment note."}
                     </span>
                   </div>
                 </div>

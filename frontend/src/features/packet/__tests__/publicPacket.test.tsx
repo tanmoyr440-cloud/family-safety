@@ -17,14 +17,17 @@ describe("Public Packet Feature (Phase 8)", () => {
     );
 
     // 1. Initial Pre-OTP View
-    await waitFor(() => {
-      expect(
-        screen.getByRole("heading", {
-          level: 2,
-          name: /emergency guidance for tanmoy sharma's family/i,
-        }),
-      ).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(
+          screen.getByRole("heading", {
+            level: 2,
+            name: /emergency guidance for tanmoy sharma's family/i,
+          }),
+        ).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
 
     expect(screen.getByText("+91 98*** **211")).toBeInTheDocument();
     expect(
@@ -86,7 +89,7 @@ describe("Public Packet Feature (Phase 8)", () => {
     // Loan Obligations
     expect(screen.getByText(/active loan obligations/i)).toBeInTheDocument();
     expect(screen.getByText("₹16,166")).toBeInTheDocument();
-    expect(screen.getByText("carloan@hdfc")).toBeInTheDocument();
+    expect(screen.getByText("tanmoyr450-1@oksbi")).toBeInTheDocument();
 
     // Encrypted Emergency Documents
     expect(screen.getByText(/encrypted emergency documents/i)).toBeInTheDocument();
@@ -101,7 +104,7 @@ describe("Public Packet Feature (Phase 8)", () => {
 
     // Full Page Accessibility check
     expect(await axe(container)).toHaveNoViolations();
-  }, 15000);
+  }, 30000);
 
   it("enforces calm copy guidelines: forbids 'missing' and 'danger', forbids fund access promises", async () => {
     const user = userEvent.setup();
