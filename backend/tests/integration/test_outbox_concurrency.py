@@ -66,6 +66,12 @@ async def test_outbox_skip_locked_concurrency(
     """Tests that concurrent workers using SELECT ... FOR UPDATE SKIP LOCKED claim
     non-overlapping message batches.
     """
+    async with db_session_factory() as session:
+        bind = session.bind
+        dialect_name = bind.dialect.name if bind is not None else ""
+        if "sqlite" in dialect_name:
+            pytest.skip("SKIP LOCKED row-level locking is not supported by SQLite")
+
     now = datetime.now(UTC)
     tag = str(uuid.uuid4())[:8]
 

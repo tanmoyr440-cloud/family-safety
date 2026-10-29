@@ -3,6 +3,7 @@ from datetime import UTC, date, datetime
 from typing import Any
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     Date,
     DateTime,
@@ -18,6 +19,8 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import TypeDecorator
 
+JSONType = JSON().with_variant(JSONB, "postgresql")
+
 
 class AwareDateTime(TypeDecorator[datetime]):
     """DateTime type that ensures all loaded values are timezone-aware UTC."""
@@ -29,7 +32,14 @@ class AwareDateTime(TypeDecorator[datetime]):
         super().__init__(**kwargs)
         self.impl = DateTime(timezone=timezone)
 
-    def process_result_value(self, value: datetime | None, dialect: Any) -> datetime | None:
+    def process_bind_param(self, value: datetime | None, _dialect: Any) -> datetime | None:
+        if value is not None:
+            if value.tzinfo is None:
+                return value.replace(tzinfo=UTC)
+            return value.astimezone(UTC)
+        return value
+
+    def process_result_value(self, value: datetime | None, _dialect: Any) -> datetime | None:
         if value is not None and value.tzinfo is None:
             return value.replace(tzinfo=UTC)
         return value
@@ -137,7 +147,7 @@ class InactivityMonitorModel(Base):
     started_at: Mapped[datetime] = mapped_column(AwareDateTime(timezone=True), nullable=False)
     last_activity_at: Mapped[datetime] = mapped_column(AwareDateTime(timezone=True), nullable=False)
     threshold_days: Mapped[int] = mapped_column(Integer, default=90, nullable=False)
-    warning_days: Mapped[list[int]] = mapped_column(JSONB, default=[60, 80], nullable=False)
+    warning_days: Mapped[list[int]] = mapped_column(JSONType, default=[60, 80], nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="OK", nullable=False)
     episode_id: Mapped[str] = mapped_column(String(64), nullable=False)
     paused_until: Mapped[datetime | None] = mapped_column(AwareDateTime(timezone=True), nullable=True)
@@ -167,7 +177,7 @@ class LoanModel(Base):
         String(7), default="2026-12", nullable=False
     )
     reminder_days_before: Mapped[list[int]] = mapped_column(
-        JSONB, default=[3, 1, 0], nullable=False
+        JSONType, default=[3, 1, 0], nullable=False
     )
     parent_repeat_every_days: Mapped[int] = mapped_column(Integer, default=7, nullable=False)
 
@@ -212,7 +222,7 @@ class OutboxModel(Base):
     channel: Mapped[str] = mapped_column(String(32), nullable=False)
     recipient: Mapped[str] = mapped_column(String(255), nullable=False)
     template_id: Mapped[str] = mapped_column(String(128), nullable=False)
-    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONType, nullable=False)
     next_attempt_at: Mapped[datetime] = mapped_column(AwareDateTime(timezone=True), nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="PENDING", nullable=False)
     attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -252,7 +262,7 @@ class AuditEventModel(Base):
     action: Mapped[str] = mapped_column(String(64), nullable=False)
     subject_type: Mapped[str] = mapped_column(String(64), nullable=False)
     subject_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONType, nullable=False, default=dict)
 
 
 class SchedulerHeartbeatModel(Base):
@@ -366,7 +376,9 @@ class NomineeGuidanceModel(Base):
     owner_id: Mapped[str] = mapped_column(
         String(64), ForeignKey("owners.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
     )
-    nominees_json: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True, default=list)
+    nominees_json: Mapped[list[dict[str, Any]] | None] = mapped_column(
+        JSONType, nullable=True, default=list
+    )
     nominee_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     nominee_relation: Mapped[str | None] = mapped_column(String(64), nullable=True)
     nominee_share: Mapped[str | None] = mapped_column(String(32), default="100%", nullable=True)

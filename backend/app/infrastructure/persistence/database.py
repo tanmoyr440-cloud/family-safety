@@ -1,5 +1,7 @@
 """Database connection and session factory utilities."""
 
+from pathlib import Path
+
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -9,11 +11,17 @@ from sqlalchemy.ext.asyncio import (
 
 
 def normalize_database_url(database_url: str) -> str:
-    """Normalize postgres URLs to use asyncpg driver."""
+    """Normalize database URLs to use appropriate async drivers."""
     if database_url.startswith("postgres://"):
         return database_url.replace("postgres://", "postgresql+asyncpg://", 1)
     if database_url.startswith("postgresql://") and not database_url.startswith("postgresql+"):
         return database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    if database_url.startswith("sqlite://") and not database_url.startswith("sqlite+"):
+        database_url = database_url.replace("sqlite://", "sqlite+aiosqlite://", 1)
+    if database_url in ("sqlite+aiosqlite:///family_safety_net.db", "sqlite:///family_safety_net.db"):
+        backend_dir = Path(__file__).resolve().parents[3]
+        db_path = (backend_dir / "family_safety_net.db").as_posix()
+        return f"sqlite+aiosqlite:///{db_path}"
     return database_url
 
 

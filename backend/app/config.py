@@ -1,6 +1,10 @@
 """Application configuration settings."""
 
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_DEFAULT_DB_PATH = (Path(__file__).resolve().parent.parent / "family_safety_net.db").as_posix()
 
 
 class Settings(BaseSettings):
@@ -35,7 +39,7 @@ class Settings(BaseSettings):
     )
 
     # Database
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/family_safety_net"
+    database_url: str = f"sqlite+aiosqlite:///{_DEFAULT_DB_PATH}"
 
     # Security
     secret_key: str = "dev-insecure-secret-key-at-least-32-characters-long"

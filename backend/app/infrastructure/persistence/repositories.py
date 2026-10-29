@@ -3,17 +3,9 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import delete, select
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession
-
-
-def _ensure_utc(dt: datetime | None) -> datetime | None:
-    """Ensure datetime is timezone-aware UTC for database compatibility."""
-    if dt is None:
-        return None
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=UTC)
-    return dt.astimezone(UTC)
 
 from app.application.dto import OutboxMessage
 from app.application.ports.repositories import (
@@ -51,6 +43,15 @@ from app.infrastructure.persistence.models import (
     OutboxModel,
     OwnerModel,
 )
+
+
+def _ensure_utc(dt: datetime | None) -> datetime | None:
+    """Ensure datetime is timezone-aware UTC for database compatibility."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
 
 
 class SqlAlchemyOwnerRepository(OwnerRepository):
@@ -384,8 +385,11 @@ class SqlAlchemyOutboxRepository(OutboxRepository):
 
     async def enqueue(self, message: OutboxMessage) -> bool:
         """Enqueue message atomically using ON CONFLICT (dedupe_key) DO NOTHING."""
+        bind = self._session.bind
+        dialect_name = bind.dialect.name if bind is not None else ""
+        insert_fn = sqlite_insert if "sqlite" in dialect_name else pg_insert
         stmt = (
-            insert(OutboxModel)
+            insert_fn(OutboxModel)
             .values(
                 id=message.id,
                 dedupe_key=message.dedupe_key,
@@ -407,7 +411,7 @@ class SqlAlchemyOutboxRepository(OutboxRepository):
         return row is not None
 
     async def get_pending(self, now: datetime, limit: int = 50) -> list[OutboxMessage]:
-        """Fetch pending messages using SELECT FOR UPDATE SKIP LOCKED."""
+        """Fetch pending messages using SELECT FOR UPDATE SKIP LOCKED where supported."""
         stmt = (
             select(OutboxModel)
             .where(
@@ -415,9 +419,12 @@ class SqlAlchemyOutboxRepository(OutboxRepository):
                 OutboxModel.next_attempt_at <= now,
             )
             .order_by(OutboxModel.next_attempt_at.asc())
-            .with_for_update(skip_locked=True)
-            .limit(limit)
         )
+        bind = self._session.bind
+        dialect_name = bind.dialect.name if bind is not None else ""
+        if "sqlite" not in dialect_name:
+            stmt = stmt.with_for_update(skip_locked=True)
+        stmt = stmt.limit(limit)
         result = await self._session.execute(stmt)
         models = result.scalars().all()
         return [

@@ -49,6 +49,8 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
 
+    json_type = sa.JSON().with_variant(postgresql.JSONB(astext_type=sa.Text()), "postgresql")
+
     # Inactivity monitors
     op.create_table(
         "inactivity_monitors",
@@ -57,7 +59,7 @@ def upgrade() -> None:
         sa.Column("started_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("last_activity_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("threshold_days", sa.Integer(), server_default="90", nullable=False),
-        sa.Column("warning_days", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("warning_days", json_type, nullable=False),
         sa.Column("status", sa.String(length=32), server_default="OK", nullable=False),
         sa.Column("episode_id", sa.String(length=64), nullable=False),
         sa.Column("paused_until", sa.DateTime(timezone=True), nullable=True),
@@ -90,7 +92,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "reminder_days_before",
-            postgresql.JSONB(astext_type=sa.Text()),
+            json_type,
             nullable=False,
         ),
         sa.Column("parent_repeat_every_days", sa.Integer(), server_default="7", nullable=False),
@@ -123,7 +125,7 @@ def upgrade() -> None:
         sa.Column("channel", sa.String(length=32), nullable=False),
         sa.Column("recipient", sa.String(length=255), nullable=False),
         sa.Column("template_id", sa.String(length=128), nullable=False),
-        sa.Column("payload", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column("payload", json_type, nullable=False),
         sa.Column("next_attempt_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("status", sa.String(length=32), server_default="PENDING", nullable=False),
         sa.Column("attempts", sa.Integer(), server_default="0", nullable=False),
