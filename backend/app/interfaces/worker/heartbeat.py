@@ -3,6 +3,7 @@
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.infrastructure.persistence.models import SchedulerHeartbeatModel
@@ -24,21 +25,26 @@ async def record_heartbeat(
         last_success = now if success else (existing.last_success_at if existing else None)
         last_err = None if success else error_message
 
-        if existing is None:
-            model = SchedulerHeartbeatModel(
+        upsert_stmt = (
+            insert(SchedulerHeartbeatModel)
+            .values(
                 job_name=job_name,
                 last_run_at=now,
                 last_success_at=last_success,
                 last_error=last_err,
                 updated_at=now,
             )
-            session.add(model)
-        else:
-            existing.last_run_at = now
-            existing.last_success_at = last_success
-            existing.last_error = last_err
-            existing.updated_at = now
-
+            .on_conflict_do_update(
+                index_elements=["job_name"],
+                set_={
+                    "last_run_at": now,
+                    "last_success_at": last_success,
+                    "last_error": last_err,
+                    "updated_at": now,
+                },
+            )
+        )
+        await session.execute(upsert_stmt)
         await session.commit()
 
 

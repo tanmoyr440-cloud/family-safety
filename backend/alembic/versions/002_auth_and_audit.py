@@ -57,8 +57,8 @@ def upgrade() -> None:
         sa.Column("subject_id", sa.String(length=64), nullable=True),
         sa.Column(
             "metadata_json",
-            sa.JSON().with_variant(postgresql.JSONB(astext_type=sa.Text()), "postgresql"),
-            server_default=sa.text("'{}'"),
+            postgresql.JSONB(astext_type=sa.Text()),
+            server_default=sa.text("'{}'::jsonb"),
             nullable=False,
         ),
         sa.PrimaryKeyConstraint("id"),

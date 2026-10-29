@@ -1,6 +1,5 @@
 import os
 from collections.abc import AsyncIterator
-from pathlib import Path
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -10,12 +9,12 @@ from app.infrastructure.persistence.database import create_engine, create_sessio
 from app.infrastructure.persistence.models import Base
 from app.main import app
 
-_TEST_DB_FILE = Path(__file__).resolve().parent / "test_family_safety_net.db"
-_DEFAULT_TEST_DB_URL = f"sqlite+aiosqlite:///{_TEST_DB_FILE.as_posix()}"
-
 TEST_DB_URL = os.environ.get(
     "TEST_DATABASE_URL",
-    _DEFAULT_TEST_DB_URL,
+    os.environ.get(
+        "DATABASE_URL",
+        "postgresql+asyncpg://postgres:admin@localhost:5432/family_safety_net_test",
+    ),
 )
 
 
@@ -36,8 +35,6 @@ async def db_engine() -> AsyncIterator[AsyncEngine]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield engine
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()
 
 
