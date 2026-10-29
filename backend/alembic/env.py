@@ -13,6 +13,7 @@ if str(backend_dir) not in sys.path:
 
 from alembic import context
 from app.config import settings
+from app.infrastructure.persistence.database import normalize_database_url
 from app.infrastructure.persistence.models import Base
 
 # this is the Alembic Config object, which provides
@@ -30,7 +31,7 @@ def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
     import os
 
-    url = os.environ.get("DATABASE_URL") or settings.database_url
+    url = normalize_database_url(os.environ.get("DATABASE_URL") or settings.database_url)
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -59,7 +60,7 @@ async def run_async_migrations() -> None:
         or os.environ.get("TEST_DATABASE_URL")
         or settings.database_url
     )
-    configuration["sqlalchemy.url"] = url
+    configuration["sqlalchemy.url"] = normalize_database_url(url)
 
     connectable = async_engine_from_config(
         configuration,

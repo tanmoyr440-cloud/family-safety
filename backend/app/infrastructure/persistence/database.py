@@ -1,5 +1,7 @@
 """Database connection and session factory utilities."""
 
+import re
+
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -9,11 +11,20 @@ from sqlalchemy.ext.asyncio import (
 
 
 def normalize_database_url(database_url: str) -> str:
-    """Normalize postgres URLs to use asyncpg driver."""
+    """Normalize postgres URLs to use asyncpg driver and translate libpq sslmode to asyncpg ssl."""
     if database_url.startswith("postgres://"):
-        return database_url.replace("postgres://", "postgresql+asyncpg://", 1)
-    if database_url.startswith("postgresql://") and not database_url.startswith("postgresql+"):
-        return database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        database_url = database_url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif database_url.startswith("postgresql://") and not database_url.startswith("postgresql+"):
+        database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+    # asyncpg does not accept 'sslmode' (standard libpq parameter), it accepts 'ssl'
+    if "sslmode=" in database_url:
+        database_url = re.sub(r"[?&]sslmode=disable(&|$)", r"\1", database_url)
+        database_url = re.sub(r"sslmode=require", "ssl=require", database_url)
+        database_url = re.sub(r"sslmode=verify-[a-z]+", "ssl=require", database_url)
+        database_url = re.sub(r"sslmode=prefer", "ssl=prefer", database_url)
+        database_url = re.sub(r"sslmode=([a-zA-Z0-9_-]+)", r"ssl=\1", database_url)
+
     return database_url
 
 
