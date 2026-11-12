@@ -1,14 +1,11 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
-  AlertCircle,
   Building2,
   CheckCircle2,
   Clock,
   FileCheck,
   HeartPulse,
-  Info,
-  ShieldAlert,
   X,
 } from "lucide-react";
 import { Button } from "@/shared/ui/Button";

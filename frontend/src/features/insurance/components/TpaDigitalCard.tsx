@@ -9,9 +9,8 @@ import {
   ShieldCheck,
   UserCheck,
 } from "lucide-react";
-import { Card, CardContent } from "@/shared/ui/Card";
 import { Button } from "@/shared/ui/Button";
-import { formatMoneyPaise } from "@/shared/lib/money";
+import { formatPaise } from "@/shared/lib/money";
 import type { InsurancePolicy } from "../api/useInsurancePolicies";
 
 export interface TpaDigitalCardProps {
@@ -19,7 +18,7 @@ export interface TpaDigitalCardProps {
   onClose?: () => void;
 }
 
-export const TpaDigitalCard: React.FC<TpaDigitalCardProps> = ({ policy, onClose }) => {
+export const TpaDigitalCard: React.FC<TpaDigitalCardProps> = ({ policy }) => {
   const [copiedField, setCopiedField] = React.useState<string | null>(null);
 
   const copyToClipboard = (text: string, fieldName: string) => {
@@ -60,7 +59,7 @@ export const TpaDigitalCard: React.FC<TpaDigitalCardProps> = ({ policy, onClose 
           <div className="text-right">
             <span className="text-[10px] uppercase tracking-wider text-slate-400 block">Sum Insured</span>
             <span className="text-base sm:text-lg font-extrabold text-emerald-400">
-              {formatMoneyPaise(policy.sum_insured_paise)}
+              {formatPaise(policy.sum_insured_paise)}
             </span>
           </div>
         )}

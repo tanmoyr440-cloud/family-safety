@@ -36,6 +36,8 @@ export function formatPaise(paise: number, includeDecimals = false): string {
   return inrFormatter.format(rupees);
 }
 
+export const formatMoneyPaise = formatPaise;
+
 /**
  * Parse a rupee amount string into integer paise.
  * E.g. "16166" -> 1616600

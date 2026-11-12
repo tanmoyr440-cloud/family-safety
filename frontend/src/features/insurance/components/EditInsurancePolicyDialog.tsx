@@ -2,7 +2,7 @@ import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useUpdateInsurancePolicy, type InsurancePolicy } from "../api/useInsurancePolicies";
 import { Button } from "@/shared/ui/Button";
-import { Building2, HeartPulse, Loader2, Save, ShieldCheck, X } from "lucide-react";
+import { HeartPulse, Loader2, Save, ShieldCheck, X } from "lucide-react";
 
 export interface EditInsurancePolicyDialogProps {
   policy: InsurancePolicy | null;

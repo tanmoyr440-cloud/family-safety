@@ -11,7 +11,7 @@ import { Button } from "@/shared/ui/Button";
 import { Card, CardContent } from "@/shared/ui/Card";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { Skeleton } from "@/shared/ui/Skeleton";
-import { formatMoneyPaise } from "@/shared/lib/money";
+import { formatPaise } from "@/shared/lib/money";
 import { useInsurancePolicies } from "../api/useInsurancePolicies";
 import { InsurancePolicyCard } from "../components/InsurancePolicyCard";
 import { AddInsurancePolicyDialog } from "../components/AddInsurancePolicyDialog";
@@ -84,7 +84,7 @@ export const InsurancePage: React.FC = () => {
                 Total Health Cover
               </span>
               <div className="text-xl sm:text-2xl font-extrabold text-foreground mt-0.5">
-                {formatMoneyPaise(totalHealthPaise)}
+                {formatPaise(totalHealthPaise)}
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {allPolicies.filter((p) => p.policy_type === "HEALTH").length} Health Policies Active
@@ -104,7 +104,7 @@ export const InsurancePage: React.FC = () => {
                 Total Term Life Cover
               </span>
               <div className="text-xl sm:text-2xl font-extrabold text-foreground mt-0.5">
-                {formatMoneyPaise(totalLifePaise)}
+                {formatPaise(totalLifePaise)}
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {allPolicies.filter((p) => p.policy_type === "TERM_LIFE").length} Term Life Policies
@@ -205,8 +205,15 @@ export const InsurancePage: React.FC = () => {
           icon={<ShieldCheck className="h-10 w-10 text-emerald-500" />}
           title={filter === "ALL" ? "No Insurance Policies Registered Yet" : "No Policies in this Category"}
           description="In an emergency, your parents need immediate access to your health insurance TPA card, policy number, and cashless claim helpline."
-          actionLabel="Register First Policy"
-          onAction={() => setAddDialogOpen(true)}
+          action={
+            <Button
+              onClick={() => setAddDialogOpen(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              Register First Policy
+            </Button>
+          }
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

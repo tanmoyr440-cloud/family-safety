@@ -1,23 +1,19 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
-  AlertCircle,
-  Building2,
   Calendar,
   CreditCard,
   Edit2,
   FileCheck2,
   HeartPulse,
-  MoreVertical,
   PhoneCall,
   ShieldCheck,
   Trash2,
-  UserCheck,
 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/shared/ui/Card";
 import { Button } from "@/shared/ui/Button";
 import { ConfirmDialog } from "@/shared/ui/ConfirmDialog";
-import { formatMoneyPaise } from "@/shared/lib/money";
+import { formatPaise } from "@/shared/lib/money";
 import { TpaDigitalCard } from "./TpaDigitalCard";
 import { CashlessClaimPlaybookModal } from "./CashlessClaimPlaybookModal";
 import { EditInsurancePolicyDialog } from "./EditInsurancePolicyDialog";
@@ -98,7 +94,7 @@ export const InsurancePolicyCard: React.FC<InsurancePolicyCardProps> = ({ policy
               Sum Insured
             </span>
             <span className="text-base sm:text-lg font-extrabold text-foreground">
-              {formatMoneyPaise(policy.sum_insured_paise)}
+              {formatPaise(policy.sum_insured_paise)}
             </span>
           </div>
         </CardHeader>
@@ -255,7 +251,7 @@ export const InsurancePolicyCard: React.FC<InsurancePolicyCardProps> = ({ policy
         title="Remove Insurance Policy?"
         description={`Are you sure you want to remove ${policy.policy_name}? This will remove it from your emergency packet and parent claim portal.`}
         confirmLabel={isDeleting ? "Removing..." : "Remove Policy"}
-        destructive
+        variant="destructive"
         onConfirm={() => {
           deletePolicy(policy.id, {
             onSuccess: () => setDeleteConfirmOpen(false),

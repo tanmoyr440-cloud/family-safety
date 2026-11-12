@@ -433,6 +433,21 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
                     : "In unforeseen circumstances, obtain the official Municipal Death Certificate and contact the insurer's 24x7 claims helpline. The benefit is transferred directly via NEFT into the nominee's bank account."}
                 </p>
               </div>
+
+              {insurancePolicies && insurancePolicies.length > 0 && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-xs">
+                  <span className="font-bold text-emerald-950 block mb-1">
+                    {isBengali ? "আপনার সন্তানের সংরক্ষিত পলিসিসমূহ:" : "Active Family Policies Recorded:"}
+                  </span>
+                  <div className="flex flex-wrap gap-2 text-[11px]">
+                    {insurancePolicies.map((p, idx) => (
+                      <span key={idx} className="bg-white border border-emerald-200 px-2 py-0.5 rounded text-slate-800 shadow-2xs">
+                        <strong>{p.policy_name}</strong> — {p.insurer_name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

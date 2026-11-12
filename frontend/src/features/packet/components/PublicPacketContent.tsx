@@ -4,7 +4,7 @@ import { ParentSimpleGuideCard } from "./ParentSimpleGuideCard";
 import { downloadPublicPacketDocument } from "../api/downloadDocument";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/Card";
 import { MoneyText } from "@/shared/ui/MoneyText";
-import { formatMoneyPaise } from "@/shared/lib/money";
+import { formatPaise } from "@/shared/lib/money";
 import { Button } from "@/shared/ui/Button";
 import {
   Building2,
@@ -17,7 +17,6 @@ import {
   PhoneCall,
   Printer,
   ShieldAlert,
-  ShieldCheck,
 } from "lucide-react";
 
 export interface PublicPacketContentProps {
@@ -199,7 +198,7 @@ export const PublicPacketContent: React.FC<PublicPacketContentProps> = ({
                             Cover
                           </span>
                           <span className="font-bold text-emerald-700 text-sm sm:text-base">
-                            {formatMoneyPaise(p.sum_insured_paise)}
+                            {formatPaise(p.sum_insured_paise)}
                           </span>
                         </div>
                       )}

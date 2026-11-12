@@ -17,7 +17,6 @@ import {
   MessageSquare,
   Paperclip,
   ShieldAlert,
-  ShieldCheck,
   Smartphone,
   User,
 } from "lucide-react";
