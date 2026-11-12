@@ -21,6 +21,7 @@ from app.interfaces.api.routers import (
     contacts_router,
     documents_router,
     health_router,
+    insurance_router,
     loans_router,
     monitor_router,
     mutual_funds_router,
@@ -393,6 +394,7 @@ app.include_router(contacts_router, prefix=settings.api_v1_prefix)
 app.include_router(loans_router, prefix=settings.api_v1_prefix)
 app.include_router(accounts_router, prefix=settings.api_v1_prefix)
 app.include_router(bank_accounts_router, prefix=settings.api_v1_prefix)
+app.include_router(insurance_router, prefix=settings.api_v1_prefix)
 app.include_router(mutual_funds_router, prefix=settings.api_v1_prefix)
 app.include_router(documents_router, prefix=settings.api_v1_prefix)
 app.include_router(packet_router, prefix=settings.api_v1_prefix)

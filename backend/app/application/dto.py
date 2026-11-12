@@ -51,4 +51,5 @@ class EmergencyPacketDTO:
     document_manifest: list[dict[str, Any]]
     assembled_at: datetime
     bank_accounts: list[dict[str, Any]] = field(default_factory=list)
+    insurance_policies: list[dict[str, Any]] = field(default_factory=list)
     version: str = "1.0"

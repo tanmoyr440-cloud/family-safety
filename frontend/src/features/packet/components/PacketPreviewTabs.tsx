@@ -12,10 +12,12 @@ import {
   Building2,
   Eye,
   FileText,
+  HeartPulse,
   Mail,
   MessageSquare,
   Paperclip,
   ShieldAlert,
+  ShieldCheck,
   Smartphone,
   User,
 } from "lucide-react";
@@ -569,6 +571,43 @@ export const PacketPreviewTabs: React.FC<PacketPreviewTabsProps> = ({ initialCon
                     ) : (
                       <p className="text-xs text-muted-foreground italic">
                         No bank accounts recorded.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Health & Life Insurance Policies */}
+                  <div className="space-y-2.5">
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <HeartPulse className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
+                      Health & Life Insurance Policies
+                    </h4>
+                    {preview?.insurance_policies && preview.insurance_policies.length > 0 ? (
+                      preview.insurance_policies.map((p) => (
+                        <div
+                          key={p.id}
+                          className="p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-50/30 space-y-1.5 text-xs"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-slate-900">{p.policy_name}</span>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              {p.policy_type}
+                            </span>
+                          </div>
+                          <p className="text-slate-600 text-[11px]">
+                            Insurer: <strong className="text-slate-800">{p.insurer_name}</strong> • Policy:{" "}
+                            <span className="font-mono font-medium">{p.policy_number_masked}</span>
+                            {p.tpa_id_number ? ` • TPA ID: ${p.tpa_id_number}` : ""}
+                          </p>
+                          {p.emergency_helpline && (
+                            <p className="text-emerald-800 text-[11px] font-medium">
+                              24x7 Emergency Helpline: {p.emergency_helpline}
+                            </p>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">
+                        No insurance policies recorded.
                       </p>
                     )}
                   </div>

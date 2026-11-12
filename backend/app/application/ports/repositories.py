@@ -7,6 +7,7 @@ from app.application.dto import OutboxMessage
 from app.domain.entities.bank_account import BankAccount
 from app.domain.entities.contact import TrustedContact
 from app.domain.entities.inactivity_monitor import InactivityMonitor
+from app.domain.entities.insurance_policy import InsurancePolicy
 from app.domain.entities.loan import Installment, Loan
 from app.domain.entities.mutual_fund_holding import MutualFundHolding
 from app.domain.entities.owner import Owner
@@ -146,4 +147,25 @@ class BankAccountRepository(Protocol):
     async def delete(self, account_id: str) -> None:
         """Delete bank account by ID."""
         ...
+
+
+class InsurancePolicyRepository(Protocol):
+    """Protocol for InsurancePolicy persistence."""
+
+    async def get_policies_for_owner(self, owner_id: str) -> list[InsurancePolicy]:
+        """Fetch all registered insurance policies for owner."""
+        ...
+
+    async def get_by_id(self, policy_id: str) -> InsurancePolicy | None:
+        """Fetch insurance policy by ID."""
+        ...
+
+    async def save(self, policy: InsurancePolicy) -> None:
+        """Persist or update insurance policy."""
+        ...
+
+    async def delete(self, policy_id: str) -> None:
+        """Delete insurance policy by ID."""
+        ...
+
 

@@ -10,6 +10,7 @@ from app.application.ports.repositories import (
     ContactRepository,
     InactivityMonitorRepository,
     InstallmentRepository,
+    InsurancePolicyRepository,
     LoanRepository,
     MutualFundHoldingRepository,
     OutboxRepository,
@@ -18,6 +19,7 @@ from app.application.ports.repositories import (
 from app.domain.entities.bank_account import BankAccount
 from app.domain.entities.contact import TrustedContact
 from app.domain.entities.inactivity_monitor import InactivityMonitor
+from app.domain.entities.insurance_policy import InsurancePolicy
 from app.domain.entities.loan import Installment, Loan
 from app.domain.entities.mutual_fund_holding import MutualFundHolding
 from app.domain.entities.owner import Owner
@@ -173,6 +175,25 @@ class InMemoryBankAccountRepository(BankAccountRepository):
         self.accounts.pop(account_id, None)
 
 
+class InMemoryInsurancePolicyRepository(InsurancePolicyRepository):
+    """In-memory storage for insurance policies."""
+
+    def __init__(self) -> None:
+        self.policies: dict[str, InsurancePolicy] = {}
+
+    async def get_policies_for_owner(self, owner_id: str) -> list[InsurancePolicy]:
+        return [p for p in self.policies.values() if p.owner_id == owner_id]
+
+    async def get_by_id(self, policy_id: str) -> InsurancePolicy | None:
+        return self.policies.get(policy_id)
+
+    async def save(self, policy: InsurancePolicy) -> None:
+        self.policies[policy.id] = policy
+
+    async def delete(self, policy_id: str) -> None:
+        self.policies.pop(policy_id, None)
+
+
 class InMemoryUnitOfWork:
     """In-memory Unit of Work implementation for unit and simulation tests."""
 
@@ -184,6 +205,7 @@ class InMemoryUnitOfWork:
         self.installments = InMemoryInstallmentRepository()
         self.mutual_funds = InMemoryMutualFundHoldingRepository()
         self.bank_accounts = InMemoryBankAccountRepository()
+        self.insurance_policies = InMemoryInsurancePolicyRepository()
         self.outbox = InMemoryOutboxRepository()
         self.committed = False
 

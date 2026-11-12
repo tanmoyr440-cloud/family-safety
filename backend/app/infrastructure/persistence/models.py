@@ -74,6 +74,9 @@ class OwnerModel(Base):
     bank_accounts: Mapped[list["BankAccountModel"]] = relationship(
         "BankAccountModel", back_populates="owner", cascade="all, delete-orphan"
     )
+    insurance_policies: Mapped[list["InsurancePolicyModel"]] = relationship(
+        "InsurancePolicyModel", back_populates="owner", cascade="all, delete-orphan"
+    )
     nominee_guidance: Mapped["NomineeGuidanceModel | None"] = relationship(
         "NomineeGuidanceModel",
         back_populates="owner",
@@ -374,3 +377,33 @@ class NomineeGuidanceModel(Base):
     updated_at: Mapped[datetime] = mapped_column(AwareDateTime(timezone=True), nullable=False)
 
     owner: Mapped[OwnerModel] = relationship("OwnerModel", back_populates="nominee_guidance")
+
+
+class InsurancePolicyModel(Base):
+    """Owner's registered insurance policy persistence model."""
+
+    __tablename__ = "insurance_policies"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    owner_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("owners.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    policy_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    policy_type: Mapped[str] = mapped_column(String(32), default="HEALTH", nullable=False)
+    policy_number: Mapped[str] = mapped_column(String(128), nullable=False)
+    policy_number_masked: Mapped[str] = mapped_column(String(64), nullable=False)
+    insurer_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    sum_insured_paise: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    premium_amount_paise: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    premium_due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    cashless_tpa_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    tpa_id_number: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    emergency_helpline: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    claim_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    nominee_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    nominee_relation: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    hospital_cashless_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(AwareDateTime(timezone=True), nullable=False)
+
+    owner: Mapped[OwnerModel] = relationship("OwnerModel", back_populates="insurance_policies")
+

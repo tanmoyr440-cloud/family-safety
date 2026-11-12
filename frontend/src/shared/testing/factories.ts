@@ -126,6 +126,7 @@ export function makeNotificationItem(
 }
 
 export type BankAccountResponse = components["schemas"]["BankAccountResponse"];
+export type InsurancePolicyResponse = components["schemas"]["InsurancePolicyResponse"];
 
 export function makeBankAccount(overrides?: Partial<BankAccountResponse>): BankAccountResponse {
   return {
@@ -136,6 +137,32 @@ export function makeBankAccount(overrides?: Partial<BankAccountResponse>): BankA
     branch_name: "Koramangala Branch",
     account_type: "SAVINGS",
     holder_name: "Tanmoy Sharma",
+    created_at: "2026-10-10T10:00:00Z",
+    ...overrides,
+  };
+}
+
+export function makeInsurancePolicy(
+  overrides?: Partial<InsurancePolicyResponse>,
+): InsurancePolicyResponse {
+  return {
+    id: "ins_mock_001",
+    policy_name: "Optima Secure",
+    policy_type: "HEALTH",
+    policy_number: "28252001234567",
+    policy_number_masked: "XXXX4567",
+    has_unmasked_policy: true,
+    insurer_name: "HDFC ERGO General Insurance",
+    sum_insured_paise: 100_000_000,
+    premium_amount_paise: 1_850_000,
+    premium_due_date: "2026-12-15",
+    cashless_tpa_name: "Medi Assist TPA",
+    tpa_id_number: "MED12345678",
+    emergency_helpline: "1800 2666 400",
+    claim_email: "claims@hdfcergo.com",
+    nominee_name: "Father",
+    nominee_relation: "Father",
+    hospital_cashless_notes: "Show Medi Assist card within 24h at admission desk.",
     created_at: "2026-10-10T10:00:00Z",
     ...overrides,
   };
@@ -153,6 +180,7 @@ export function makePacketPreview(
     },
     loans: [makeLoan()],
     bank_accounts: [makeBankAccount()],
+    insurance_policies: [makeInsurancePolicy()],
     documents: [makeDocument()],
     instructions: "Please contact the family lawyer and verify bank auto-debits.",
     ...overrides,

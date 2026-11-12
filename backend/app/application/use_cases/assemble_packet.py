@@ -33,6 +33,7 @@ class AssemblePacket:
 
             loans = await self._uow.loans.get_loans_for_owner(owner_id)
             bank_accounts = await self._uow.bank_accounts.get_accounts_for_owner(owner_id)
+            insurance_policies = await self._uow.insurance_policies.get_policies_for_owner(owner_id)
 
             loan_data: list[dict[str, Any]] = [
                 {
@@ -58,6 +59,26 @@ class AssemblePacket:
                 for b in bank_accounts
             ]
 
+            insurance_data: list[dict[str, Any]] = [
+                {
+                    "id": p.id,
+                    "policy_name": p.policy_name,
+                    "policy_type": p.policy_type,
+                    "policy_number_masked": p.policy_number_masked,
+                    "insurer_name": p.insurer_name,
+                    "sum_insured_paise": p.sum_insured_paise,
+                    "premium_due_date": str(p.premium_due_date) if p.premium_due_date else None,
+                    "cashless_tpa_name": p.cashless_tpa_name,
+                    "tpa_id_number": p.tpa_id_number,
+                    "emergency_helpline": p.emergency_helpline,
+                    "claim_email": p.claim_email,
+                    "nominee_name": p.nominee_name,
+                    "nominee_relation": p.nominee_relation,
+                    "hospital_cashless_notes": p.hospital_cashless_notes,
+                }
+                for p in insurance_policies
+            ]
+
         doc_data: list[dict[str, Any]] = []
         if self._document_store is not None:
             docs = await self._document_store.list_for_owner(owner_id)
@@ -79,5 +100,6 @@ class AssemblePacket:
             document_manifest=doc_data,
             assembled_at=now,
             bank_accounts=bank_account_data,
+            insurance_policies=insurance_data,
             version="1.0",
         )

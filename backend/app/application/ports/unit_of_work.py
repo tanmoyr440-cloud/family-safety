@@ -8,6 +8,7 @@ from app.application.ports.repositories import (
     ContactRepository,
     InactivityMonitorRepository,
     InstallmentRepository,
+    InsurancePolicyRepository,
     LoanRepository,
     MutualFundHoldingRepository,
     OutboxRepository,
@@ -51,6 +52,11 @@ class UnitOfWork(Protocol):
     @property
     def bank_accounts(self) -> BankAccountRepository:
         """Bank account repository."""
+        ...
+
+    @property
+    def insurance_policies(self) -> InsurancePolicyRepository:
+        """Insurance policy repository."""
         ...
 
     @property

@@ -8,6 +8,7 @@ import {
   makeContact,
   makeDocument,
   makeInstallment,
+  makeInsurancePolicy,
   makeLoan,
   makeMonitorStatus,
   makeNotificationItem,
@@ -589,6 +590,72 @@ export const handlers = [
     return HttpResponse.json({
       success: true,
       message: "Bank account deleted successfully.",
+    });
+  }),
+
+  // Insurance Policies
+  http.get(new RegExp("/api/v1/insurance$"), () => {
+    return HttpResponse.json([makeInsurancePolicy()]);
+  }),
+
+  http.post(new RegExp("/api/v1/insurance$"), async ({ request }) => {
+    const body = (await request.json().catch(() => ({}))) as any;
+    return HttpResponse.json(
+      makeInsurancePolicy({
+        id: "ins_mock_new_123",
+        policy_name: body.policy_name || "Optima Secure",
+        policy_type: body.policy_type || "HEALTH",
+        policy_number: body.policy_number || "28252001234567",
+        policy_number_masked: `XXXX${(body.policy_number || "4567").slice(-4)}`,
+        insurer_name: body.insurer_name || "HDFC ERGO General Insurance",
+        sum_insured_paise: body.sum_insured_paise || 100_000_000,
+        cashless_tpa_name: body.cashless_tpa_name || "Medi Assist TPA",
+        emergency_helpline: body.emergency_helpline || "1800 2666 400",
+      }),
+      { status: 201 },
+    );
+  }),
+
+  http.patch(new RegExp("/api/v1/insurance/(?<id>[^/]+)$"), async ({ request, params }) => {
+    const body = (await request.json().catch(() => ({}))) as any;
+    return HttpResponse.json(
+      makeInsurancePolicy({
+        id: String(params.id),
+        ...body,
+      }),
+    );
+  }),
+
+  http.delete(new RegExp("/api/v1/insurance/(?<id>[^/]+)$"), () => {
+    return HttpResponse.json({
+      success: true,
+      message: "Insurance policy deleted successfully.",
+    });
+  }),
+
+  http.get(new RegExp("/api/v1/insurance/playbook/(?<policy_type>[^/]+)$"), () => {
+    return HttpResponse.json({
+      title: "Hospital Cashless Treatment SOP",
+      summary: "Step-by-step guidance for cashless hospitalization in network hospitals.",
+      timeline_rule: "Inform within 24 hours of emergency admission, or 48 hours prior to planned surgery.",
+      steps: [
+        {
+          step_number: 1,
+          title: "Locate Network Hospital & TPA Desk",
+          instruction: "Go to the hospital TPA desk with TPA Card or Policy Number and Photo ID.",
+          important: true,
+        },
+        {
+          step_number: 2,
+          title: "Pre-Authorization Form Submission",
+          instruction: "Hospital fills physician diagnosis and submits pre-auth to TPA.",
+          important: false,
+        },
+      ],
+      documents_checklist: [
+        "TPA Health Card or Policy Document",
+        "Patient & Proposer Aadhaar / PAN Card",
+      ],
     });
   }),
 

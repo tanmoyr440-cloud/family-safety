@@ -10,6 +10,11 @@ from app.domain.entities.inactivity_monitor import (
     InactivityMonitor,
     InactivityStage,
 )
+from app.domain.entities.insurance_policy import (
+    InsurancePolicy,
+    PolicyType,
+    mask_policy_number,
+)
 from app.domain.entities.loan import (
     Installment,
     InstallmentStatus,
@@ -25,12 +30,15 @@ __all__ = [
     "InactivityStage",
     "Installment",
     "InstallmentStatus",
+    "InsurancePolicy",
     "Loan",
     "MutualFundHolding",
     "Owner",
+    "PolicyType",
     "TrustedContact",
     "is_valid_ifsc",
     "mask_bank_account_number",
+    "mask_policy_number",
     "normalize_ifsc",
 ]
 

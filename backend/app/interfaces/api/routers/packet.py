@@ -22,6 +22,7 @@ from app.domain.policies.escalation_policy import ChannelKind
 from app.infrastructure.persistence.models import (
     ContactModel,
     DocumentModel,
+    InsurancePolicyModel,
     NomineeGuidanceModel,
     OwnerModel,
     PacketShareModel,
@@ -44,6 +45,7 @@ from app.interfaces.api.schemas import (
     BankAccountResponse,
     CreatePacketShareRequest,
     DocumentResponse,
+    InsurancePolicyResponse,
     LoanResponse,
     NextDueSchema,
     NomineeGuidanceResponse,
@@ -182,6 +184,7 @@ async def preview_packet(
         monitor = await uow.monitors.get_for_owner(current_owner.id)
         mf_holdings = await uow.mutual_funds.get_holdings_for_owner(current_owner.id)
         bank_accounts = await uow.bank_accounts.get_accounts_for_owner(current_owner.id)
+        insurance_policies = await uow.insurance_policies.get_policies_for_owner(current_owner.id)
 
     days_idle = (
         (clock.now() - monitor.last_activity_at).days if monitor and monitor.last_activity_at else 0
@@ -264,6 +267,34 @@ async def preview_packet(
         for b in bank_accounts
     ]
 
+    insurance_dtos: list[InsurancePolicyResponse] = [
+        InsurancePolicyResponse(
+            id=p.id,
+            policy_name=p.policy_name,
+            policy_type=p.policy_type,
+            policy_number=p.policy_number,
+            policy_number_masked=p.policy_number_masked,
+            has_unmasked_policy=bool(
+                p.policy_number
+                and not p.policy_number.startswith("XXXX")
+                and not p.policy_number.startswith("****")
+            ),
+            insurer_name=p.insurer_name,
+            sum_insured_paise=p.sum_insured_paise,
+            premium_amount_paise=p.premium_amount_paise,
+            premium_due_date=p.premium_due_date,
+            cashless_tpa_name=p.cashless_tpa_name,
+            tpa_id_number=p.tpa_id_number,
+            emergency_helpline=p.emergency_helpline,
+            claim_email=p.claim_email,
+            nominee_name=p.nominee_name,
+            nominee_relation=p.nominee_relation,
+            hospital_cashless_notes=p.hospital_cashless_notes,
+            created_at=p.created_at,
+        )
+        for p in insurance_policies
+    ]
+
     doc_dtos: list[DocumentResponse] = [
         DocumentResponse(
             id=d.id,
@@ -342,6 +373,7 @@ async def preview_packet(
         },
         loans=loan_dtos,
         bank_accounts=bank_account_dtos,
+        insurance_policies=insurance_dtos,
         documents=doc_dtos,
         instructions=instructions,
         nominee=nominee_dto,
@@ -536,6 +568,7 @@ async def get_public_packet_session(
         monitor = await uow.monitors.get_for_owner(share.owner_id)
         mf_holdings = await uow.mutual_funds.get_holdings_for_owner(share.owner_id)
         bank_accounts = await uow.bank_accounts.get_accounts_for_owner(share.owner_id)
+        insurance_policies = await uow.insurance_policies.get_policies_for_owner(share.owner_id)
 
     last_act = (
         monitor.last_activity_at.replace(tzinfo=UTC)
@@ -598,6 +631,34 @@ async def get_public_packet_session(
             created_at=b.created_at,
         )
         for b in bank_accounts
+    ]
+
+    insurance_dtos: list[InsurancePolicyResponse] = [
+        InsurancePolicyResponse(
+            id=p.id,
+            policy_name=p.policy_name,
+            policy_type=p.policy_type,
+            policy_number=p.policy_number,
+            policy_number_masked=p.policy_number_masked,
+            has_unmasked_policy=bool(
+                p.policy_number
+                and not p.policy_number.startswith("XXXX")
+                and not p.policy_number.startswith("****")
+            ),
+            insurer_name=p.insurer_name,
+            sum_insured_paise=p.sum_insured_paise,
+            premium_amount_paise=p.premium_amount_paise,
+            premium_due_date=p.premium_due_date,
+            cashless_tpa_name=p.cashless_tpa_name,
+            tpa_id_number=p.tpa_id_number,
+            emergency_helpline=p.emergency_helpline,
+            claim_email=p.claim_email,
+            nominee_name=p.nominee_name,
+            nominee_relation=p.nominee_relation,
+            hospital_cashless_notes=p.hospital_cashless_notes,
+            created_at=p.created_at,
+        )
+        for p in insurance_policies
     ]
 
     doc_dtos: list[DocumentResponse] = [
@@ -678,6 +739,7 @@ async def get_public_packet_session(
         },
         loans=loan_dtos,
         bank_accounts=bank_account_dtos,
+        insurance_policies=insurance_dtos,
         documents=doc_dtos,
         instructions=instructions,
         nominee=nominee_dto,

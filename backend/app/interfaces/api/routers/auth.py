@@ -451,6 +451,8 @@ async def export_me(
         contacts = await uow.contacts.get_contacts_for_owner(current_owner.id)
         monitor = await uow.monitors.get_for_owner(current_owner.id)
         loans = await uow.loans.get_loans_for_owner(current_owner.id)
+        bank_accounts = await uow.bank_accounts.get_accounts_for_owner(current_owner.id)
+        insurance_policies = await uow.insurance_policies.get_policies_for_owner(current_owner.id)
 
     monitor_dict: dict[str, Any] | None = None
     if monitor:
@@ -500,6 +502,29 @@ async def export_me(
         monitor=monitor_dict,
         contacts=contacts_data,
         loans=loans_data,
+        bank_accounts=[
+            {
+                "id": b.id,
+                "bank_name": b.bank_name,
+                "account_number_masked": b.account_number_masked,
+                "ifsc_code": b.ifsc_code,
+                "account_type": b.account_type,
+            }
+            for b in bank_accounts
+        ],
+        insurance_policies=[
+            {
+                "id": p.id,
+                "policy_name": p.policy_name,
+                "policy_type": p.policy_type,
+                "policy_number_masked": p.policy_number_masked,
+                "insurer_name": p.insurer_name,
+                "sum_insured_paise": p.sum_insured_paise,
+                "cashless_tpa_name": p.cashless_tpa_name,
+                "emergency_helpline": p.emergency_helpline,
+            }
+            for p in insurance_policies
+        ],
         documents=[],
         exported_at=datetime.now(UTC),
     )

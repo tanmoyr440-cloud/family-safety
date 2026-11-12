@@ -12,6 +12,7 @@ import {
   Menu,
   RefreshCw,
   Settings,
+  ShieldCheck,
   Users,
   X,
 } from "lucide-react";
@@ -30,6 +31,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", to: "/", icon: <Home className="h-4 w-4" /> },
   { label: "Accounts", to: "/accounts", icon: <Landmark className="h-4 w-4" /> },
+  { label: "Insurance", to: "/insurance", icon: <ShieldCheck className="h-4 w-4" /> },
   { label: "Loans & EMI", to: "/loans", icon: <IndianRupee className="h-4 w-4" /> },
   { label: "Contacts", to: "/contacts", icon: <Users className="h-4 w-4" /> },
   { label: "Documents", to: "/documents", icon: <FileText className="h-4 w-4" /> },

@@ -4,16 +4,20 @@ import { ParentSimpleGuideCard } from "./ParentSimpleGuideCard";
 import { downloadPublicPacketDocument } from "../api/downloadDocument";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/Card";
 import { MoneyText } from "@/shared/ui/MoneyText";
+import { formatMoneyPaise } from "@/shared/lib/money";
 import { Button } from "@/shared/ui/Button";
 import {
   Building2,
   CreditCard,
   Download,
   FileText,
+  HeartPulse,
   Info,
   Phone,
+  PhoneCall,
   Printer,
   ShieldAlert,
+  ShieldCheck,
 } from "lucide-react";
 
 export interface PublicPacketContentProps {
@@ -139,7 +143,116 @@ export const PublicPacketContent: React.FC<PublicPacketContentProps> = ({
       </Card>
 
       {/* PARENT SIMPLE STEP-BY-STEP GUIDE */}
-      <ParentSimpleGuideCard ownerName={ownerName} loans={packet.loans} />
+      <ParentSimpleGuideCard
+        ownerName={ownerName}
+        loans={packet.loans}
+        insurancePolicies={packet.insurance_policies}
+      />
+
+      {/* SECTION: HEALTH & LIFE INSURANCE (CASHLESS CARDS) */}
+      {packet.insurance_policies && packet.insurance_policies.length > 0 && (
+        <Card className="page-break-avoid border-emerald-500/30 shadow-xs bg-gradient-to-br from-emerald-50/20 via-background to-background">
+          <CardHeader className="pb-3 border-b border-emerald-100 flex flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <HeartPulse className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900">
+                  Health & Life Insurance Policies
+                </CardTitle>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Emergency cashless cards and 24x7 claim hotlines for hospital admission
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              Immediate Emergency Utility
+            </span>
+          </CardHeader>
+
+          <CardContent className="p-5 sm:p-6 space-y-4 text-xs text-slate-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {packet.insurance_policies.map((p) => {
+                const isHealth = p.policy_type === "HEALTH";
+                return (
+                  <div
+                    key={p.id}
+                    className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <span
+                          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                            isHealth
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-blue-50 text-blue-700 border-blue-200"
+                          }`}
+                        >
+                          {p.policy_type === "HEALTH" ? "Health (Mediclaim)" : p.policy_type}
+                        </span>
+                        <h4 className="font-bold text-slate-900 text-sm mt-1">{p.policy_name}</h4>
+                        <p className="text-[11px] text-muted-foreground">{p.insurer_name}</p>
+                      </div>
+
+                      {p.sum_insured_paise > 0 && (
+                        <div className="text-right">
+                          <span className="text-[10px] text-muted-foreground block uppercase font-semibold">
+                            Cover
+                          </span>
+                          <span className="font-bold text-emerald-700 text-sm sm:text-base">
+                            {formatMoneyPaise(p.sum_insured_paise)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200/80 text-[11px]">
+                      <div>
+                        <span className="text-muted-foreground block">Policy Number:</span>
+                        <span className="font-mono font-bold text-slate-900">
+                          {p.policy_number || p.policy_number_masked}
+                        </span>
+                      </div>
+                      {p.tpa_id_number && (
+                        <div>
+                          <span className="text-muted-foreground block">TPA / Member ID:</span>
+                          <span className="font-mono font-bold text-emerald-600">
+                            {p.tpa_id_number}
+                          </span>
+                        </div>
+                      )}
+                      {p.cashless_tpa_name && (
+                        <div className="col-span-2">
+                          <span className="text-muted-foreground">TPA Desk: </span>
+                          <strong className="text-slate-800">{p.cashless_tpa_name}</strong>
+                        </div>
+                      )}
+                    </div>
+
+                    {p.hospital_cashless_notes && (
+                      <p className="text-[11px] text-emerald-900 bg-emerald-50 p-2 rounded border border-emerald-200/70">
+                        <strong>Hospital Tip:</strong> {p.hospital_cashless_notes}
+                      </p>
+                    )}
+
+                    {p.emergency_helpline && (
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[11px] text-muted-foreground">24x7 Helpline:</span>
+                        <a
+                          href={`tel:${p.emergency_helpline.replace(/\s+/g, "")}`}
+                          className="inline-flex items-center gap-1.5 font-bold text-emerald-700 hover:underline bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200"
+                        >
+                          <PhoneCall className="h-3 w-3" />
+                          {p.emergency_helpline}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* SECTION 2: INVESTMENT ACCOUNTS (GROWW) */}
       <Card className="page-break-avoid border-slate-200 shadow-xs">

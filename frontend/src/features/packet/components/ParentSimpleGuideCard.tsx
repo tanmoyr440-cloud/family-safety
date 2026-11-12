@@ -6,6 +6,7 @@ import {
   Car,
   CheckCircle2,
   HelpCircle,
+  HeartPulse,
   Landmark,
   Languages,
   ShieldCheck,
@@ -25,14 +26,25 @@ export interface ParentSimpleGuideCardProps {
       portal_url?: string | null;
     } | null;
   }>;
+  insurancePolicies?: Array<{
+    policy_name?: string;
+    policy_type?: string;
+    insurer_name?: string;
+    policy_number_masked?: string;
+    cashless_tpa_name?: string | null;
+    tpa_id_number?: string | null;
+    emergency_helpline?: string | null;
+    hospital_cashless_notes?: string | null;
+  }>;
 }
 
 type Language = "en" | "bn";
-type ActiveTab = "mf" | "loan" | "bank" | "rules";
+type ActiveTab = "mf" | "insurance" | "loan" | "bank" | "rules";
 
 export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
   ownerName,
   loans = [],
+  insurancePolicies = [],
 }) => {
   const [lang, setLang] = React.useState<Language>("bn");
   const [tab, setTab] = React.useState<ActiveTab>("mf");
@@ -112,7 +124,7 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
         <div
           role="tablist"
           aria-label="Parent Guidance Topics"
-          className="grid grid-cols-2 sm:grid-cols-4 gap-2"
+          className="grid grid-cols-2 sm:grid-cols-5 gap-2"
         >
           <button
             type="button"
@@ -131,6 +143,27 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
               <span className="block">{isBengali ? "মিউচুয়াল ফান্ড / শেয়ার" : "Mutual Funds & Stocks"}</span>
               <span className="text-[10px] font-normal text-muted-foreground block">
                 {isBengali ? "টাকা কীভাবে পাবেন" : "How to claim"}
+              </span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "insurance"}
+            onClick={() => setTab("insurance")}
+            className={cn(
+              "flex items-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-all text-left",
+              tab === "insurance"
+                ? "bg-white border-emerald-500 text-emerald-950 shadow-xs ring-1 ring-emerald-500/20"
+                : "bg-white/60 border-slate-200 text-slate-700 hover:bg-white hover:border-slate-300",
+            )}
+          >
+            <HeartPulse className="h-4 w-4 text-emerald-600 shrink-0" aria-hidden="true" />
+            <div className="leading-tight">
+              <span className="block">{isBengali ? "স্বাস্থ্য ও জীবন বীমা" : "Health & Life Insurance"}</span>
+              <span className="text-[10px] font-normal text-muted-foreground block">
+                {isBengali ? "ক্যাশলেস চিকিৎসা ও ক্লেম" : "Cashless & claims"}
               </span>
             </div>
           </button>
@@ -327,7 +360,84 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
           </div>
         )}
 
-        {/* Tab 2: Car Loan Guidance */}
+        {/* Tab 2: Health & Term Life Insurance Guidance */}
+        {tab === "insurance" && (
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-4 text-xs text-slate-700">
+            <div className="border-b border-slate-100 pb-3 space-y-0.5">
+              <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                <HeartPulse className="h-4 w-4 text-emerald-600" />
+                {isBengali
+                  ? "স্বাস্থ্য ও জীবন বীমা — ক্যাশলেস চিকিৎসা ও ক্লেমের সহজ নিয়ম"
+                  : "Health & Life Insurance — Cashless Hospitalization & Claim Guide"}
+              </h3>
+              <p className="text-muted-foreground text-[11px]">
+                {isBengali
+                  ? "হাসপাতালে ভর্তি হলে অগ্রিম টাকা ছাড়া চিকিৎসা পাওয়া এবং জীবন বীমার টাকা দাবির নির্দেশিকা:"
+                  : "Simple, step-by-step guidance for cashless hospital admission and insurance claims:"}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {/* Part A: Cashless Hospitalization */}
+              <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="h-5 w-5 rounded-full bg-emerald-600 text-white font-bold text-[11px] flex items-center justify-center shrink-0">
+                    1
+                  </span>
+                  <span className="font-bold text-emerald-950 text-xs">
+                    {isBengali ? "হাসপাতালে ক্যাশলেস চিকিৎসা (Cashless Hospitalization)" : "Step 1: Cashless Hospital Admission"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-emerald-900 pl-7 leading-relaxed">
+                  {isBengali
+                    ? "রোগীকে হাসপাতালে ভর্তি করার সাথে সাথে হাসপাতালের 'TPA / Insurance Desk'-এ যান। রোগীর আধার কার্ড এবং ডিজিটাল TPA কার্ড বা পলিসি নম্বর দেখান।"
+                    : "Immediately visit the hospital's TPA / Insurance Helpdesk upon admission. Present the Digital TPA Card or Policy number alongside Govt Photo ID."}
+                </p>
+                <div className="pl-7 pt-1">
+                  <span className="text-[10px] font-bold text-emerald-800 bg-white border border-emerald-300 px-2 py-0.5 rounded-md">
+                    {isBengali ? "জরুরি নিয়ম: ভর্তির ২৪ ঘণ্টার মধ্যে TPA ডেস্কে জানাতে হবে" : "Important: Inform desk within 24 hours of emergency admission"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Part B: Zero Deposit */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="h-5 w-5 rounded-full bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center shrink-0">
+                    2
+                  </span>
+                  <span className="font-bold text-slate-900 text-xs">
+                    {isBengali ? "হাসপাতাল অগ্রিম টাকা চাইতে পারে না (Zero Advance Deposit)" : "Step 2: No Advance Deposit for Approved Amount"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-700 pl-7 leading-relaxed">
+                  {isBengali
+                    ? "TPA অনুমোদন (Pre-authorization) দিলে নেটওয়ার্ক হাসপাতাল চিকিৎসা ব্যয়ের জন্য কোনো অগ্রিম টাকা চাইতে পারবে না। ছুটির সময় শুধুমাত্র ওষুধ বহির্ভূত চার্জ (যেমন গ্লাভস, ফাইল চার্জ) দিতে হবে।"
+                    : "Once initial TPA pre-authorization is approved, the network hospital cannot demand cash advance deposits for covered treatment. You only pay minor non-medical exclusions."}
+                </p>
+              </div>
+
+              {/* Part C: Term Life Claim */}
+              <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="h-5 w-5 rounded-full bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center shrink-0">
+                    3
+                  </span>
+                  <span className="font-bold text-blue-950 text-xs">
+                    {isBengali ? "জীবন বীমা ক্লেম (Term Life Claim)" : "Step 3: Term Life Insurance Claim"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-blue-900 pl-7 leading-relaxed">
+                  {isBengali
+                    ? "অপ্রত্যাশিত পরিস্থিতিতে পৌরসভা থেকে ডেথ সার্টিফিকেট নিয়ে বীমা কোম্পানির টোল-ফ্রি হেল্পলাইনে ফোন করুন বা ইমেইল পাঠান। মনোনীত ব্যক্তি (নমিনি)-র ব্যাংক অ্যাকাউন্টে সম্পূর্ণ অর্থ সরাসরি জমা হবে।"
+                    : "In unforeseen circumstances, obtain the official Municipal Death Certificate and contact the insurer's 24x7 claims helpline. The benefit is transferred directly via NEFT into the nominee's bank account."}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Car Loan Guidance */}
         {tab === "loan" && (
           <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-4 text-xs text-slate-700">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">

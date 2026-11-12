@@ -576,6 +576,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/insurance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listInsurancePolicies"];
+        put?: never;
+        post: operations["addInsurancePolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/insurance/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getInsurancePolicy"];
+        put?: never;
+        post?: never;
+        delete: operations["deleteInsurancePolicy"];
+        options?: never;
+        head?: never;
+        patch: operations["updateInsurancePolicy"];
+        trace?: never;
+    };
+    "/api/v1/insurance/playbook/{policy_type}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getInsuranceClaimPlaybook"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/mutual-funds/search": {
         parameters: {
             query?: never;
@@ -1092,6 +1140,71 @@ export interface components {
             /** Has Unmasked Account */
             has_unmasked_account?: boolean;
         };
+        InsurancePolicyResponse: {
+            id: string;
+            policy_name: string;
+            policy_type: string;
+            policy_number?: string | null;
+            policy_number_masked: string;
+            has_unmasked_policy?: boolean;
+            insurer_name: string;
+            sum_insured_paise: number;
+            premium_amount_paise?: number | null;
+            premium_due_date?: string | null;
+            cashless_tpa_name?: string | null;
+            tpa_id_number?: string | null;
+            emergency_helpline?: string | null;
+            claim_email?: string | null;
+            nominee_name?: string | null;
+            nominee_relation?: string | null;
+            hospital_cashless_notes?: string | null;
+            created_at?: string | null;
+        };
+        AddInsurancePolicyRequest: {
+            policy_name: string;
+            policy_type?: string;
+            policy_number: string;
+            insurer_name: string;
+            sum_insured_paise: number;
+            premium_amount_paise?: number | null;
+            premium_due_date?: string | null;
+            cashless_tpa_name?: string | null;
+            tpa_id_number?: string | null;
+            emergency_helpline?: string | null;
+            claim_email?: string | null;
+            nominee_name?: string | null;
+            nominee_relation?: string | null;
+            hospital_cashless_notes?: string | null;
+        };
+        UpdateInsurancePolicyRequest: {
+            policy_name?: string | null;
+            policy_type?: string | null;
+            policy_number?: string | null;
+            insurer_name?: string | null;
+            sum_insured_paise?: number | null;
+            premium_amount_paise?: number | null;
+            premium_due_date?: string | null;
+            cashless_tpa_name?: string | null;
+            tpa_id_number?: string | null;
+            emergency_helpline?: string | null;
+            claim_email?: string | null;
+            nominee_name?: string | null;
+            nominee_relation?: string | null;
+            hospital_cashless_notes?: string | null;
+        };
+        ClaimPlaybookStep: {
+            step_number: number;
+            title: string;
+            instruction: string;
+            important?: boolean;
+        };
+        ClaimPlaybookResponse: {
+            title: string;
+            summary: string;
+            timeline_rule: string;
+            steps: components["schemas"]["ClaimPlaybookStep"][];
+            documents_checklist: string[];
+        };
         /** Body_importCasStatement */
         Body_importCasStatement: {
             /**
@@ -1579,6 +1692,8 @@ export interface components {
             loans: components["schemas"]["LoanResponse"][];
             /** Bank Accounts */
             bank_accounts?: components["schemas"]["BankAccountResponse"][];
+            /** Insurance Policies */
+            insurance_policies?: components["schemas"]["InsurancePolicyResponse"][];
             /** Documents */
             documents: components["schemas"]["DocumentResponse"][];
             /** Instructions */
@@ -2834,6 +2949,187 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listInsurancePolicies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsurancePolicyResponse"][];
+                };
+            };
+        };
+    };
+    addInsurancePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddInsurancePolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsurancePolicyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getInsurancePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsurancePolicyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    updateInsurancePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateInsurancePolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsurancePolicyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deleteInsurancePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getInsuranceClaimPlaybook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                policy_type: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimPlaybookResponse"];
                 };
             };
             /** @description Validation Error */

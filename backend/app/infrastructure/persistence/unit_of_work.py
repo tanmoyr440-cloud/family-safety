@@ -10,6 +10,7 @@ from app.application.ports.repositories import (
     ContactRepository,
     InactivityMonitorRepository,
     InstallmentRepository,
+    InsurancePolicyRepository,
     LoanRepository,
     MutualFundHoldingRepository,
     OutboxRepository,
@@ -21,6 +22,7 @@ from app.infrastructure.persistence.repositories import (
     SqlAlchemyContactRepository,
     SqlAlchemyInactivityMonitorRepository,
     SqlAlchemyInstallmentRepository,
+    SqlAlchemyInsurancePolicyRepository,
     SqlAlchemyLoanRepository,
     SqlAlchemyMutualFundHoldingRepository,
     SqlAlchemyOutboxRepository,
@@ -45,6 +47,7 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
         self._installments: SqlAlchemyInstallmentRepository | None = None
         self._mutual_funds: SqlAlchemyMutualFundHoldingRepository | None = None
         self._bank_accounts: SqlAlchemyBankAccountRepository | None = None
+        self._insurance_policies: SqlAlchemyInsurancePolicyRepository | None = None
         self._outbox: SqlAlchemyOutboxRepository | None = None
 
     @property
@@ -83,6 +86,11 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
         return self._bank_accounts
 
     @property
+    def insurance_policies(self) -> InsurancePolicyRepository:
+        assert self._insurance_policies is not None, "UnitOfWork not initialized. Use 'async with uow:'"
+        return self._insurance_policies
+
+    @property
     def outbox(self) -> OutboxRepository:
         assert self._outbox is not None, "UnitOfWork not initialized. Use 'async with uow:'"
         return self._outbox
@@ -97,6 +105,7 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
             self._installments = SqlAlchemyInstallmentRepository(self._session)
             self._mutual_funds = SqlAlchemyMutualFundHoldingRepository(self._session)
             self._bank_accounts = SqlAlchemyBankAccountRepository(self._session)
+            self._insurance_policies = SqlAlchemyInsurancePolicyRepository(self._session)
             self._outbox = SqlAlchemyOutboxRepository(self._session)
         self._depth += 1
         return self

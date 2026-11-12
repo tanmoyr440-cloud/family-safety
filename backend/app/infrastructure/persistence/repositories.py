@@ -21,6 +21,7 @@ from app.application.ports.repositories import (
     ContactRepository,
     InactivityMonitorRepository,
     InstallmentRepository,
+    InsurancePolicyRepository,
     LoanRepository,
     MutualFundHoldingRepository,
     OutboxRepository,
@@ -33,6 +34,7 @@ from app.domain.entities.inactivity_monitor import (
     InactivityMonitor,
     InactivityStage,
 )
+from app.domain.entities.insurance_policy import InsurancePolicy
 from app.domain.entities.loan import Installment, InstallmentStatus, Loan
 from app.domain.entities.mutual_fund_holding import MutualFundHolding
 from app.domain.entities.owner import Owner
@@ -46,6 +48,7 @@ from app.infrastructure.persistence.models import (
     ContactModel,
     InactivityMonitorModel,
     InstallmentModel,
+    InsurancePolicyModel,
     LoanModel,
     MutualFundHoldingModel,
     OutboxModel,
@@ -611,4 +614,114 @@ class SqlAlchemyBankAccountRepository(BankAccountRepository):
     async def delete(self, account_id: str) -> None:
         stmt = delete(BankAccountModel).where(BankAccountModel.id == account_id)
         await self._session.execute(stmt)
+
+
+class SqlAlchemyInsurancePolicyRepository(InsurancePolicyRepository):
+    """SQLAlchemy implementation of InsurancePolicyRepository."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def get_policies_for_owner(self, owner_id: str) -> list[InsurancePolicy]:
+        stmt = (
+            select(InsurancePolicyModel)
+            .where(InsurancePolicyModel.owner_id == owner_id)
+            .order_by(InsurancePolicyModel.created_at.desc())
+        )
+        result = await self._session.execute(stmt)
+        models = result.scalars().all()
+        return [
+            InsurancePolicy(
+                id=m.id,
+                owner_id=m.owner_id,
+                policy_name=m.policy_name,
+                policy_type=m.policy_type,
+                policy_number=m.policy_number,
+                policy_number_masked=m.policy_number_masked,
+                insurer_name=m.insurer_name,
+                sum_insured_paise=m.sum_insured_paise,
+                premium_amount_paise=m.premium_amount_paise,
+                premium_due_date=m.premium_due_date,
+                cashless_tpa_name=m.cashless_tpa_name,
+                tpa_id_number=m.tpa_id_number,
+                emergency_helpline=m.emergency_helpline,
+                claim_email=m.claim_email,
+                nominee_name=m.nominee_name,
+                nominee_relation=m.nominee_relation,
+                hospital_cashless_notes=m.hospital_cashless_notes,
+                created_at=_ensure_utc(m.created_at),
+            )
+            for m in models
+        ]
+
+    async def get_by_id(self, policy_id: str) -> InsurancePolicy | None:
+        model = await self._session.get(InsurancePolicyModel, policy_id)
+        if model is None:
+            return None
+        return InsurancePolicy(
+            id=model.id,
+            owner_id=model.owner_id,
+            policy_name=model.policy_name,
+            policy_type=model.policy_type,
+            policy_number=model.policy_number,
+            policy_number_masked=model.policy_number_masked,
+            insurer_name=model.insurer_name,
+            sum_insured_paise=model.sum_insured_paise,
+            premium_amount_paise=model.premium_amount_paise,
+            premium_due_date=model.premium_due_date,
+            cashless_tpa_name=model.cashless_tpa_name,
+            tpa_id_number=model.tpa_id_number,
+            emergency_helpline=model.emergency_helpline,
+            claim_email=model.claim_email,
+            nominee_name=model.nominee_name,
+            nominee_relation=model.nominee_relation,
+            hospital_cashless_notes=model.hospital_cashless_notes,
+            created_at=_ensure_utc(model.created_at),
+        )
+
+    async def save(self, policy: InsurancePolicy) -> None:
+        model = await self._session.get(InsurancePolicyModel, policy.id)
+        if model is None:
+            model = InsurancePolicyModel(
+                id=policy.id,
+                owner_id=policy.owner_id,
+                policy_name=policy.policy_name,
+                policy_type=policy.policy_type,
+                policy_number=policy.policy_number,
+                policy_number_masked=policy.policy_number_masked,
+                insurer_name=policy.insurer_name,
+                sum_insured_paise=policy.sum_insured_paise,
+                premium_amount_paise=policy.premium_amount_paise,
+                premium_due_date=policy.premium_due_date,
+                cashless_tpa_name=policy.cashless_tpa_name,
+                tpa_id_number=policy.tpa_id_number,
+                emergency_helpline=policy.emergency_helpline,
+                claim_email=policy.claim_email,
+                nominee_name=policy.nominee_name,
+                nominee_relation=policy.nominee_relation,
+                hospital_cashless_notes=policy.hospital_cashless_notes,
+                created_at=_ensure_utc(policy.created_at) or datetime.now(UTC),
+            )
+            self._session.add(model)
+        else:
+            model.policy_name = policy.policy_name
+            model.policy_type = policy.policy_type
+            model.policy_number = policy.policy_number
+            model.policy_number_masked = policy.policy_number_masked
+            model.insurer_name = policy.insurer_name
+            model.sum_insured_paise = policy.sum_insured_paise
+            model.premium_amount_paise = policy.premium_amount_paise
+            model.premium_due_date = policy.premium_due_date
+            model.cashless_tpa_name = policy.cashless_tpa_name
+            model.tpa_id_number = policy.tpa_id_number
+            model.emergency_helpline = policy.emergency_helpline
+            model.claim_email = policy.claim_email
+            model.nominee_name = policy.nominee_name
+            model.nominee_relation = policy.nominee_relation
+            model.hospital_cashless_notes = policy.hospital_cashless_notes
+
+    async def delete(self, policy_id: str) -> None:
+        stmt = delete(InsurancePolicyModel).where(InsurancePolicyModel.id == policy_id)
+        await self._session.execute(stmt)
+
 

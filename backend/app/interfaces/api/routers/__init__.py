@@ -6,6 +6,7 @@ from app.interfaces.api.routers.bank_accounts import router as bank_accounts_rou
 from app.interfaces.api.routers.contacts import router as contacts_router
 from app.interfaces.api.routers.documents import router as documents_router
 from app.interfaces.api.routers.health import router as health_router
+from app.interfaces.api.routers.insurance import router as insurance_router
 from app.interfaces.api.routers.loans import router as loans_router
 from app.interfaces.api.routers.monitor import router as monitor_router
 from app.interfaces.api.routers.mutual_funds import router as mutual_funds_router
@@ -20,6 +21,7 @@ __all__ = [
     "contacts_router",
     "documents_router",
     "health_router",
+    "insurance_router",
     "loans_router",
     "monitor_router",
     "mutual_funds_router",

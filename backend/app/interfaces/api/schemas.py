@@ -68,6 +68,8 @@ class OwnerExportResponse(BaseModel):
     monitor: dict[str, Any] | None = None
     contacts: list[dict[str, Any]] = Field(default_factory=list)
     loans: list[dict[str, Any]] = Field(default_factory=list)
+    bank_accounts: list[dict[str, Any]] = Field(default_factory=list)
+    insurance_policies: list[dict[str, Any]] = Field(default_factory=list)
     documents: list[dict[str, Any]] = Field(default_factory=list)
     exported_at: datetime
 
@@ -285,12 +287,84 @@ class BankAccountResponse(BaseModel):
     created_at: datetime | None = None
 
 
+# --- Insurance Policies Schemas ---
+class AddInsurancePolicyRequest(BaseModel):
+    policy_name: str = Field(..., min_length=2, max_length=255, examples=["HDFC ERGO Optima Secure"])
+    policy_type: str = Field(default="HEALTH", examples=["HEALTH", "TERM_LIFE", "MOTOR", "CRITICAL_ILLNESS", "OTHER"])
+    policy_number: str = Field(..., min_length=2, max_length=128, examples=["28252001234567"])
+    insurer_name: str = Field(..., min_length=2, max_length=255, examples=["HDFC ERGO General Insurance"])
+    sum_insured_paise: int = Field(..., ge=0, examples=[100000000])  # e.g. 10 Lakhs = 1,00,00,000 paise = 10,00,000 INR
+    premium_amount_paise: int | None = Field(default=None, ge=0)
+    premium_due_date: date | None = None
+    cashless_tpa_name: str | None = Field(default=None, max_length=255, examples=["Medi Assist TPA"])
+    tpa_id_number: str | None = Field(default=None, max_length=128, examples=["MED12345678"])
+    emergency_helpline: str | None = Field(default=None, max_length=128, examples=["1800 2666 400"])
+    claim_email: str | None = Field(default=None, max_length=255, examples=["claims@hdfcergo.com"])
+    nominee_name: str | None = Field(default=None, max_length=255)
+    nominee_relation: str | None = Field(default=None, max_length=64)
+    hospital_cashless_notes: str | None = Field(default=None, max_length=2000)
+
+
+class UpdateInsurancePolicyRequest(BaseModel):
+    policy_name: str | None = Field(default=None, min_length=2, max_length=255)
+    policy_type: str | None = None
+    policy_number: str | None = Field(default=None, min_length=2, max_length=128)
+    insurer_name: str | None = Field(default=None, min_length=2, max_length=255)
+    sum_insured_paise: int | None = Field(default=None, ge=0)
+    premium_amount_paise: int | None = Field(default=None, ge=0)
+    premium_due_date: date | None = None
+    cashless_tpa_name: str | None = Field(default=None, max_length=255)
+    tpa_id_number: str | None = Field(default=None, max_length=128)
+    emergency_helpline: str | None = Field(default=None, max_length=128)
+    claim_email: str | None = Field(default=None, max_length=255)
+    nominee_name: str | None = Field(default=None, max_length=255)
+    nominee_relation: str | None = Field(default=None, max_length=64)
+    hospital_cashless_notes: str | None = Field(default=None, max_length=2000)
+
+
+class InsurancePolicyResponse(BaseModel):
+    id: str
+    policy_name: str
+    policy_type: str
+    policy_number: str | None = None
+    policy_number_masked: str
+    has_unmasked_policy: bool = False
+    insurer_name: str
+    sum_insured_paise: int
+    premium_amount_paise: int | None = None
+    premium_due_date: date | None = None
+    cashless_tpa_name: str | None = None
+    tpa_id_number: str | None = None
+    emergency_helpline: str | None = None
+    claim_email: str | None = None
+    nominee_name: str | None = None
+    nominee_relation: str | None = None
+    hospital_cashless_notes: str | None = None
+    created_at: datetime | None = None
+
+
+class ClaimPlaybookStep(BaseModel):
+    step_number: int
+    title: str
+    instruction: str
+    important: bool = False
+
+
+class ClaimPlaybookResponse(BaseModel):
+    title: str
+    summary: str
+    timeline_rule: str
+    steps: list[ClaimPlaybookStep]
+    documents_checklist: list[str]
+
+
 class PacketPreviewResponse(BaseModel):
     owner_name: str
     days_idle: int
     holdings_summary: dict[str, Any]
     loans: list[LoanResponse]
     bank_accounts: list[BankAccountResponse] = Field(default_factory=list)
+    insurance_policies: list[InsurancePolicyResponse] = Field(default_factory=list)
     documents: list[DocumentResponse]
     instructions: str
     nominee: NomineeGuidanceResponse | None = None

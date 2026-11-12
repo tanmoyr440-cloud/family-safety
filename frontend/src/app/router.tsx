@@ -51,6 +51,9 @@ const AccountsPage = lazyWithRetry(() =>
 const LoansPage = lazyWithRetry(() =>
   import("@/features/loans/pages/LoansPage").then((m) => ({ default: m.LoansPage })),
 );
+const InsurancePage = lazyWithRetry(() =>
+  import("@/features/insurance/pages/InsurancePage").then((m) => ({ default: m.InsurancePage })),
+);
 const ContactsPage = lazyWithRetry(() =>
   import("@/features/contacts/pages/ContactsPage").then((m) => ({ default: m.ContactsPage })),
 );
@@ -150,6 +153,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "accounts", element: withSuspense(<AccountsPage />) },
+      { path: "insurance", element: withSuspense(<InsurancePage />) },
       { path: "loans", element: withSuspense(<LoansPage />) },
       { path: "contacts", element: withSuspense(<ContactsPage />) },
       { path: "documents", element: withSuspense(<DocumentsPage />) },
