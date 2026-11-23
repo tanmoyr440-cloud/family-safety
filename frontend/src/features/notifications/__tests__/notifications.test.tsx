@@ -268,7 +268,7 @@ describe("Notifications & Preview Feature (Phase 7)", () => {
       contact_name: "Savitri Sharma",
       token: "tok_secret_share_abc",
       revoked: false,
-      expires_at: "2026-11-01T00:00:00Z",
+      expires_at: new Date(Date.now() + 86400000 * 30).toISOString(),
     });
 
     server.use(

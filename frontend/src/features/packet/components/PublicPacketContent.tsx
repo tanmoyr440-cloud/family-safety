@@ -188,7 +188,7 @@ export const PublicPacketContent: React.FC<PublicPacketContentProps> = ({
                         >
                           {p.policy_type === "HEALTH" ? "Health (Mediclaim)" : p.policy_type}
                         </span>
-                        <h4 className="font-bold text-slate-900 text-sm mt-1">{p.policy_name}</h4>
+                        <h3 className="font-bold text-slate-900 text-sm mt-1">{p.policy_name}</h3>
                         <p className="text-[11px] text-muted-foreground">{p.insurer_name}</p>
                       </div>
 

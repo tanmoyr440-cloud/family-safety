@@ -82,9 +82,9 @@ export const InsurancePolicyCard: React.FC<InsurancePolicyCardProps> = ({ policy
                   </span>
                 )}
               </div>
-              <h3 className="text-base font-bold text-foreground mt-1 leading-snug">
+              <h2 className="text-base font-bold text-foreground mt-1 leading-snug">
                 {policy.policy_name}
-              </h3>
+              </h2>
               <p className="text-xs text-muted-foreground">{policy.insurer_name}</p>
             </div>
           </div>

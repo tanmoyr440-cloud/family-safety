@@ -174,8 +174,11 @@ export const AddInsurancePolicyDialog: React.FC<AddInsurancePolicyDialogProps> =
             {/* Policy Category & Name */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1 sm:col-span-1">
-                <label className="text-xs font-semibold text-foreground">Policy Category *</label>
+                <label htmlFor="policy-type" className="text-xs font-semibold text-foreground">
+                  Policy Category *
+                </label>
                 <select
+                  id="policy-type"
                   value={policyType}
                   onChange={(e) => setPolicyType(e.target.value)}
                   className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
@@ -189,8 +192,11 @@ export const AddInsurancePolicyDialog: React.FC<AddInsurancePolicyDialogProps> =
               </div>
 
               <div className="space-y-1 sm:col-span-2">
-                <label className="text-xs font-semibold text-foreground">Policy Name / Plan *</label>
+                <label htmlFor="policy-name" className="text-xs font-semibold text-foreground">
+                  Policy Name / Plan *
+                </label>
                 <input
+                  id="policy-name"
                   type="text"
                   placeholder="e.g. Optima Secure, Sampoorna Raksha"
                   value={policyName}
@@ -204,8 +210,11 @@ export const AddInsurancePolicyDialog: React.FC<AddInsurancePolicyDialogProps> =
             {/* Insurer Name & Policy Number */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground">Insurer Name *</label>
+                <label htmlFor="insurer-name" className="text-xs font-semibold text-foreground">
+                  Insurer Name *
+                </label>
                 <input
+                  id="insurer-name"
                   list="common-insurers"
                   type="text"
                   placeholder="e.g. HDFC ERGO, Star Health"
@@ -222,8 +231,11 @@ export const AddInsurancePolicyDialog: React.FC<AddInsurancePolicyDialogProps> =
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground">Policy Number *</label>
+                <label htmlFor="policy-number" className="text-xs font-semibold text-foreground">
+                  Policy Number *
+                </label>
                 <input
+                  id="policy-number"
                   type="text"
                   placeholder="e.g. 28252001234567"
                   value={policyNumber}
@@ -237,8 +249,11 @@ export const AddInsurancePolicyDialog: React.FC<AddInsurancePolicyDialogProps> =
             {/* Sum Insured & Premium */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1 sm:col-span-1">
-                <label className="text-xs font-semibold text-foreground">Sum Insured (₹) *</label>
+                <label htmlFor="sum-insured" className="text-xs font-semibold text-foreground">
+                  Sum Insured (₹) *
+                </label>
                 <input
+                  id="sum-insured"
                   type="number"
                   min="0"
                   step="1000"
@@ -251,8 +266,11 @@ export const AddInsurancePolicyDialog: React.FC<AddInsurancePolicyDialogProps> =
               </div>
 
               <div className="space-y-1 sm:col-span-1">
-                <label className="text-xs font-semibold text-foreground">Annual Premium (₹)</label>
+                <label htmlFor="premium-inr" className="text-xs font-semibold text-foreground">
+                  Annual Premium (₹)
+                </label>
                 <input
+                  id="premium-inr"
                   type="number"
                   min="0"
                   step="100"
@@ -264,8 +282,11 @@ export const AddInsurancePolicyDialog: React.FC<AddInsurancePolicyDialogProps> =
               </div>
 
               <div className="space-y-1 sm:col-span-1">
-                <label className="text-xs font-semibold text-foreground">Next Renewal Due</label>
+                <label htmlFor="due-date" className="text-xs font-semibold text-foreground">
+                  Next Renewal Due
+                </label>
                 <input
+                  id="due-date"
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}

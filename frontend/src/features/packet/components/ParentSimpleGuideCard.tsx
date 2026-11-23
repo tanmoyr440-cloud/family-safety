@@ -12,6 +12,9 @@ import {
   ShieldCheck,
   TrendingUp,
 } from "lucide-react";
+import { useSpeechGuidance } from "../hooks/useSpeechGuidance";
+import { AudioGuidePlayer } from "./AudioGuidePlayer";
+import { getAudioScript } from "../lib/bengaliAudioGuidance";
 
 export interface ParentSimpleGuideCardProps {
   ownerName: string;
@@ -49,6 +52,8 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
   const [lang, setLang] = React.useState<Language>("bn");
   const [tab, setTab] = React.useState<ActiveTab>("mf");
 
+  const speech = useSpeechGuidance();
+
   const primaryLoan = loans[0];
   const loanLender = primaryLoan?.lender || "HDFC Bank";
   const loanAccount =
@@ -60,6 +65,34 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
   const loanUpi = primaryLoan?.payment_instructions?.upi_id || "tanmoyr450-1@oksbi";
 
   const isBengali = lang === "bn";
+
+  const audioContext = React.useMemo(
+    () => ({
+      ownerName,
+      loanEmiFormatted,
+      loanDueDay,
+      loanUpi,
+      loanLender,
+      loanAccount,
+    }),
+    [ownerName, loanEmiFormatted, loanDueDay, loanUpi, loanLender, loanAccount],
+  );
+
+  const currentAudioScript = React.useMemo(
+    () => getAudioScript(tab, lang, audioContext),
+    [tab, lang, audioContext],
+  );
+
+  // Stop speech playback when switching tabs or language to prevent audio mismatch
+  const { stop: stopSpeech } = speech;
+  const isFirstMount = React.useRef(true);
+  React.useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    stopSpeech();
+  }, [tab, lang, stopSpeech]);
 
   return (
     <Card className="page-break-avoid border-blue-200 bg-gradient-to-br from-blue-50/70 via-indigo-50/40 to-white shadow-xs overflow-hidden">
@@ -231,6 +264,14 @@ export const ParentSimpleGuideCard: React.FC<ParentSimpleGuideCardProps> = ({
             </div>
           </button>
         </div>
+
+        {/* Voice Audio Guidance Bar for Parents */}
+        <AudioGuidePlayer
+          speech={speech}
+          script={currentAudioScript}
+          lang={lang}
+          topicId={tab}
+        />
 
         {/* Tab 1: Mutual Funds & Stocks Guidance */}
         {tab === "mf" && (
