@@ -1,0 +1,41 @@
+name: Keep-Alive Pinger
+
+on:
+  schedule:
+    # Runs every 10 minutes to prevent Render free tier from sleeping (sleep threshold is 15 minutes)
+    - cron: "*/10 * * * *"
+  workflow_dispatch: # Allows manual trigger from the Actions tab anytime
+
+jobs:
+  ping:
+    name: Keep Alive Ping
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend and Frontend
+        env:
+          # You can either set RENDER_BACKEND_URL in GitHub repo Secrets/Variables or edit the default below
+          BACKEND_URL: ${{ secrets.RENDER_BACKEND_URL || 'https://family-safety.onrender.com' }}
+          FRONTEND_URL: ${{ secrets.VERCEL_FRONTEND_URL || '' }}
+        run: |
+          echo "=========================================="
+          echo "Keep-Alive Ping: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "=========================================="
+
+          # Ping backend /health (Render free tier sleeps after 15 min inactivity)
+          if [ -n "$BACKEND_URL" ]; then
+            CLEAN_BACKEND="${BACKEND_URL%/}"
+            TARGET_URL="$CLEAN_BACKEND/health"
+            echo "Pinging Backend -> $TARGET_URL"
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 20 --max-time 60 "$TARGET_URL" || echo "000")
+            echo "Backend returned HTTP $HTTP_CODE"
+          fi
+
+          # Optional: Ping frontend on Vercel
+          if [ -n "$FRONTEND_URL" ]; then
+            CLEAN_FRONTEND="${FRONTEND_URL%/}"
+            echo "Pinging Frontend -> $CLEAN_FRONTEND"
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 30 "$CLEAN_FRONTEND" || echo "000")
+            echo "Frontend returned HTTP $HTTP_CODE"
+          fi
+
+          echo "Ping complete."
